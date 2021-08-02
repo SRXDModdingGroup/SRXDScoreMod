@@ -26,7 +26,6 @@ namespace ScoreMod {
             Liftoff,
             Beat,
             BeatRelease,
-            SpinStart,
             SustainedNoteTick
         }
         
@@ -98,10 +97,6 @@ namespace ScoreMod {
                     }
                     else
                         return AddTimedNoteScore(timingOffset, Profile.ReleaseNoteWindows);
-                case PointSource.SpinStart:
-                    AddScore(Profile.SpinStartValue);
-
-                    return Accuracy.Perfect;
             }
 
             return Accuracy.Perfect;

@@ -80,6 +80,8 @@
         <Compile Include="CompleteScreenUI.cs" />
         <Compile Include="GameplayUI.cs" />
         <Compile Include="GameplayState.cs" />
+        <Compile Include="HighScoresContainer.cs" />
+        <Compile Include="LevelSelectUI.cs" />
         <Compile Include="Main.cs" />
         <Compile Include="ModState.cs" />
         <Compile Include="ScoreContainer.cs" />

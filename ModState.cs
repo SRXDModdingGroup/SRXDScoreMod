@@ -223,6 +223,18 @@ namespace ScoreMod {
                 LogToFile(writer);
             }
         }
+
+        public static void SavePlayData(string trackId) {
+            bool anyChanged = false;
+            
+            foreach (var container in scoreContainers) {
+                if (HighScoresContainer.SetHighScore(trackId, container.Profile.GetUniqueId(), container.Score, container.GetRank()))
+                    anyChanged = true;
+            }
+            
+            if (anyChanged)
+                HighScoresContainer.SaveHighScores();
+        }
         
         private static void InitScoreContainers() {
             scoreContainers = new ScoreContainer[ScoreSystemProfile.Profiles.Count];

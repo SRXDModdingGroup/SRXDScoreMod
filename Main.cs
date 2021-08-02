@@ -17,6 +17,9 @@ namespace ScoreMod {
             harmony.PatchAll(typeof(GameplayState));
             harmony.PatchAll(typeof(GameplayUI));
             harmony.PatchAll(typeof(CompleteScreenUI));
+            harmony.PatchAll(typeof(LevelSelectUI));
+            
+            HighScoresContainer.LoadHighScores();
         }
     }
 }

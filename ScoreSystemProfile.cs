@@ -4,7 +4,7 @@ using static ScoreMod.ScoreContainer;
 namespace ScoreMod {
     public class ScoreSystemProfile {
         private const uint HASH_BIAS = 2166136261u;
-        private const int HASH_COEFF = 16777619;
+        private const int HASH_COEFF = 486187739;
 
         public static ReadOnlyCollection<ScoreSystemProfile> Profiles { get; } = new ReadOnlyCollection<ScoreSystemProfile>(new[] {
             new ScoreSystemProfile("Standard", 4, 32, 4,
@@ -92,6 +92,9 @@ namespace ScoreMod {
         public ReadOnlyCollection<TimedNoteWindow> ReleaseNoteWindows { get; }
 
         private readonly int hash;
+        private string uniqueId;
+
+        public string GetUniqueId() => uniqueId;
 
         private ScoreSystemProfile(string name, int maxMultiplier, int pointsPerMultiplier, int matchNoteValue, TimedNoteWindow[] pressNoteWindows, TimedNoteWindow[] releaseNoteWindows) {
             Name = name;
@@ -111,6 +114,8 @@ namespace ScoreMod {
                 
                 foreach (var window in ReleaseNoteWindows)
                     hash = hash * HASH_COEFF ^ window.GetHashCode();
+                
+                uniqueId = ((uint) hash).ToString("x8");
             }
         }
 
