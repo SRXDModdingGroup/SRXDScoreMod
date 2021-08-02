@@ -10,10 +10,13 @@ namespace ScoreMod {
 
         public override void Load() {
             Logger = Log;
-            Harmony.CreateAndPatchAll(typeof(UnityObjects));
-            Harmony.CreateAndPatchAll(typeof(GameplayState));
-            Harmony.CreateAndPatchAll(typeof(GameplayUI));
-            Harmony.CreateAndPatchAll(typeof(CompleteScreenUI));
+
+            var harmony = new Harmony("ScoreMod");
+            
+            harmony.PatchAll(typeof(UnityObjects));
+            harmony.PatchAll(typeof(GameplayState));
+            harmony.PatchAll(typeof(GameplayUI));
+            harmony.PatchAll(typeof(CompleteScreenUI));
         }
     }
 }
