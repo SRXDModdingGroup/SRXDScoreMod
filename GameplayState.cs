@@ -11,7 +11,7 @@ namespace ScoreMod {
         private static bool calculatingMaxScore;
         private static int lastHoldIndex;
         private static int lastBeatIndex;
-        private static Note[] notes;
+        private static NoteType[] noteTypes;
 
         private static void EndPlay() {
             Playing = false;
@@ -75,26 +75,26 @@ namespace ScoreMod {
 
         [HarmonyPatch(typeof(PlayState.ScoreState), nameof(PlayState.ScoreState.AddScore)), HarmonyPostfix]
         private static void ScoreState_AddScore_Postfix(PlayState.ScoreState __instance, int amount, int noteIndex) {
-            if (!Playing && !calculatingMaxScore || notes == null || noteIndex >= notes.Length || noteIndex < 0)
+            if (!Playing && !calculatingMaxScore || noteTypes == null || noteIndex >= noteTypes.Length || noteIndex < 0)
                 return;
             
-            var note = notes[noteIndex];
+            var noteType = noteTypes[noteIndex];
             bool isSustainedNoteTick = false;
             
-            if (note.NoteType == NoteType.HoldStart) {
+            if (noteType == NoteType.HoldStart) {
                 if (noteIndex == lastHoldIndex)
                     isSustainedNoteTick = true;
                 else
                     lastHoldIndex = noteIndex;
             }
-            else if (note.NoteType == NoteType.DrumStart) {
+            else if (noteType == NoteType.DrumStart) {
                 if (noteIndex == lastBeatIndex)
                     isSustainedNoteTick = true;
                 else
                     lastBeatIndex = noteIndex;
             }
             
-            ModState.AddPoints(amount, LastOffset ?? 0f, isSustainedNoteTick, note);
+            ModState.AddPoints(amount, LastOffset ?? 0f, isSustainedNoteTick, noteType);
         }
 
         [HarmonyPatch(typeof(PlayState.ScoreState), nameof(PlayState.ScoreState.DropMultiplier)), HarmonyPostfix]
@@ -129,12 +129,12 @@ namespace ScoreMod {
 
             var trackNotes = __instance.playStateFirst.trackData.Notes;
 
-            notes = new Note[trackNotes.Count];
+            noteTypes = new NoteType[trackNotes.Count];
 
             int j = 0;
 
             foreach (var note in trackNotes) {
-                notes[j] = note;
+                noteTypes[j] = note.NoteType;
                 j++;
             }
         }

@@ -10,40 +10,41 @@ namespace ScoreMod {
         private static TMP_Text pfcLabel;
         
         public static void UpdateUI() {
-            if (levelCompleteMenu != null && levelCompleteMenu.gameObject.activeSelf) {
-                if (ModState.ShowModdedScore) {
-                    levelCompleteMenu.pfcBonusText.SetText(ModState.CurrentContainer.Profile.Name);
-                    levelCompleteMenu.accuracyBonusText.SetText(ModState.CurrentContainer.GetAccuracyRating().ToString("P"));
-                    levelCompleteMenu.PfcBonusGameObject.SetActive(true);
-                    levelCompleteMenu.accuracyGameObject.SetActive(true);
-                    levelCompleteMenu.pfcStatusText.SetText(ModState.CurrentContainer.GetIsPfc() ? "PFC" : "FC");
-                    levelCompleteMenu.scoreValueText.SetText(ModState.CurrentContainer.Score.ToString());
-                    levelCompleteMenu.rankAnimator.SetText(ModState.CurrentContainer.GetRank());
-                    pfcLabel.SetText("Current Profile");
-                }
-                else {
-                    bool realIsPfc = GameplayState.PlayState.fullComboState == FullComboState.PerfectFullCombo;
+            if (levelCompleteMenu == null || !levelCompleteMenu.gameObject.activeSelf)
+                return;
 
-                    levelCompleteMenu.pfcBonusText.SetText(ModState.ShowModdedScore ? ModState.CurrentContainer.Profile.Name : GameplayState.PlayState.scoreState.AccuracyBonus.ToString());
-                    levelCompleteMenu.accuracyBonusText.SetText(GameplayState.PlayState.scoreState.AccuracyBonus.ToString());
-                    levelCompleteMenu.PfcBonusGameObject.SetActive(realIsPfc);
-                    levelCompleteMenu.accuracyGameObject.SetActive(GameplayState.PlayState.scoreState.AccuracyBonus > 0);
-                    levelCompleteMenu.pfcStatusText.SetText(realIsPfc ? "PFC" : "FC");
-                    levelCompleteMenu.scoreValueText.SetText(GameplayState.PlayState.TotalScore.ToString());
-                    levelCompleteMenu.rankAnimator.SetText(realRank);
-                    pfcLabel.SetText("PFC");
-                }
+            if (ModState.ShowModdedScore) {
+                levelCompleteMenu.pfcBonusText.SetText(ModState.CurrentContainer.Profile.Name);
+                levelCompleteMenu.accuracyBonusText.SetText(ModState.CurrentContainer.GetAccuracyRating().ToString("P"));
+                levelCompleteMenu.PfcBonusGameObject.SetActive(true);
+                levelCompleteMenu.accuracyGameObject.SetActive(true);
+                levelCompleteMenu.pfcStatusText.SetText(ModState.CurrentContainer.GetIsPfc() ? "PFC" : "FC");
+                levelCompleteMenu.scoreValueText.SetText(ModState.CurrentContainer.Score.ToString());
+                levelCompleteMenu.rankAnimator.SetText(ModState.CurrentContainer.GetRank());
+                pfcLabel.SetText("Current Profile");
+            }
+            else {
+                bool realIsPfc = GameplayState.PlayState.fullComboState == FullComboState.PerfectFullCombo;
+
+                levelCompleteMenu.pfcBonusText.SetText(ModState.ShowModdedScore ? ModState.CurrentContainer.Profile.Name : GameplayState.PlayState.scoreState.AccuracyBonus.ToString());
+                levelCompleteMenu.accuracyBonusText.SetText(GameplayState.PlayState.scoreState.AccuracyBonus.ToString());
+                levelCompleteMenu.PfcBonusGameObject.SetActive(realIsPfc);
+                levelCompleteMenu.accuracyGameObject.SetActive(GameplayState.PlayState.scoreState.AccuracyBonus > 0);
+                levelCompleteMenu.pfcStatusText.SetText(realIsPfc ? "PFC" : "FC");
+                levelCompleteMenu.scoreValueText.SetText(GameplayState.PlayState.TotalScore.ToString());
+                levelCompleteMenu.rankAnimator.SetText(realRank);
+                pfcLabel.SetText("PFC");
             }
         }
 
         public static bool CheckCompleteMenuClosed(bool value, GameObject instance) {
-            if (levelCompleteMenuOpen && !value && instance == levelCompleteMenu.gameObject) {
-                levelCompleteMenuOpen = false;
+            if (!levelCompleteMenuOpen || value || instance != levelCompleteMenu.gameObject)
+                return false;
 
-                return true;
-            }
+            levelCompleteMenuOpen = false;
 
-            return false;
+            return true;
+
         }
 
         [HarmonyPatch(typeof(XDLevelCompleteMenu), nameof(XDLevelCompleteMenu.Setup)), HarmonyPostfix]

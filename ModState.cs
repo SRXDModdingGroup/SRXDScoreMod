@@ -48,13 +48,13 @@ namespace ScoreMod {
             return true;
         }
 
-        public static void AddPoints(int amount, float offset, bool isSustainedNoteTick, Note note) {
+        public static void AddPoints(int amount, float offset, bool isSustainedNoteTick, NoteType noteType) {
             int oldMultiplier = CurrentContainer.Multiplier;
             bool oldIsPfc = CurrentContainer.GetIsPfc();
 
             ScoreContainer.PointSource source;
 
-            switch (note.NoteType) {
+            switch (noteType) {
                 case NoteType.Match:
                     source = ScoreContainer.PointSource.Match;
                     
