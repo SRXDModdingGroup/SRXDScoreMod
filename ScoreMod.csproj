@@ -77,11 +77,16 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="CompleteScreenUI.cs" />
+        <Compile Include="GameplayUI.cs" />
+        <Compile Include="GameplayState.cs" />
         <Compile Include="Main.cs" />
+        <Compile Include="ModState.cs" />
         <Compile Include="ScoreContainer.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
         <Compile Include="ScoreSystemProfile.cs" />
         <Compile Include="StringTable.cs" />
+        <Compile Include="UnityObjects.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

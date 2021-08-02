@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace ScoreMod {
     public class ScoreContainer {
@@ -10,13 +9,14 @@ namespace ScoreMod {
         // }
         
         private static readonly List<KeyValuePair<float, string>> RANKS = new List<KeyValuePair<float, string>> {
-            new KeyValuePair<float, string>(0.975f, "S"),
-            new KeyValuePair<float, string>(0.95f, "A+"),
-            new KeyValuePair<float, string>(0.925f, "A"),
-            new KeyValuePair<float, string>(0.90f, "B+"),
-            new KeyValuePair<float, string>(0.85f, "B"),
-            new KeyValuePair<float, string>(0.80f, "C+"),
-            new KeyValuePair<float, string>(0.75f, "C")
+            new KeyValuePair<float, string>(0.98f, "S"),
+            new KeyValuePair<float, string>(0.965f, "A+"),
+            new KeyValuePair<float, string>(0.95f, "A"),
+            new KeyValuePair<float, string>(0.925f, "B+"),
+            new KeyValuePair<float, string>(0.90f, "B"),
+            new KeyValuePair<float, string>(0.85f, "C+"),
+            new KeyValuePair<float, string>(0.80f, "C"),
+            new KeyValuePair<float, string>(0.75f, "D+")
         };
 
         public enum PointSource {
