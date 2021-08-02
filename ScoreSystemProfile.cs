@@ -3,8 +3,11 @@ using static ScoreMod.ScoreContainer;
 
 namespace ScoreMod {
     public class ScoreSystemProfile {
+        private const uint HASH_BIAS = 2166136261u;
+        private const int HASH_COEFF = 16777619;
+
         public static ReadOnlyCollection<ScoreSystemProfile> Profiles { get; } = new ReadOnlyCollection<ScoreSystemProfile>(new[] {
-            new ScoreSystemProfile("Standard", 4, 32, 4, 12,
+            new ScoreSystemProfile("Standard", 4, 32, 4,
                 new [] {
                     new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
                     new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
@@ -19,7 +22,7 @@ namespace ScoreMod {
                     new TimedNoteWindow(Accuracy.Good, 6, 0.065f),
                     new TimedNoteWindow(Accuracy.Okay, 3, 0.08f)
                 }),
-            new ScoreSystemProfile("Steep Good", 4, 32, 4, 12,
+            new ScoreSystemProfile("Steep Good", 4, 32, 4,
                 new [] {
                     new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
                     new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
@@ -34,7 +37,7 @@ namespace ScoreMod {
                     new TimedNoteWindow(Accuracy.Good, 8, 0.065f),
                     new TimedNoteWindow(Accuracy.Okay, 2, 0.08f)
                 }),
-            new ScoreSystemProfile("Steeper Good", 4, 32, 4, 12,
+            new ScoreSystemProfile("Steeper Good", 4, 32, 4,
                 new [] {
                     new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
                     new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
@@ -49,7 +52,7 @@ namespace ScoreMod {
                     new TimedNoteWindow(Accuracy.Good, 8, 0.065f),
                     new TimedNoteWindow(Accuracy.Okay, 1, 0.075f)
                 }),
-            new ScoreSystemProfile("Steep Good (PPM 16)", 4, 16, 4, 12,
+            new ScoreSystemProfile("Steep Good (PPM 16)", 4, 16, 4,
                 new [] {
                     new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
                     new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
@@ -64,7 +67,7 @@ namespace ScoreMod {
                     new TimedNoteWindow(Accuracy.Good, 8, 0.065f),
                     new TimedNoteWindow(Accuracy.Okay, 2, 0.08f)
                 }),
-            new ScoreSystemProfile("Steeper Good (PPM 16)", 4, 16, 4, 12,
+            new ScoreSystemProfile("Steeper Good (PPM 16)", 4, 16, 4,
                 new [] {
                     new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
                     new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
@@ -85,30 +88,54 @@ namespace ScoreMod {
         public int MaxMultiplier { get; }
         public int PointsPerMultiplier { get; }
         public int MatchNoteValue { get; }
-        public int SpinStartValue { get; }
         public ReadOnlyCollection<TimedNoteWindow> PressNoteWindows { get; }
         public ReadOnlyCollection<TimedNoteWindow> ReleaseNoteWindows { get; }
 
-        public ScoreSystemProfile(string name, int maxMultiplier, int pointsPerMultiplier, int matchNoteValue, int spinStartValue, TimedNoteWindow[] pressNoteWindows, TimedNoteWindow[] releaseNoteWindows) {
+        private readonly int hash;
+
+        private ScoreSystemProfile(string name, int maxMultiplier, int pointsPerMultiplier, int matchNoteValue, TimedNoteWindow[] pressNoteWindows, TimedNoteWindow[] releaseNoteWindows) {
             Name = name;
             MaxMultiplier = maxMultiplier;
             PointsPerMultiplier = pointsPerMultiplier;
             MatchNoteValue = matchNoteValue;
-            SpinStartValue = spinStartValue;
             PressNoteWindows = new ReadOnlyCollection<TimedNoteWindow>(pressNoteWindows);
             ReleaseNoteWindows = new ReadOnlyCollection<TimedNoteWindow>(releaseNoteWindows);
+            
+            unchecked {
+                hash = (int) HASH_BIAS * HASH_COEFF ^ MaxMultiplier.GetHashCode();
+                hash = hash * HASH_COEFF ^ PointsPerMultiplier.GetHashCode();
+                hash = hash * HASH_COEFF ^ MatchNoteValue.GetHashCode();
+
+                foreach (var window in PressNoteWindows)
+                    hash = hash * HASH_COEFF ^ window.GetHashCode();
+                
+                foreach (var window in ReleaseNoteWindows)
+                    hash = hash * HASH_COEFF ^ window.GetHashCode();
+            }
         }
+
+        public override int GetHashCode() => hash;
 
         public class TimedNoteWindow {
             public Accuracy Accuracy { get; }
             public int MaxValue { get; }
             public float LowerBound { get; }
 
+            private readonly int hash;
+
             public TimedNoteWindow(Accuracy accuracy, int maxValue, float lowerBound) {
                 Accuracy = accuracy;
                 MaxValue = maxValue;
                 LowerBound = lowerBound;
+                
+                unchecked {
+                    hash = (int) HASH_BIAS * HASH_COEFF ^ Accuracy.GetHashCode();
+                    hash = hash * HASH_COEFF ^ MaxValue.GetHashCode();
+                    hash = hash * HASH_COEFF ^ LowerBound.GetHashCode();
+                }
             }
+
+            public override int GetHashCode() => hash;
         }
     }
 }
