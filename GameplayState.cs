@@ -8,15 +8,12 @@ namespace ScoreMod {
         public static PlayState PlayState { get; private set; }
 
         private static bool pickedNewScoreSystem;
-        private static bool calculatingMaxScore;
         private static int lastHoldIndex;
         private static int lastBeatIndex;
         private static NoteType[] noteTypes;
 
         private static void EndPlay() {
             Playing = false;
-            calculatingMaxScore = false;
-            ModState.FinishCalculatingMaxScore();
             ModState.LogPlayData(PlayState.TrackInfoRef.asset.title);
             ModState.SavePlayData(LevelSelectUI.GetCompletedTrackId(PlayState.trackData));
             CompleteScreenUI.UpdateUI();
@@ -52,33 +49,11 @@ namespace ScoreMod {
                 ModState.ToggleModdedScoring();
         }
         
-        [HarmonyPatch(typeof(PlayState.ScoreState), nameof(PlayState.ScoreState.FinaliseScore)), HarmonyPostfix]
-        private static void ScoreState_FinaliseScore_Postfix() {
-            if (!Playing || calculatingMaxScore)
-                return;
-
-            ModState.BeginCalculatingMaxScore();
-
-            Playing = false;
-            calculatingMaxScore = true;
-            LastOffset = null;
-            lastHoldIndex = -1;
-            lastBeatIndex = -1;
-        }
-
-        [HarmonyPatch(typeof(PlayState.ScoreState), nameof(PlayState.ScoreState.PerfectFullComboLost)), HarmonyPrefix]
-        private static bool ScoreState_PerfectFullComboLost_PreFix() {
-            if (Playing)
-                ModState.PfcLost();
-
-            return true;
-        }
-
         [HarmonyPatch(typeof(PlayState.ScoreState), nameof(PlayState.ScoreState.AddScore)), HarmonyPostfix]
         private static void ScoreState_AddScore_Postfix(PlayState.ScoreState __instance, int amount, int noteIndex) {
-            if (!Playing && !calculatingMaxScore || noteTypes == null || noteIndex >= noteTypes.Length || noteIndex < 0)
+            if (!Playing)
                 return;
-            
+
             var noteType = noteTypes[noteIndex];
             bool isSustainedNoteTick = false;
             
@@ -95,7 +70,10 @@ namespace ScoreMod {
                     lastBeatIndex = noteIndex;
             }
             
-            ModState.AddPoints(amount, LastOffset ?? 0f, isSustainedNoteTick, noteType);
+            if (__instance.isMaxPossibleCalculation)
+                ModState.AddMaxScore(amount, isSustainedNoteTick, noteType);
+            else
+                ModState.AddScore(amount, LastOffset ?? 0f, isSustainedNoteTick, noteType);
         }
 
         [HarmonyPatch(typeof(PlayState.ScoreState), nameof(PlayState.ScoreState.DropMultiplier)), HarmonyPostfix]
@@ -107,6 +85,23 @@ namespace ScoreMod {
             GameplayUI.UpdateMultiplierText();
         }
 
+        [HarmonyPatch(typeof(PlayState.ScoreState), nameof(PlayState.ScoreState.PerfectFullComboLost)), HarmonyPrefix]
+        private static bool ScoreState_PerfectFullComboLost_PreFix() {
+            if (Playing)
+                ModState.PfcLost();
+
+            return true;
+        }
+        
+        [HarmonyPatch(typeof(PlayState.ScoreState), nameof(PlayState.ScoreState.FinaliseScore)), HarmonyPostfix]
+        private static void ScoreState_FinaliseScore_Postfix(PlayState.ScoreState __instance) {
+            if (!Playing)
+                return;
+
+            lastHoldIndex = -1;
+            lastBeatIndex = -1;
+        }
+        
         [HarmonyPatch(typeof(Track), nameof(Track.FailSong)), HarmonyPostfix]
         private static void Track_FailSong_Postfix() {
             EndPlay();
@@ -123,7 +118,6 @@ namespace ScoreMod {
 
             PlayState = __instance.playStateFirst;
             Playing = true;
-            calculatingMaxScore = false;
             LastOffset = null;
             lastHoldIndex = -1;
             lastBeatIndex = -1;
@@ -143,7 +137,6 @@ namespace ScoreMod {
         [HarmonyPatch(typeof(XDPauseMenu), nameof(XDPauseMenu.ExitButtonPressed)), HarmonyPostfix]
         private static void XDPauseMenu_ExitButtonPressed_Postfix() {
             Playing = false;
-            calculatingMaxScore = false;
         }
         
         [HarmonyPatch(typeof(GameplayVariables), nameof(GameplayVariables.GetTimingAccuracy)), HarmonyPostfix]

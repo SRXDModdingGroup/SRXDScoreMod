@@ -49,7 +49,6 @@ namespace ScoreMod {
         private int earlies;
         private int lates;
         private bool isPfc;
-        private bool calculatingMaxScore;
         private string rank;
         private Dictionary<Accuracy, int> accuracyCounters;
         private Dictionary<Accuracy, int> detailedLossToAccuracy;
@@ -73,7 +72,7 @@ namespace ScoreMod {
             };
         }
 
-        public Accuracy AddPointsFromSource(PointSource source, float timingOffset = 0f) {
+        public Accuracy AddScoreFromSource(PointSource source, float timingOffset = 0f) {
             switch (source) {
                 case PointSource.Match:
                     AddScore(Profile.MatchNoteValue);
@@ -82,28 +81,38 @@ namespace ScoreMod {
                 case PointSource.Tap:
                 case PointSource.HoldStart:
                 case PointSource.Beat:
-                    if (calculatingMaxScore) {
-                        AddScore(Profile.PressNoteWindows[0].MaxValue);
-
-                        return Accuracy.Perfect;
-                    }
-                    else
-                        return AddTimedNoteScore(timingOffset, Profile.PressNoteWindows);
+                    return AddTimedNoteScore(timingOffset, Profile.PressNoteWindows);
                 case PointSource.Liftoff:
                 case PointSource.BeatRelease:
-                    if (calculatingMaxScore) {
-                        AddScore(Profile.ReleaseNoteWindows[0].MaxValue);
-
-                        return Accuracy.Perfect;
-                    }
-                    else
-                        return AddTimedNoteScore(timingOffset, Profile.ReleaseNoteWindows);
+                    return AddTimedNoteScore(timingOffset, Profile.ReleaseNoteWindows);
             }
 
             return Accuracy.Perfect;
         }
         
         public void AddSustainedNoteTickScore(int amount) => AddScore(amount);
+
+        public void AddMaxScoreFromSource(PointSource source) {
+            switch (source) {
+                case PointSource.Match:
+                    AddMaxScore(Profile.MatchNoteValue);
+
+                    return;
+                case PointSource.Tap:
+                case PointSource.HoldStart:
+                case PointSource.Beat:
+                    AddMaxScore(Profile.PressNoteWindows[0].MaxValue);
+                    
+                    return;
+                case PointSource.Liftoff:
+                case PointSource.BeatRelease:
+                    AddMaxScore(Profile.ReleaseNoteWindows[0].MaxValue);
+                    
+                    return;
+            }
+        }
+
+        public void AddSustainedNoteTickMaxScore(int amount) => AddMaxScore(amount);
 
         public void Miss(bool dropMultiplier = true) {
             accuracyCounters[Accuracy.Miss]++;
@@ -129,7 +138,6 @@ namespace ScoreMod {
             earlies = 0;
             lates = 0;
             isPfc = true;
-            calculatingMaxScore = false;
             rank = null;
             accuracyCounters[Accuracy.Perfect] = 0;
             accuracyCounters[Accuracy.Great] = 0;
@@ -140,13 +148,6 @@ namespace ScoreMod {
             detailedLossToAccuracy[Accuracy.Good] = 0;
             detailedLossToAccuracy[Accuracy.Okay] = 0;
         }
-
-        public void BeginCalculatingMaxScore() {
-            MaxScore = 0;
-            calculatingMaxScore = true;
-        }
-
-        public void FinishCalculatingMaxScore() => calculatingMaxScore = false;
         
         public void GetLoss(out int lossToMisses, out int lossToAccuracy) {
             int totalLoss = MaxScore - Score;
@@ -207,12 +208,6 @@ namespace ScoreMod {
         public string GetRank() => rank ?? (rank = GetRankInternal()) ?? string.Empty;
 
         private void AddScore(int amount) {
-            if (calculatingMaxScore) {
-                MaxScore += Profile.MaxMultiplier * amount;
-                
-                return;
-            }
-            
             int acc = amount;
             
             while (Multiplier < Profile.MaxMultiplier && acc >= pointsToNextMultiplier) {
@@ -227,6 +222,8 @@ namespace ScoreMod {
 
             Score += Multiplier * acc;
         }
+        
+        private void AddMaxScore(int amount) => MaxScore += Profile.MaxMultiplier * amount;
 
         private string GetRankInternal() {
             if (MaxScore == 0)
@@ -234,7 +231,7 @@ namespace ScoreMod {
             
             float ratio = (float) Score / MaxScore;
 
-            if (ratio > RANKS[0].Key) {
+            if (ratio >= RANKS[0].Key) {
                 if (MaxScore - Score < S_PLUS_THRESHOLD)
                     return "S+";
 
@@ -244,7 +241,7 @@ namespace ScoreMod {
             for (int i = 1; i < RANKS.Count; i++) {
                 var pair = RANKS[i];
 
-                if (ratio > pair.Key)
+                if (ratio >= pair.Key)
                     return pair.Value;
             }
 
