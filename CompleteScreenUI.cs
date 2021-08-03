@@ -26,7 +26,7 @@ namespace ScoreMod {
             else {
                 bool realIsPfc = GameplayState.PlayState.fullComboState == FullComboState.PerfectFullCombo;
 
-                levelCompleteMenu.pfcBonusText.SetText(ModState.ShowModdedScore ? ModState.CurrentContainer.Profile.Name : GameplayState.PlayState.scoreState.AccuracyBonus.ToString());
+                levelCompleteMenu.pfcBonusText.SetText(GameplayState.PlayState.scoreState.PfcBonus.ToString());
                 levelCompleteMenu.accuracyBonusText.SetText(GameplayState.PlayState.scoreState.AccuracyBonus.ToString());
                 levelCompleteMenu.PfcBonusGameObject.SetActive(realIsPfc);
                 levelCompleteMenu.accuracyGameObject.SetActive(GameplayState.PlayState.scoreState.AccuracyBonus > 0);

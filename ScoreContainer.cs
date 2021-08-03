@@ -7,7 +7,8 @@ namespace ScoreMod {
         //     foreach (var window in PRESS_NOTE_WINDOWS)
         //         Console.WriteLine($"{window.Accuracy}: {window.LowerBound} {window.MaxValue} {GetValueFromTiming(window.LowerBound, PRESS_NOTE_WINDOWS, out var accuracy)} {accuracy}");
         // }
-        
+
+        private static readonly int S_PLUS_THRESHOLD = 96;
         private static readonly List<KeyValuePair<float, string>> RANKS = new List<KeyValuePair<float, string>> {
             new KeyValuePair<float, string>(0.98f, "S"),
             new KeyValuePair<float, string>(0.965f, "A+"),
@@ -234,7 +235,7 @@ namespace ScoreMod {
             float ratio = (float) Score / MaxScore;
 
             if (ratio > RANKS[0].Key) {
-                if (MaxScore - Score < Profile.PointsPerMultiplier * Profile.MaxMultiplier * (Profile.MaxMultiplier - 1) / 2)
+                if (MaxScore - Score < S_PLUS_THRESHOLD)
                     return "S+";
 
                 return RANKS[0].Value;
