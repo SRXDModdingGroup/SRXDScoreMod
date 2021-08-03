@@ -37,14 +37,6 @@ namespace ScoreMod {
 
         public static void UpdateFcStar() => fcStar.sprite = fcSprite;
 
-        public static void CheckTimingFeedbackSpawned(bool value, GameObject instance) {
-            if (!timingFeedbackSpawned || !value || instance.name != "AccuracyEffectXD(Clone)")
-                return;
-
-            timingFeedbackObject = instance;
-            timingFeedbackSpawned = false;
-        }
-
         private static string GetMultiplierAsText() => $"{ModState.CurrentContainer.Multiplier}<size=65%>x</size>";
 
         [HarmonyPatch(typeof(XDHudCanvases), nameof(XDHudCanvases.Start)), HarmonyPostfix]
@@ -190,6 +182,15 @@ namespace ScoreMod {
 
             feedbackText.Text = newText;
             timingFeedbackObject = null;
+        }
+        
+        [HarmonyPatch(typeof(GameObject), nameof(GameObject.SetActive)), HarmonyPostfix]
+        private static void GameObject_SetActive_Postfix(GameObject __instance, bool value) {
+            if (!timingFeedbackSpawned || !value || __instance.name != "AccuracyEffectXD(Clone)")
+                return;
+
+            timingFeedbackObject = __instance;
+            timingFeedbackSpawned = false;
         }
     }
 }

@@ -18,6 +18,7 @@ namespace ScoreMod {
             calculatingMaxScore = false;
             ModState.FinishCalculatingMaxScore();
             ModState.LogPlayData(PlayState.TrackInfoRef.asset.title);
+            ModState.SavePlayData(LevelSelectUI.GetCompletedTrackId(PlayState.trackData));
             CompleteScreenUI.UpdateUI();
         }
         

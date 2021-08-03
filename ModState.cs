@@ -31,6 +31,8 @@ namespace ScoreMod {
             
             GameplayUI.UpdateUI();
             CompleteScreenUI.UpdateUI();
+            LevelSelectUI.UpdateModScore();
+            LevelSelectUI.UpdateUI();
         }
 
         public static bool PickScoringSystem(int index) {
@@ -44,6 +46,8 @@ namespace ScoreMod {
             ShowModdedScore = true;
             GameplayUI.UpdateUI();
             CompleteScreenUI.UpdateUI();
+            LevelSelectUI.UpdateModScore();
+            LevelSelectUI.UpdateUI();
 
             return true;
         }

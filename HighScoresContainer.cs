@@ -53,7 +53,7 @@ namespace ScoreMod {
         public static bool SetHighScore(string trackId, string scoreProfileId, int score, string rank) {
             string id = $"{trackId}_{scoreProfileId}";
 
-            if (score <= highScores[id].Score)
+            if (highScores.TryGetValue(id, out var item) && score <= item.Score)
                 return false;
 
             highScores[id] = new HighScoreItem(id, score, rank);

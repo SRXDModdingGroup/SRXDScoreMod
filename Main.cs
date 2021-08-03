@@ -13,12 +13,12 @@ namespace ScoreMod {
 
             var harmony = new Harmony("ScoreMod");
             
-            harmony.PatchAll(typeof(UnityObjects));
             harmony.PatchAll(typeof(GameplayState));
             harmony.PatchAll(typeof(GameplayUI));
             harmony.PatchAll(typeof(CompleteScreenUI));
             harmony.PatchAll(typeof(LevelSelectUI));
             
+            ModState.Initialize();
             HighScoresContainer.LoadHighScores();
         }
     }

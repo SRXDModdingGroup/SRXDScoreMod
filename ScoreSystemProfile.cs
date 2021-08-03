@@ -92,7 +92,7 @@ namespace ScoreMod {
         public ReadOnlyCollection<TimedNoteWindow> ReleaseNoteWindows { get; }
 
         private readonly int hash;
-        private string uniqueId;
+        private readonly string uniqueId;
 
         public string GetUniqueId() => uniqueId;
 

@@ -37,16 +37,6 @@ namespace ScoreMod {
             }
         }
 
-        public static bool CheckCompleteMenuClosed(bool value, GameObject instance) {
-            if (!levelCompleteMenuOpen || value || instance != levelCompleteMenu.gameObject)
-                return false;
-
-            levelCompleteMenuOpen = false;
-
-            return true;
-
-        }
-
         [HarmonyPatch(typeof(XDLevelCompleteMenu), nameof(XDLevelCompleteMenu.Setup)), HarmonyPostfix]
         private static void XDLevelCompleteMenu_Setup_Postfix(XDLevelCompleteMenu __instance, PlayState playState) {
             levelCompleteMenu = __instance;
@@ -68,6 +58,12 @@ namespace ScoreMod {
                 
 
             return true;
+        }
+        
+        [HarmonyPatch(typeof(GameObject), nameof(GameObject.SetActive)), HarmonyPostfix]
+        private static void GameObject_SetActive_Postfix(GameObject __instance, bool value) {
+            if (levelCompleteMenuOpen && !value && __instance == levelCompleteMenu.gameObject)
+                levelCompleteMenuOpen = false;
         }
     }
 }
