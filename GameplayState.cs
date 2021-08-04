@@ -10,7 +10,7 @@ namespace ScoreMod {
         private static bool pickedNewScoreSystem;
         private static int lastHoldIndex;
         private static int lastBeatIndex;
-        private static NoteType[] noteTypes;
+        private static PlayableNoteData noteData;
 
         private static void EndPlay() {
             Playing = false;
@@ -54,7 +54,7 @@ namespace ScoreMod {
             if (!Playing)
                 return;
 
-            var noteType = noteTypes[noteIndex];
+            var noteType = noteData.GetNote(noteIndex).NoteType;
             bool isSustainedNoteTick = false;
             
             if (noteType == NoteType.HoldStart) {
@@ -92,19 +92,36 @@ namespace ScoreMod {
 
             return true;
         }
-        
-        [HarmonyPatch(typeof(PlayState.ScoreState), nameof(PlayState.ScoreState.FinaliseScore)), HarmonyPostfix]
-        private static void ScoreState_FinaliseScore_Postfix(PlayState.ScoreState __instance) {
+
+        [HarmonyPatch(typeof(PlayableTrackData), nameof(PlayableTrackData.GetMaxPossibleScoreState), typeof(IntRange)), HarmonyPrefix]
+        private static bool PlayableTrackData_GetMaxPossibleScoreState_Prefix() {
             if (!Playing)
-                return;
+                return true;
 
             lastHoldIndex = -1;
             lastBeatIndex = -1;
+
+            return true;
         }
         
-        [HarmonyPatch(typeof(Track), nameof(Track.FailSong)), HarmonyPostfix]
-        private static void Track_FailSong_Postfix() {
-            EndPlay();
+        [HarmonyPatch(typeof(Track), nameof(Track.PlayTrack)), HarmonyPostfix]
+        private static void Track_PlayTrack_Postfix(Track __instance) {
+            Playing = false;
+            
+            if (__instance.IsInEditMode)
+                return;
+            
+            PlayState = __instance.playStateFirst;
+            ModState.Initialize();
+            
+            if (PlayState.isInPracticeMode)
+                return;
+
+            noteData = PlayState.trackData.NoteData;
+            Playing = true;
+            LastOffset = null;
+            lastHoldIndex = -1;
+            lastBeatIndex = -1;
         }
 
         [HarmonyPatch(typeof(Track), nameof(Track.CompleteSong)), HarmonyPostfix]
@@ -112,26 +129,9 @@ namespace ScoreMod {
             EndPlay();
         }
         
-        [HarmonyPatch(typeof(Track), nameof(Track.PlayTrack)), HarmonyPostfix]
-        private static void Track_PlayTrack_Postfix(Track __instance) {
-            ModState.Initialize();
-
-            PlayState = __instance.playStateFirst;
-            Playing = true;
-            LastOffset = null;
-            lastHoldIndex = -1;
-            lastBeatIndex = -1;
-
-            var trackNotes = __instance.playStateFirst.trackData.Notes;
-
-            noteTypes = new NoteType[trackNotes.Count];
-
-            int j = 0;
-
-            foreach (var note in trackNotes) {
-                noteTypes[j] = note.NoteType;
-                j++;
-            }
+        [HarmonyPatch(typeof(Track), nameof(Track.FailSong)), HarmonyPostfix]
+        private static void Track_FailSong_Postfix() {
+            EndPlay();
         }
 
         [HarmonyPatch(typeof(XDPauseMenu), nameof(XDPauseMenu.ExitButtonPressed)), HarmonyPostfix]

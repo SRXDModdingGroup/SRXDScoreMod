@@ -20,24 +20,6 @@ namespace ScoreMod {
             new KeyValuePair<float, string>(0.75f, "D+")
         };
 
-        public enum PointSource {
-            Match,
-            Tap,
-            HoldStart,
-            Liftoff,
-            Beat,
-            BeatRelease,
-            SustainedNoteTick
-        }
-        
-        public enum Accuracy {
-            Perfect,
-            Great,
-            Good,
-            Okay,
-            Miss
-        }
-
         public ScoreSystemProfile Profile { get; }
         public int Score { get; private set; }
         public int Multiplier { get; private set; }
@@ -72,47 +54,47 @@ namespace ScoreMod {
             };
         }
 
-        public Accuracy AddScoreFromSource(PointSource source, float timingOffset = 0f) {
-            switch (source) {
-                case PointSource.Match:
+        public Accuracy AddScoreFromSource(NoteType noteType, float timingOffset = 0f) {
+            switch (noteType) {
+                case NoteType.Match:
                     AddScore(Profile.MatchNoteValue);
 
                     return Accuracy.Perfect;
-                case PointSource.Tap:
-                case PointSource.HoldStart:
-                case PointSource.Beat:
+                case NoteType.Tap:
+                case NoteType.HoldStart:
+                case NoteType.DrumStart:
                     return AddTimedNoteScore(timingOffset, Profile.PressNoteWindows);
-                case PointSource.Liftoff:
-                case PointSource.BeatRelease:
+                case NoteType.SectionContinuationOrEnd:
+                case NoteType.DrumEnd:
                     return AddTimedNoteScore(timingOffset, Profile.ReleaseNoteWindows);
             }
 
             return Accuracy.Perfect;
         }
         
-        public void AddSustainedNoteTickScore(int amount) => AddScore(amount);
+        public void AddFlatScore(int amount) => AddScore(amount);
 
-        public void AddMaxScoreFromSource(PointSource source) {
-            switch (source) {
-                case PointSource.Match:
+        public void AddMaxScoreFromSource(NoteType noteType) {
+            switch (noteType) {
+                case NoteType.Match:
                     AddMaxScore(Profile.MatchNoteValue);
 
                     return;
-                case PointSource.Tap:
-                case PointSource.HoldStart:
-                case PointSource.Beat:
+                case NoteType.Tap:
+                case NoteType.HoldStart:
+                case NoteType.DrumStart:
                     AddMaxScore(Profile.PressNoteWindows[0].MaxValue);
                     
                     return;
-                case PointSource.Liftoff:
-                case PointSource.BeatRelease:
+                case NoteType.SectionContinuationOrEnd:
+                case NoteType.DrumEnd:
                     AddMaxScore(Profile.ReleaseNoteWindows[0].MaxValue);
                     
                     return;
             }
         }
 
-        public void AddSustainedNoteTickMaxScore(int amount) => AddMaxScore(amount);
+        public void AddFlatMaxScore(int amount) => AddMaxScore(amount);
 
         public void Miss(bool dropMultiplier = true) {
             accuracyCounters[Accuracy.Miss]++;

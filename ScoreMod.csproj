@@ -50,6 +50,9 @@
         <Reference Include="Il2CppSystem, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\Il2CppSystem.dll</HintPath>
         </Reference>
+        <Reference Include="SSD.Types, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
+          <HintPath>Libs\SSD.Types.dll</HintPath>
+        </Reference>
         <Reference Include="System" />
         <Reference Include="System.Core" />
         <Reference Include="System.Data" />
@@ -63,9 +66,6 @@
         <Reference Include="UnityEngine, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\UnityEngine.dll</HintPath>
         </Reference>
-        <Reference Include="UnityEngine.AnimationModule, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
-          <HintPath>Libs\UnityEngine.AnimationModule.dll</HintPath>
-        </Reference>
         <Reference Include="UnityEngine.CoreModule, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\UnityEngine.CoreModule.dll</HintPath>
         </Reference>
@@ -78,6 +78,7 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="CompleteScreenUI.cs" />
+        <Compile Include="Enums.cs" />
         <Compile Include="GameplayUI.cs" />
         <Compile Include="GameplayState.cs" />
         <Compile Include="HighScoresContainer.cs" />

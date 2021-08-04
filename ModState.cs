@@ -5,7 +5,7 @@ namespace ScoreMod {
     public class ModState {
         public static bool ShowModdedScore { get; private set; }
         public static ScoreContainer CurrentContainer { get; private set; }
-        public static ScoreContainer.Accuracy LastAccuracy { get; private set; }
+        public static Accuracy LastAccuracy { get; private set; }
 
         private static ScoreContainer[] scoreContainers;
         private static StringTable outputTable;
@@ -56,28 +56,37 @@ namespace ScoreMod {
             int oldMultiplier = CurrentContainer.Multiplier;
             bool oldIsPfc = CurrentContainer.GetIsPfc();
 
-            var source = GetPointSourceFromNoteType(noteType, isSustainedNoteTick);
-            
-            switch (source) {
-                case ScoreContainer.PointSource.SustainedNoteTick:
-                    foreach (var container in scoreContainers)
-                        container.AddSustainedNoteTickScore(amount);
+            if (isSustainedNoteTick) {
+                foreach (var container in scoreContainers)
+                    container.AddFlatScore(amount);
+            }
+            else {
+                switch (noteType) {
+                    case NoteType.Match: {
+                        foreach (var container in scoreContainers)
+                            container.AddScoreFromSource(NoteType.Match);
 
-                    break;
-                case ScoreContainer.PointSource.Match:
-                    foreach (var container in scoreContainers)
-                        container.AddScoreFromSource(ScoreContainer.PointSource.Match);
-
-                    break;
-                default:
-                    foreach (var container in scoreContainers) {
-                        var accuracyForContainer = container.AddScoreFromSource(source, offset);
-
-                        if (container == CurrentContainer)
-                            LastAccuracy = accuracyForContainer;
+                        break;
                     }
+                    case NoteType.Tap:
+                    case NoteType.HoldStart:
+                    case NoteType.DrumStart:
+                    case NoteType.SectionContinuationOrEnd:
+                    case NoteType.DrumEnd:
+                        foreach (var container in scoreContainers) {
+                            var accuracyForContainer = container.AddScoreFromSource(noteType, offset);
 
-                    break;
+                            if (container == CurrentContainer)
+                                LastAccuracy = accuracyForContainer;
+                        }
+
+                        break;
+                    default:
+                        foreach (var container in scoreContainers)
+                            container.AddFlatScore(amount);
+
+                        break;
+                }
             }
 
             if (!ShowModdedScore || !GameplayState.Playing)
@@ -91,15 +100,28 @@ namespace ScoreMod {
         }
 
         public static void AddMaxScore(int amount, bool isSustainedNoteTick, NoteType noteType) {
-            var source = GetPointSourceFromNoteType(noteType, isSustainedNoteTick);
-
-            if (source == ScoreContainer.PointSource.SustainedNoteTick) {
+            if (isSustainedNoteTick) {
                 foreach (var container in scoreContainers)
-                    container.AddSustainedNoteTickMaxScore(amount);
+                    container.AddFlatMaxScore(amount);
             }
             else {
-                foreach (var container in scoreContainers)
-                    container.AddMaxScoreFromSource(source);
+                switch (noteType) {
+                    case NoteType.Match:
+                    case NoteType.Tap:
+                    case NoteType.HoldStart:
+                    case NoteType.DrumStart:
+                    case NoteType.SectionContinuationOrEnd:
+                    case NoteType.DrumEnd:
+                        foreach (var container in scoreContainers)
+                            container.AddMaxScoreFromSource(noteType);
+
+                        break;
+                    default:
+                        foreach (var container in scoreContainers)
+                            container.AddFlatMaxScore(amount);
+
+                        break;
+                }
             }
         }
         
@@ -175,14 +197,14 @@ namespace ScoreMod {
                     container.GetAccuracyRating().ToString("P"),
                     $"{early} :",
                     late.ToString(),
-                    container.GetAccuracyCount(ScoreContainer.Accuracy.Perfect, out _).ToString(),
-                    container.GetAccuracyCount(ScoreContainer.Accuracy.Great, out int loss0).ToString(),
+                    container.GetAccuracyCount(Accuracy.Perfect, out _).ToString(),
+                    container.GetAccuracyCount(Accuracy.Great, out int loss0).ToString(),
                     $"(-{loss0})",
-                    container.GetAccuracyCount(ScoreContainer.Accuracy.Good, out int loss1).ToString(),
+                    container.GetAccuracyCount(Accuracy.Good, out int loss1).ToString(),
                     $"(-{loss1})",
-                    container.GetAccuracyCount(ScoreContainer.Accuracy.Okay, out int loss2).ToString(),
+                    container.GetAccuracyCount(Accuracy.Okay, out int loss2).ToString(),
                     $"(-{loss2})",
-                    container.GetAccuracyCount(ScoreContainer.Accuracy.Miss, out _).ToString(),
+                    container.GetAccuracyCount(Accuracy.Miss, out _).ToString(),
                     lossToMisses.ToString(),
                     lossToAccuracy.ToString());
             }
@@ -226,25 +248,6 @@ namespace ScoreMod {
         private static void LogToFile(StreamWriter writer) {
             Main.Logger.LogMessage("");
             writer.WriteLine();
-        }
-
-        private static ScoreContainer.PointSource GetPointSourceFromNoteType(NoteType noteType, bool isSustainedNoteTick) {
-            switch (noteType) {
-                case NoteType.Match:
-                    return ScoreContainer.PointSource.Match;
-                case NoteType.DrumStart when !isSustainedNoteTick:
-                    return ScoreContainer.PointSource.Beat;
-                case NoteType.HoldStart when !isSustainedNoteTick:
-                    return ScoreContainer.PointSource.HoldStart;
-                case NoteType.SectionContinuationOrEnd:
-                    return ScoreContainer.PointSource.Liftoff;
-                case NoteType.Tap:
-                    return ScoreContainer.PointSource.Tap;
-                case NoteType.DrumEnd:
-                    return ScoreContainer.PointSource.BeatRelease;
-                default:
-                    return ScoreContainer.PointSource.SustainedNoteTick;
-            }
         }
     }
 }

@@ -95,13 +95,13 @@ namespace ScoreMod {
                 return true;
 
             switch (ModState.LastAccuracy) {
-                case ScoreContainer.Accuracy.Perfect:
-                case ScoreContainer.Accuracy.Great:
+                case Accuracy.Perfect:
+                case Accuracy.Great:
                     noteTimingAccuracy = NoteTimingAccuracy.Perfect;
 
                     break;
-                case ScoreContainer.Accuracy.Good:
-                case ScoreContainer.Accuracy.Okay: 
+                case Accuracy.Good:
+                case Accuracy.Okay: 
                     if (GameplayState.LastOffset > 0f)
                         noteTimingAccuracy = NoteTimingAccuracy.Late;
                     else
@@ -127,17 +127,17 @@ namespace ScoreMod {
             
             if (ModState.ShowModdedScore) {
                 switch (ModState.LastAccuracy) {
-                    case ScoreContainer.Accuracy.Perfect:
+                    case Accuracy.Perfect:
                         newText = "Perfect";
                         target = 3;
                     
                         break;
-                    case ScoreContainer.Accuracy.Great:
+                    case Accuracy.Great:
                         newText = "Great";
                         target = 3;
 
                         break;
-                    case ScoreContainer.Accuracy.Good:
+                    case Accuracy.Good:
                         newText = "Good";
 
                         if (GameplayState.LastOffset > 0f)
