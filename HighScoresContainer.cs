@@ -6,6 +6,8 @@ namespace ScoreMod {
     public class HighScoresContainer {
         private const uint HASH_BIAS = 2166136261u;
         private const int HASH_COEFF = 486187739;
+
+        private static readonly bool SAVE_HIGH_SCORES = true;
         
         private static Dictionary<string, HighScoreItem> highScores;
 
@@ -26,11 +28,11 @@ namespace ScoreMod {
                     
                     var split = line.Split(' ');
                     
-                    if (split.Length < 4 || !int.TryParse(split[1], out int score))
+                    if (split.Length < 4 || !int.TryParse(split[1], out int score) || !int.TryParse(split[2], out int maxScore))
                         continue;
 
                     string id = split[0];
-                    var newItem = new HighScoreItem(id, score, split[2]);
+                    var newItem = new HighScoreItem(id, score, maxScore);
                     
                     if (newItem.SecurityKey == split[3])
                         highScores.Add(id, newItem);
@@ -39,41 +41,45 @@ namespace ScoreMod {
         }
 
         public static void SaveHighScores() {
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"ScoreMod HighScores.txt");
+            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ScoreMod HighScores.txt");
 
             using (var writer = new StreamWriter(path)) {
                 foreach (var pair in highScores) {
                     var item = pair.Value;
                     
-                    writer.WriteLine($"{pair.Key} {item.Score} {item.Rank} {item.SecurityKey}");
+                    writer.WriteLine($"{pair.Key} {item.Score} {item.MaxScore} {item.SecurityKey}");
                 }
             }
         }
 
-        public static bool TrySetHighScore(string trackId, string scoreProfileId, int score, string rank, int maxScore) {
-            string id = $"{trackId}_{scoreProfileId}";
+        public static bool IsNewBest(string trackId, ScoreContainer container) => !highScores.TryGetValue($"{trackId}_{container.Profile.GetUniqueId()}", out var item) || container.Score > item.Score;
 
-            if (!highScores.TryGetValue(id, out var item) || score > item.Score || item.Score > maxScore) {
-                highScores[id] = new HighScoreItem(id, score, rank);
+        public static bool TrySetHighScore(string trackId, ScoreContainer container) {
+            var profile = container.Profile;
+            string id = $"{trackId}_{profile.GetUniqueId()}";
+            int score = container.Score;
+            int maxScore = container.MaxScore;
 
-                return true;
+            if (highScores.TryGetValue(id, out var item)) {
+                if (maxScore != item.MaxScore) {
+                    Main.Logger.LogWarning($"WARNING: Max Score for profile \"{profile.Name}\" does not match saved Max Score. Score will not be saved");
+
+                    return false;
+                }
+
+                if (score <= item.Score)
+                    return false;
             }
 
-            string expectedRank = ScoreContainer.GetRank(item.Score, maxScore);
+            highScores[id] = new HighScoreItem(id, score, maxScore);
 
-            if (item.Rank != expectedRank) {
-                highScores[id] = new HighScoreItem(id, item.Score, expectedRank);
-
-                return true;
-            }
-
-            return false;
+            return true;
 
         }
-        
+
         public static int GetHighScore(string trackId, string scoreProfileId, out string rank) {
             if (highScores.TryGetValue($"{trackId}_{scoreProfileId}", out var item)) {
-                rank = item.Rank;
+                rank = ScoreContainer.GetRank(item.Score, item.MaxScore);
 
                 return item.Score;
             }
@@ -85,17 +91,19 @@ namespace ScoreMod {
 
         private readonly struct HighScoreItem {
             public int Score { get; }
-            public string Rank { get; }
+            public int MaxScore { get; }
             public string SecurityKey { get; }
 
-            public HighScoreItem(string id, int score, string rank) {
+            public string GetRank() => ScoreContainer.GetRank(Score, MaxScore);
+            
+            public HighScoreItem(string id, int score, int maxScore) {
                 Score = score;
-                Rank = rank;
+                MaxScore = maxScore;
                 
                 unchecked {
                     int hash = (int) HASH_BIAS * HASH_COEFF ^ score.GetHashCode();
 
-                    hash = hash * HASH_COEFF ^ rank.GetHashCode();
+                    hash = hash * HASH_COEFF ^ maxScore.GetHashCode();
                     
                     SecurityKey = ((uint) (hash * HASH_COEFF ^ id.GetHashCode())).ToString("x8");
                 }

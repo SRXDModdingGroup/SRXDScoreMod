@@ -20,7 +20,10 @@ namespace ScoreMod {
         private static string realRank;
         private static string selectedTrackStatString;
         private static string selectedTrackId;
+        private static string lastTrackId;
+        private static string lastStatString;
         private static TrackData.DifficultyType selectedTrackDifficulty;
+        private static TrackData.DifficultyType lastDifficulty;
         private static TMP_Text scoreText;
         private static TMP_Text rankText;
 
@@ -43,18 +46,17 @@ namespace ScoreMod {
                 modHighScore = HighScoresContainer.GetHighScore(selectedTrackId, ModState.CurrentContainer.Profile.GetUniqueId(), out modRank).ToString();
         }
 
-        public static string GetCompletedTrackId(PlayableTrackData trackData) {
-            string statString = trackData.TrackInfoRef.StatsUniqueString;
-            
-            if (statString == selectedTrackStatString)
-                return selectedTrackId;
-
-            return GetTrackId(statString, selectedTrackDifficulty);
-        }
+        public static string GetCompletedTrackId(PlayableTrackData trackData) => GetTrackId(trackData.TrackInfoRef.StatsUniqueString, trackData.Difficulty);
 
         private static string GetTrackId(string statString, TrackData.DifficultyType difficulty) {
+            if (statString == lastStatString && difficulty == lastDifficulty)
+                return lastTrackId;
+
+            lastStatString = statString;
+            lastDifficulty = difficulty;
+            
             if (FORBIDDEN_NAMES.Contains(statString))
-                return string.Empty;
+                return lastTrackId = string.Empty;
             
             var match = MATCH_CUSTOM_ID.Match(statString);
             
@@ -66,15 +68,15 @@ namespace ScoreMod {
                     fileHash = (uint) int.Parse(groups[2].Value);
                 }
 
-                return $"{groups[1].Value.Replace(' ', '_')}_{fileHash:x8}_{difficulty}";
+                return lastTrackId = $"{groups[1].Value.Replace(' ', '_')}_{fileHash:x8}_{difficulty}";
             }
 
             match = MATCH_BASE_ID.Match(statString);
 
             if (match.Success)
-                return $"{match.Groups[1].Value.Replace(' ', '_')}_{difficulty}";
+                return lastTrackId = $"{match.Groups[1].Value.Replace(' ', '_')}_{difficulty}";
 
-            return string.Empty;
+            return lastTrackId = string.Empty;
         }
         
         [HarmonyPatch(typeof(XDLevelSelectMenuBase), nameof(XDLevelSelectMenuBase.ShowSongDetails)), HarmonyPostfix]

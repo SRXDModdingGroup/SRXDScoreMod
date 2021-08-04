@@ -226,7 +226,7 @@ namespace ScoreMod {
             bool anyChanged = false;
             
             foreach (var container in scoreContainers) {
-                if (HighScoresContainer.TrySetHighScore(trackId, container.Profile.GetUniqueId(), container.Score, container.GetRank(), container.MaxScore))
+                if (HighScoresContainer.TrySetHighScore(trackId, container))
                     anyChanged = true;
             }
             
