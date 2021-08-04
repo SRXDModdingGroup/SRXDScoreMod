@@ -50,15 +50,24 @@ namespace ScoreMod {
             }
         }
 
-        public static bool SetHighScore(string trackId, string scoreProfileId, int score, string rank) {
+        public static bool TrySetHighScore(string trackId, string scoreProfileId, int score, string rank, int maxScore) {
             string id = $"{trackId}_{scoreProfileId}";
 
-            if (highScores.TryGetValue(id, out var item) && score <= item.Score)
-                return false;
+            if (!highScores.TryGetValue(id, out var item) || score > item.Score || item.Score > maxScore) {
+                highScores[id] = new HighScoreItem(id, score, rank);
 
-            highScores[id] = new HighScoreItem(id, score, rank);
+                return true;
+            }
 
-            return true;
+            string expectedRank = ScoreContainer.GetRank(item.Score, maxScore);
+
+            if (item.Rank != expectedRank) {
+                highScores[id] = new HighScoreItem(id, item.Score, expectedRank);
+
+                return true;
+            }
+
+            return false;
 
         }
         

@@ -89,7 +89,7 @@ namespace ScoreMod {
                 }
             }
 
-            if (!ShowModdedScore || !GameplayState.Playing)
+            if (!ShowModdedScore)
                 return;
 
             if (CurrentContainer.Multiplier != oldMultiplier)
@@ -226,7 +226,7 @@ namespace ScoreMod {
             bool anyChanged = false;
             
             foreach (var container in scoreContainers) {
-                if (HighScoresContainer.SetHighScore(trackId, container.Profile.GetUniqueId(), container.Score, container.GetRank()))
+                if (HighScoresContainer.TrySetHighScore(trackId, container.Profile.GetUniqueId(), container.Score, container.GetRank(), container.MaxScore))
                     anyChanged = true;
             }
             

@@ -187,7 +187,30 @@ namespace ScoreMod {
             return (float) timedNoteScore / potentialTimedNoteScore;
         }
 
-        public string GetRank() => rank ?? (rank = GetRankInternal()) ?? string.Empty;
+        public string GetRank() => rank ?? (rank = GetRank(Score, MaxScore)) ?? string.Empty;
+
+        public static string GetRank(int score, int maxScore) {
+            if (maxScore == 0)
+                return null;
+            
+            float ratio = (float) score / maxScore;
+
+            if (ratio >= RANKS[0].Key) {
+                if (maxScore - score < S_PLUS_THRESHOLD)
+                    return "S+";
+
+                return RANKS[0].Value;
+            }
+
+            for (int i = 1; i < RANKS.Count; i++) {
+                var pair = RANKS[i];
+
+                if (ratio >= pair.Key)
+                    return pair.Value;
+            }
+
+            return "D";
+        }
 
         private void AddScore(int amount) {
             int acc = amount;
@@ -206,29 +229,6 @@ namespace ScoreMod {
         }
         
         private void AddMaxScore(int amount) => MaxScore += Profile.MaxMultiplier * amount;
-
-        private string GetRankInternal() {
-            if (MaxScore == 0)
-                return null;
-            
-            float ratio = (float) Score / MaxScore;
-
-            if (ratio >= RANKS[0].Key) {
-                if (MaxScore - Score < S_PLUS_THRESHOLD)
-                    return "S+";
-
-                return RANKS[0].Value;
-            }
-
-            for (int i = 1; i < RANKS.Count; i++) {
-                var pair = RANKS[i];
-
-                if (ratio >= pair.Key)
-                    return pair.Value;
-            }
-
-            return "D";
-        }
         
         private Accuracy AddTimedNoteScore(float timingOffset, IList<ScoreSystemProfile.TimedNoteWindow> noteWindows) {
             int amount = GetValueFromTiming(timingOffset, noteWindows, out var accuracy);
