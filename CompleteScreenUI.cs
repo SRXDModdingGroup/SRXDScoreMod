@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ScoreMod {
     public class CompleteScreenUI {
-        private static bool levelCompleteMenuOpen;
+        private static bool completeMenuLoaded;
         private static string realRank;
         private static XDLevelCompleteMenu levelCompleteMenu;
         private static TMP_Text pfcLabel;
@@ -21,6 +21,7 @@ namespace ScoreMod {
                 levelCompleteMenu.pfcStatusText.SetText(ModState.CurrentContainer.GetIsPfc() ? "PFC" : "FC");
                 levelCompleteMenu.scoreValueText.SetText(ModState.CurrentContainer.Score.ToString());
                 levelCompleteMenu.rankAnimator.SetText(ModState.CurrentContainer.GetRank());
+                levelCompleteMenu.newBestGameObject.SetActive(ModState.CurrentContainer.GetIsHighScore());
                 pfcLabel.SetText("Current Profile");
             }
             else {
@@ -33,6 +34,7 @@ namespace ScoreMod {
                 levelCompleteMenu.pfcStatusText.SetText(realIsPfc ? "PFC" : "FC");
                 levelCompleteMenu.scoreValueText.SetText(GameplayState.PlayState.TotalScore.ToString());
                 levelCompleteMenu.rankAnimator.SetText(realRank);
+                levelCompleteMenu.newBestGameObject.SetActive(levelCompleteMenu.newBest);
                 pfcLabel.SetText("PFC");
             }
         }
@@ -40,15 +42,15 @@ namespace ScoreMod {
         [HarmonyPatch(typeof(XDLevelCompleteMenu), nameof(XDLevelCompleteMenu.Setup)), HarmonyPostfix]
         private static void XDLevelCompleteMenu_Setup_Postfix(XDLevelCompleteMenu __instance, PlayState playState) {
             levelCompleteMenu = __instance;
+            completeMenuLoaded = true;
             realRank = __instance.rankAnimator.rankText.text;
             pfcLabel = __instance.PfcBonusGameObject.GetComponentsInChildren<TMP_Text>()[0];
             UpdateUI();
-            levelCompleteMenuOpen = true;
         }
 
         [HarmonyPatch(typeof(TMP_Text), nameof(TMP_Text.text), MethodType.Setter), HarmonyPrefix]
         private static bool TMP_Text_SetTextInternal_Prefix(TMP_Text __instance, ref string value) {
-            if (!levelCompleteMenuOpen || !ModState.ShowModdedScore)
+            if (!ModState.ShowModdedScore || !completeMenuLoaded || !levelCompleteMenu.gameObject.activeSelf)
                 return true;
                 
             if (__instance == levelCompleteMenu.scoreValueText)
@@ -58,12 +60,6 @@ namespace ScoreMod {
                 
 
             return true;
-        }
-        
-        [HarmonyPatch(typeof(GameObject), nameof(GameObject.SetActive)), HarmonyPostfix]
-        private static void GameObject_SetActive_Postfix(GameObject __instance, bool value) {
-            if (levelCompleteMenuOpen && !value && __instance == levelCompleteMenu.gameObject)
-                levelCompleteMenuOpen = false;
         }
     }
 }

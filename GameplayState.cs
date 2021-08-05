@@ -15,7 +15,7 @@ namespace ScoreMod {
         private static void EndPlay() {
             Playing = false;
             ModState.LogPlayData(PlayState.TrackInfoRef.asset.title);
-            ModState.SavePlayData(LevelSelectUI.GetCompletedTrackId(PlayState.trackData));
+            ModState.SavePlayData(LevelSelectUI.GetTrackId(PlayState.trackData));
             CompleteScreenUI.UpdateUI();
         }
         
@@ -112,7 +112,7 @@ namespace ScoreMod {
                 return;
             
             PlayState = __instance.playStateFirst;
-            ModState.Initialize();
+            ModState.Initialize(LevelSelectUI.GetTrackId(PlayState.trackData));
             
             if (PlayState.isInPracticeMode)
                 return;

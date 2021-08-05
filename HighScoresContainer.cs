@@ -41,6 +41,9 @@ namespace ScoreMod {
         }
 
         public static void SaveHighScores() {
+            if (!SAVE_HIGH_SCORES)
+                return;
+            
             string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ScoreMod HighScores.txt");
 
             using (var writer = new StreamWriter(path)) {
@@ -93,8 +96,6 @@ namespace ScoreMod {
             public int Score { get; }
             public int MaxScore { get; }
             public string SecurityKey { get; }
-
-            public string GetRank() => ScoreContainer.GetRank(Score, MaxScore);
             
             public HighScoreItem(string id, int score, int maxScore) {
                 Score = score;

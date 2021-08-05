@@ -23,6 +23,7 @@ namespace ScoreMod {
         public ScoreSystemProfile Profile { get; }
         public int Score { get; private set; }
         public int Multiplier { get; private set; }
+        public int HighScore { get; private set; }
         public int MaxScore { get; private set; }
 
         private int pointsToNextMultiplier;
@@ -110,6 +111,8 @@ namespace ScoreMod {
         
         public void PfcLost() => isPfc = false;
 
+        public void SetTrackId(string trackId) => HighScore = HighScoresContainer.GetHighScore(trackId, Profile.GetUniqueId(), out _);
+
         public void Clear() {
             Score = 0;
             Multiplier = Profile.MaxMultiplier;
@@ -170,6 +173,8 @@ namespace ScoreMod {
         }
 
         public bool GetIsPfc() => isPfc && (MaxScore == 0 || Score == MaxScore);
+
+        public bool GetIsHighScore() => Score > HighScore;
 
         public int GetAccuracyCount(Accuracy accuracy, out int loss) {
             if (accuracy == Accuracy.Perfect || accuracy == Accuracy.Miss)

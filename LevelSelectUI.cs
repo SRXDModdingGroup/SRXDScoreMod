@@ -46,7 +46,7 @@ namespace ScoreMod {
                 modHighScore = HighScoresContainer.GetHighScore(selectedTrackId, ModState.CurrentContainer.Profile.GetUniqueId(), out modRank).ToString();
         }
 
-        public static string GetCompletedTrackId(PlayableTrackData trackData) => GetTrackId(trackData.TrackInfoRef.StatsUniqueString, trackData.Difficulty);
+        public static string GetTrackId(PlayableTrackData trackData) => GetTrackId(trackData.TrackInfoRef.StatsUniqueString, trackData.Difficulty);
 
         private static string GetTrackId(string statString, TrackData.DifficultyType difficulty) {
             if (statString == lastStatString && difficulty == lastDifficulty)

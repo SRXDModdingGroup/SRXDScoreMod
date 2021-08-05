@@ -10,7 +10,7 @@ namespace ScoreMod {
         private static ScoreContainer[] scoreContainers;
         private static StringTable outputTable;
 
-        public static void Initialize() {
+        public static void Initialize(string trackId) {
             if (scoreContainers == null) {
                 InitScoreContainers();
                 CurrentContainer = scoreContainers[0];
@@ -19,6 +19,12 @@ namespace ScoreMod {
                 foreach (var container in scoreContainers)
                     container.Clear();
             }
+            
+            if (string.IsNullOrWhiteSpace(trackId))
+                return;
+
+            foreach (var container in scoreContainers)
+                container.SetTrackId(trackId);
         }
 
         public static void ToggleModdedScoring() {
@@ -137,11 +143,12 @@ namespace ScoreMod {
 
         public static void LogPlayData(string trackName) {
             if (outputTable == null) {
-                outputTable = new StringTable(18, scoreContainers.Length + 1);
+                outputTable = new StringTable(19, scoreContainers.Length + 1);
 
                 outputTable.SetHeader(
                     "Profile",
                     "Score",
+                    "Best",
                     "Max",
                     "Rank",
                     string.Empty,
@@ -161,6 +168,7 @@ namespace ScoreMod {
 
                 outputTable.SetDataAlignment(
                     StringTable.Alignment.Left,
+                    StringTable.Alignment.Right,
                     StringTable.Alignment.Right,
                     StringTable.Alignment.Right,
                     StringTable.Alignment.Left,
@@ -191,6 +199,7 @@ namespace ScoreMod {
                 outputTable.SetRow(i + 1,
                     container.Profile.Name,
                     container.Score.ToString(),
+                    container.HighScore.ToString(),
                     container.MaxScore.ToString(),
                     container.GetRank(),
                     $"({(float) container.Score / container.MaxScore:P})",
