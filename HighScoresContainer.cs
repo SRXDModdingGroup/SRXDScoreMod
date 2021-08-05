@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 
 namespace ScoreMod {
     public class HighScoresContainer {
@@ -8,18 +8,17 @@ namespace ScoreMod {
         private const int HASH_COEFF = 486187739;
 
         private static readonly bool SAVE_HIGH_SCORES = true;
-        
+
+        private static string filePath;
         private static Dictionary<string, HighScoreItem> highScores;
 
         public static void LoadHighScores() {
             highScores = new Dictionary<string, HighScoreItem>();
             
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"ScoreMod HighScores.txt");
-            
-            if (!File.Exists(path))
+            if (!TryGetFilePath() || !File.Exists(filePath))
                 return;
 
-            using (var reader = new StreamReader(path)) {
+            using (var reader = new StreamReader(filePath)) {
                 while (!reader.EndOfStream) {
                     string line = reader.ReadLine();
                     
@@ -41,12 +40,10 @@ namespace ScoreMod {
         }
 
         public static void SaveHighScores() {
-            if (!SAVE_HIGH_SCORES)
+            if (!SAVE_HIGH_SCORES || !TryGetFilePath())
                 return;
-            
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ScoreMod HighScores.txt");
 
-            using (var writer = new StreamWriter(path)) {
+            using (var writer = new StreamWriter(filePath)) {
                 foreach (var pair in highScores) {
                     var item = pair.Value;
                     
@@ -90,6 +87,18 @@ namespace ScoreMod {
             rank = "D";
 
             return 0;
+        }
+
+        private static bool TryGetFilePath() {
+            if (!string.IsNullOrWhiteSpace(filePath))
+                return true;
+
+            if (!Main.TryGetFileDirectory(out string fileDirectory))
+                return false;
+
+            filePath = Path.Combine(fileDirectory, "Highscores.txt");
+
+            return true;
         }
 
         private readonly struct HighScoreItem {

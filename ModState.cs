@@ -7,6 +7,7 @@ namespace ScoreMod {
         public static ScoreContainer CurrentContainer { get; private set; }
         public static Accuracy LastAccuracy { get; private set; }
 
+        private static string logFilePath;
         private static ScoreContainer[] scoreContainers;
         private static StringTable outputTable;
 
@@ -142,6 +143,9 @@ namespace ScoreMod {
         }
 
         public static void LogPlayData(string trackName) {
+            if (!TryGetLogFilePath())
+                return;
+            
             if (outputTable == null) {
                 outputTable = new StringTable(19, scoreContainers.Length + 1);
 
@@ -217,10 +221,8 @@ namespace ScoreMod {
                     lossToMisses.ToString(),
                     lossToAccuracy.ToString());
             }
-            
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"ScoreMod History.txt");
 
-            using (var writer = File.AppendText(path)) {
+            using (var writer = File.AppendText(logFilePath)) {
                 LogToFile(writer, $"Track: {trackName}");
                 LogToFile(writer);
 
@@ -257,6 +259,18 @@ namespace ScoreMod {
         private static void LogToFile(StreamWriter writer) {
             Main.Logger.LogMessage("");
             writer.WriteLine();
+        }
+        
+        private static bool TryGetLogFilePath() {
+            if (!string.IsNullOrWhiteSpace(logFilePath))
+                return true;
+
+            if (!Main.TryGetFileDirectory(out string fileDirectory))
+                return false;
+
+            logFilePath = Path.Combine(fileDirectory, "History.txt");
+
+            return true;
         }
     }
 }
