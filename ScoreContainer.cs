@@ -158,7 +158,7 @@ namespace ScoreMod {
             early = (int) Math.Round((float) earlies / sum * 100f);
             late = (int) Math.Round((float) lates / sum * 100f);
 
-            if (early + late >= 100)
+            if (early + late > 100)
                 late = 100 - early;
 
             if (early == 0 && earlies > 0) {

@@ -22,6 +22,7 @@ namespace ScoreMod {
                 levelCompleteMenu.scoreValueText.SetText(ModState.CurrentContainer.Score.ToString());
                 levelCompleteMenu.rankAnimator.SetText(ModState.CurrentContainer.GetRank());
                 levelCompleteMenu.newBestGameObject.SetActive(ModState.CurrentContainer.GetIsHighScore());
+                levelCompleteMenu.extendedStats.translatedRhythmHeader.text.SetText("Rhythm ( : )");
                 pfcLabel.SetText("Current Profile");
             }
             else {
@@ -35,6 +36,7 @@ namespace ScoreMod {
                 levelCompleteMenu.scoreValueText.SetText(GameplayState.PlayState.TotalScore.ToString());
                 levelCompleteMenu.rankAnimator.SetText(realRank);
                 levelCompleteMenu.newBestGameObject.SetActive(levelCompleteMenu.newBest);
+                levelCompleteMenu.extendedStats.translatedRhythmHeader.ChangeText();
                 pfcLabel.SetText("PFC");
             }
         }
@@ -57,6 +59,10 @@ namespace ScoreMod {
                 value = ModState.CurrentContainer.Score.ToString();
             else if (__instance == pfcLabel)
                 value = "Current Profile";
+            else if (__instance == levelCompleteMenu.extendedStats.translatedRhythmHeader.text) {
+                ModState.CurrentContainer.GetEarlyLateBalance(out int early, out int late);
+                value = $"Rhythm ({early} : {late})";
+            }
                 
 
             return true;
