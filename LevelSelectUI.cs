@@ -14,10 +14,10 @@ namespace ScoreMod {
         };
         
         private static bool menuLoaded;
-        private static string modHighScore;
-        private static string modRank;
         private static string realHighScore;
+        private static string modHighScore;        
         private static string realRank;
+        private static string modRank;
         private static string selectedTrackStatString;
         private static string selectedTrackId;
         private static string lastTrackId;
@@ -89,8 +89,8 @@ namespace ScoreMod {
 
             if (!menuLoaded)
                 return;
-            
-            string statString = __instance.WillLandAtHandle.TrackInfoRef.Stats.statsUniqueString;
+
+            string statString = __instance.WillLandAtHandle.TrackInfoRef.StatsUniqueString;
 
             if (statString == selectedTrackStatString)
                 return;
@@ -110,31 +110,29 @@ namespace ScoreMod {
             selectedTrackId = GetTrackId(selectedTrackStatString, selectedTrackDifficulty);
             UpdateModScore();
         }
+
+        [HarmonyPatch(typeof(TrackInfoAssetReference.StatsForTrackInfo), nameof(TrackInfoAssetReference.StatsForTrackInfo.GetBestScoreForDifficulty)), HarmonyPostfix]
+        private static void StatsForTrackInfo_GetBestScoreForDifficulty_Postfix(TrackInfoAssetReference.VersionedIntValueForDifficulty __result) {
+            realHighScore = __result.valueForDifficulty.ToString();
+        }
+
+        [HarmonyPatch(typeof(TrackDataMetadata), nameof(TrackDataMetadata.GetRankCalculatedFromScore)), HarmonyPostfix]
+        private static void TrackDataMetadata_GetRankCalculatedFromScore_Postfix(string __result) {
+            realRank = __result;
+        }
         
         [HarmonyPatch(typeof(TMP_Text), nameof(TMP_Text.text), MethodType.Setter), HarmonyPrefix]
         private static bool TMP_Text_SetTextInternal_Prefix(TMP_Text __instance, ref string value) {
-            if (GameplayState.Playing)
+            if (GameplayState.Playing || !ModState.ShowModdedScore)
                 return true;
-
-            if (ModState.ShowModdedScore) {
-                if (value != modHighScore && __instance == scoreText) {
-                    realHighScore = value;
-                    value = modHighScore;
-                }
-                else if (value != modRank && __instance == rankText) {
-                    realRank = value;
-                    value = modRank;
-                }
-
-                return true;
-            }
 
             if (__instance == scoreText)
-                realHighScore = value;
+                value = modHighScore;
             else if (__instance == rankText)
-                realRank = value;
+                value = modRank;
 
             return true;
+
         }
     }
 }
