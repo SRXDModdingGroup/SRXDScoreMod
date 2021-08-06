@@ -66,6 +66,12 @@ namespace ScoreMod {
 
                     return false;
                 }
+                
+                if (score > maxScore) {
+                    Main.Logger.LogWarning($"WARNING: Score for profile \"{profile.Name}\" is greater than saved Max Score. Score will not be saved");
+
+                    return false;
+                }
 
                 if (score <= item.Score)
                     return false;
