@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace ScoreMod {
@@ -11,7 +10,6 @@ namespace ScoreMod {
         private static string logFilePath;
         private static ScoreContainer[] scoreContainers;
         private static StringTable outputTable;
-        private static Queue<float> pendingMaxScoreNoteTicks;
 
         public static void Initialize(string trackId) {
             if (scoreContainers == null) {
@@ -22,12 +20,7 @@ namespace ScoreMod {
                 foreach (var container in scoreContainers)
                     container.Clear();
             }
-
-            if (pendingMaxScoreNoteTicks == null)
-                pendingMaxScoreNoteTicks = new Queue<float>();
-            else
-                pendingMaxScoreNoteTicks.Clear();
-
+            
             if (string.IsNullOrWhiteSpace(trackId))
                 return;
 
@@ -113,12 +106,12 @@ namespace ScoreMod {
                 GameplayUI.UpdateFcStar();
         }
 
-        public static void AddMaxScore(int amount, bool isSustainedNoteTick, NoteType noteType, float time) {
-            if (isSustainedNoteTick)
-                EnqueueMaxScoreNoteTicks(amount, noteType, time);
+        public static void AddMaxScore(int amount, bool isSustainedNoteTick, NoteType noteType) {
+            if (isSustainedNoteTick) {
+                foreach (var container in scoreContainers)
+                    container.AddFlatMaxScore(amount);
+            }
             else {
-                AddMaxScoreNoteTicksUpToTime(time);
-                
                 switch (noteType) {
                     case NoteType.Match:
                     case NoteType.Tap:
@@ -127,24 +120,15 @@ namespace ScoreMod {
                     case NoteType.SectionContinuationOrEnd:
                     case NoteType.DrumEnd:
                         foreach (var container in scoreContainers)
-                            container.AddMaxScoreFromSource(noteType, time);
+                            container.AddMaxScoreFromSource(noteType);
 
                         break;
                     default:
                         foreach (var container in scoreContainers)
-                            container.AddFlatMaxScore(amount, time);
+                            container.AddFlatMaxScore(amount);
 
                         break;
                 }
-            }
-        }
-
-        public static void AddRemainingMaxScoreNoteTicks() {
-            while (pendingMaxScoreNoteTicks.Count > 0) {
-                float tickTime = pendingMaxScoreNoteTicks.Dequeue();
-
-                foreach (var container in scoreContainers)
-                    container.AddFlatMaxScore(1, tickTime);
             }
         }
         
@@ -266,44 +250,6 @@ namespace ScoreMod {
 
             for (int i = 0; i < scoreContainers.Length; i++)
                 scoreContainers[i] = new ScoreContainer(ScoreSystemProfile.Profiles[i]);
-        }
-
-        private static void EnqueueMaxScoreNoteTicks(int amount, NoteType noteType, float time) {
-            int rate;
-
-            switch (noteType) {
-                case NoteType.HoldStart:
-                    rate = 30;
-
-                    break;
-                case NoteType.DrumStart:
-                    rate = 40;
-                    pendingMaxScoreNoteTicks.Enqueue(time);
-                    amount--;
-
-                    break;
-                case NoteType.SpinLeftStart:
-                case NoteType.SpinRightStart:
-                    rate = 20;
-
-                    break;
-                default:
-                    rate = 40;
-
-                    break;
-            }
-
-            for (int i = 1; i <= amount; i++)
-                pendingMaxScoreNoteTicks.Enqueue(time + (float) i / rate);
-        }
-
-        private static void AddMaxScoreNoteTicksUpToTime(float time) {
-            while (pendingMaxScoreNoteTicks.Count > 0 && pendingMaxScoreNoteTicks.Peek() <= time) {
-                float tickTime = pendingMaxScoreNoteTicks.Dequeue();
-
-                foreach (var container in scoreContainers)
-                    container.AddFlatMaxScore(1, tickTime);
-            }
         }
 
         private static void LogToFile(StreamWriter writer, string text) {
