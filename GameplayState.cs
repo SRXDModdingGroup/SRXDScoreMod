@@ -10,6 +10,8 @@ namespace ScoreMod {
         private static bool pickedNewScoreSystem;
         private static int lastHoldIndex;
         private static int lastBeatIndex;
+        private static int lastSpinIndex;
+        private static int lastScratchIndex;
         private static PlayableNoteData noteData;
 
         private static void EndPlay() {
@@ -54,24 +56,44 @@ namespace ScoreMod {
             if (!Playing)
                 return;
 
-            var noteType = noteData.GetNote(noteIndex).NoteType;
+            var note = noteData.GetNote(noteIndex);
+            var noteType = note.NoteType;
             bool isSustainedNoteTick = false;
-            
-            if (noteType == NoteType.HoldStart) {
-                if (noteIndex == lastHoldIndex)
-                    isSustainedNoteTick = true;
-                else
-                    lastHoldIndex = noteIndex;
+
+            switch (noteType) {
+                case NoteType.HoldStart:
+                    if (noteIndex == lastHoldIndex)
+                        isSustainedNoteTick = true;
+                    else
+                        lastHoldIndex = noteIndex;
+
+                    break;
+                case NoteType.DrumStart:
+                    if (noteIndex == lastBeatIndex)
+                        isSustainedNoteTick = true;
+                    else
+                        lastBeatIndex = noteIndex;
+
+                    break;
+                case NoteType.SpinLeftStart:
+                case NoteType.SpinRightStart:
+                    if (noteIndex == lastSpinIndex)
+                        isSustainedNoteTick = true;
+                    else
+                        lastSpinIndex = noteIndex;
+
+                    break;
+                case NoteType.ScratchStart:
+                    if (noteIndex == lastScratchIndex)
+                        isSustainedNoteTick = true;
+                    else
+                        lastScratchIndex = noteIndex;
+
+                    break;
             }
-            else if (noteType == NoteType.DrumStart) {
-                if (noteIndex == lastBeatIndex)
-                    isSustainedNoteTick = true;
-                else
-                    lastBeatIndex = noteIndex;
-            }
-            
+
             if (__instance.isMaxPossibleCalculation)
-                ModState.AddMaxScore(amount, isSustainedNoteTick, noteType);
+                ModState.AddMaxScore(amount, isSustainedNoteTick, noteType, note.time);
             else
                 ModState.AddScore(amount, LastOffset ?? 0f, isSustainedNoteTick, noteType);
         }
@@ -100,10 +122,17 @@ namespace ScoreMod {
 
             lastHoldIndex = -1;
             lastBeatIndex = -1;
+            lastSpinIndex = -1;
+            lastScratchIndex = -1;
 
             return true;
         }
-        
+
+        [HarmonyPatch(typeof(PlayableTrackData), nameof(PlayableTrackData.GetMaxPossibleScoreState), typeof(IntRange)), HarmonyPostfix]
+        private static void PlayableTrackData_GetMaxPossibleScoreState_Postfix() {
+            ModState.AddRemainingMaxScoreNoteTicks();
+        }
+
         [HarmonyPatch(typeof(Track), nameof(Track.PlayTrack)), HarmonyPostfix]
         private static void Track_PlayTrack_Postfix(Track __instance) {
             Playing = false;
@@ -122,6 +151,8 @@ namespace ScoreMod {
             LastOffset = null;
             lastHoldIndex = -1;
             lastBeatIndex = -1;
+            lastSpinIndex = -1;
+            lastScratchIndex = -1;
         }
 
         [HarmonyPatch(typeof(Track), nameof(Track.CompleteSong)), HarmonyPostfix]

@@ -29,12 +29,14 @@ namespace ScoreMod {
         private int pointsToNextMultiplier;
         private int timedNoteScore;
         private int potentialTimedNoteScore;
+        private int currentMaxScoreIndex;
         private int earlies;
         private int lates;
         private bool isPfc;
         private string rank;
         private Dictionary<Accuracy, int> accuracyCounters;
         private Dictionary<Accuracy, int> detailedLossToAccuracy;
+        private List<KeyValuePair<float, int>> maxScoresAtTime;
 
         public ScoreContainer(ScoreSystemProfile profile) {
             Profile = profile;
@@ -53,6 +55,8 @@ namespace ScoreMod {
                 { Accuracy.Good, 0 },
                 { Accuracy.Okay, 0 }
             };
+
+            maxScoresAtTime = new List<KeyValuePair<float, int>>();
         }
 
         public Accuracy AddScoreFromSource(NoteType noteType, float timingOffset = 0f) {
@@ -75,27 +79,27 @@ namespace ScoreMod {
         
         public void AddFlatScore(int amount) => AddScore(amount);
 
-        public void AddMaxScoreFromSource(NoteType noteType) {
+        public void AddMaxScoreFromSource(NoteType noteType, float time) {
             switch (noteType) {
                 case NoteType.Match:
-                    AddMaxScore(Profile.MatchNoteValue);
+                    AddMaxScore(Profile.MatchNoteValue, time);
 
                     return;
                 case NoteType.Tap:
                 case NoteType.HoldStart:
                 case NoteType.DrumStart:
-                    AddMaxScore(Profile.PressNoteWindows[0].MaxValue);
+                    AddMaxScore(Profile.PressNoteWindows[0].MaxValue, time);
                     
                     return;
                 case NoteType.SectionContinuationOrEnd:
                 case NoteType.DrumEnd:
-                    AddMaxScore(Profile.ReleaseNoteWindows[0].MaxValue);
+                    AddMaxScore(Profile.ReleaseNoteWindows[0].MaxValue, time);
                     
                     return;
             }
         }
 
-        public void AddFlatMaxScore(int amount) => AddMaxScore(amount);
+        public void AddFlatMaxScore(int amount, float time) => AddMaxScore(amount, time);
 
         public void Miss(bool dropMultiplier = true) {
             accuracyCounters[Accuracy.Miss]++;
@@ -120,6 +124,7 @@ namespace ScoreMod {
             timedNoteScore = 0;
             potentialTimedNoteScore = 0;
             pointsToNextMultiplier = Profile.PointsPerMultiplier;
+            currentMaxScoreIndex = 0;
             earlies = 0;
             lates = 0;
             isPfc = true;
@@ -132,6 +137,7 @@ namespace ScoreMod {
             detailedLossToAccuracy[Accuracy.Great] = 0;
             detailedLossToAccuracy[Accuracy.Good] = 0;
             detailedLossToAccuracy[Accuracy.Okay] = 0;
+            maxScoresAtTime.Clear();
         }
         
         public void GetLoss(out int lossToMisses, out int lossToAccuracy) {
@@ -185,6 +191,19 @@ namespace ScoreMod {
             return accuracyCounters[accuracy];
         }
 
+        public int GetMaxScoreAtTime(float time) {
+            if (maxScoresAtTime.Count == 0)
+                return 0;
+            
+            while (maxScoresAtTime[currentMaxScoreIndex].Key < time)
+                currentMaxScoreIndex++;
+
+            while (maxScoresAtTime[currentMaxScoreIndex].Key > time)
+                currentMaxScoreIndex--;
+
+            return maxScoresAtTime[currentMaxScoreIndex].Value;
+        }
+
         public float GetAccuracyRating() {
             if (potentialTimedNoteScore == 0)
                 return 1f;
@@ -233,8 +252,11 @@ namespace ScoreMod {
             Score += Multiplier * acc;
         }
         
-        private void AddMaxScore(int amount) => MaxScore += Profile.MaxMultiplier * amount;
-        
+        private void AddMaxScore(int amount, float time) {
+            MaxScore += Profile.MaxMultiplier * amount;
+            maxScoresAtTime.Add(new KeyValuePair<float, int>(time, MaxScore));
+        }
+
         private Accuracy AddTimedNoteScore(float timingOffset, IList<ScoreSystemProfile.TimedNoteWindow> noteWindows) {
             int amount = GetValueFromTiming(timingOffset, noteWindows, out var accuracy);
             int maxAmount = noteWindows[0].MaxValue;
