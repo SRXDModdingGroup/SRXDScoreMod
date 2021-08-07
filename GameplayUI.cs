@@ -1,17 +1,21 @@
 ﻿using HarmonyLib;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace ScoreMod {
     public class GameplayUI {
+        private static bool spawnBestPossibleText;
         private static bool timingFeedbackSpawned;
         private static Color defaultScoreNumberColor;
         private static GameObject timingFeedbackObject;
+        private static XDHudCanvases canvases;
         private static TextNumber scoreNumber;
         private static TextCharacter multiplierNumber;
         private static Image fcStar;
         private static Sprite fcSprite;
         private static Sprite pfcSprite;
+        private static TMP_Text bestPossibleText;
 
         public static void UpdateUI() {
             if (!GameplayState.Playing)
@@ -26,6 +30,9 @@ namespace ScoreMod {
 
             if (fcStar != null)
                 fcStar.sprite = pfcSprite;
+            
+            if (bestPossibleText != null)
+                bestPossibleText.gameObject.SetActive(ModState.ShowModdedScore);
 
             if (ModState.ShowModdedScore)
                 multiplierNumber.Text = GetMultiplierAsText();
@@ -44,6 +51,7 @@ namespace ScoreMod {
             if (scoreNumber == null)
                 defaultScoreNumberColor = __instance.score.color;
 
+            canvases = __instance;
             scoreNumber = __instance.score;
             multiplierNumber = __instance.multiplier;
 
@@ -55,12 +63,45 @@ namespace ScoreMod {
             fcStar = __instance.fcStar;
             fcSprite = __instance.fcStarSprite;
             pfcSprite = __instance.pfcStarSprite;
+            spawnBestPossibleText = true;
         }
         
         [HarmonyPatch(typeof(TextNumber), nameof(TextNumber.Update)), HarmonyPrefix]
         private static bool TextNumber_Update_Prefix(TextNumber __instance) {
-            if (ModState.ShowModdedScore && GameplayState.Playing && __instance == scoreNumber)
-                __instance.desiredNumber = ModState.CurrentContainer.MaxScore - ModState.CurrentContainer.MaxScoreSoFar + ModState.CurrentContainer.Score;
+            if (!ModState.ShowModdedScore || !GameplayState.Playing || __instance != scoreNumber)
+                return true;
+            
+            if (spawnBestPossibleText) {
+                var timeLeftTextContainer = canvases.timeLeftText.transform.parent;
+                var bestPossibleObject = Object.Instantiate(timeLeftTextContainer.gameObject, Vector3.zero, timeLeftTextContainer.rotation, timeLeftTextContainer.parent);
+            
+                bestPossibleObject.transform.localPosition = new Vector3(235f, 67f, 0f);
+                bestPossibleObject.transform.localScale = timeLeftTextContainer.localScale;
+                bestPossibleObject.SetActive(ModState.ShowModdedScore);
+                bestPossibleText = bestPossibleObject.GetComponentInChildren<TMP_Text>();
+                bestPossibleText.fontSize = 8f;
+                bestPossibleText.overflowMode = TextOverflowModes.Overflow;
+                bestPossibleText.horizontalAlignment = HorizontalAlignmentOptions.Right;
+                spawnBestPossibleText = false;
+            }
+
+            var container = ModState.CurrentContainer;
+            
+            __instance.desiredNumber = container.Score;
+            
+            int pace = container.MaxScore - container.MaxScoreSoFar + container.Score - container.HighScore;
+            string paceString;
+
+            if (pace >= 0) {
+                paceString = $"+{pace}";
+                bestPossibleText.color = Color.cyan;
+            }
+            else {
+                paceString = pace.ToString();
+                bestPossibleText.color = Color.gray * 0.5f;
+            }
+            
+            bestPossibleText.SetText($"Pace: {paceString,6}");
 
             return true;
         }
@@ -76,7 +117,7 @@ namespace ScoreMod {
         [HarmonyPatch(typeof(Image), nameof(Image.sprite), MethodType.Setter), HarmonyPrefix]
         private static bool Image_Sprite_Set_Prefix(Image __instance, ref Sprite value) {
             if (GameplayState.Playing && __instance == fcStar)
-                value = GameplayState.PlayState.fullComboState == FullComboState.PerfectFullCombo && (!ModState.ShowModdedScore || ModState.CurrentContainer.GetIsPfc()) ? pfcSprite : fcSprite;
+                value = GameplayState.PlayState.fullComboState == FullComboState.PerfectFullCombo && (!ModState.ShowModdedScore || ModState.CurrentContainer.GetIsPfc(false)) ? pfcSprite : fcSprite;
 
             return true;
         }

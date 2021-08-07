@@ -86,7 +86,7 @@ namespace ScoreMod {
 
         public static void AddScore(int amount, float offset, bool isSustainedNoteTick, NoteType noteType, int noteIndex) {
             int oldMultiplier = CurrentContainer.Multiplier;
-            bool oldIsPfc = CurrentContainer.GetIsPfc();
+            bool oldIsPfc = CurrentContainer.GetIsPfc(false);
             var source = GetSourceFromNoteType(noteType, isSustainedNoteTick);
 
             if (isSustainedNoteTick) {
@@ -141,7 +141,7 @@ namespace ScoreMod {
             if (CurrentContainer.Multiplier != oldMultiplier)
                 GameplayUI.UpdateMultiplierText();
 
-            if (CurrentContainer.GetIsPfc() != oldIsPfc)
+            if (CurrentContainer.GetIsPfc(false) != oldIsPfc)
                 GameplayUI.UpdateFcStar();
         }
 
@@ -225,7 +225,7 @@ namespace ScoreMod {
                 container.PfcLost();
         }
 
-        public static void LogPlayData(string trackName) {
+        public static void LogPlayData(string trackName, bool logDiscrepancies) {
             if (!TryGetLogFilePath())
                 return;
             
@@ -315,6 +315,9 @@ namespace ScoreMod {
                 LogToFile(writer);
             }
 
+            if (!logDiscrepancies)
+                return;
+            
             bool anyDiscrepancies = remainingNotes.Count > 0 || remainingNoteTicks.Count > 0;
             
             foreach (object obj in Enum.GetValues(typeof(PointSource))) {

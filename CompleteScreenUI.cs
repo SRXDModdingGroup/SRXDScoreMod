@@ -17,7 +17,7 @@ namespace ScoreMod {
                 levelCompleteMenu.accuracyBonusText.SetText(ModState.CurrentContainer.GetAccuracyRating().ToString("P"));
                 levelCompleteMenu.PfcBonusGameObject.SetActive(true);
                 levelCompleteMenu.accuracyGameObject.SetActive(true);
-                levelCompleteMenu.pfcStatusText.SetText(ModState.CurrentContainer.GetIsPfc() ? "PFC" : "FC");
+                levelCompleteMenu.pfcStatusText.SetText(ModState.CurrentContainer.GetIsPfc(true) ? "PFC" : "FC");
                 levelCompleteMenu.scoreValueText.SetText(ModState.CurrentContainer.Score.ToString());
                 levelCompleteMenu.rankAnimator.SetText(ModState.CurrentContainer.GetRank());
                 levelCompleteMenu.newBestGameObject.SetActive(ModState.CurrentContainer.GetIsHighScore());

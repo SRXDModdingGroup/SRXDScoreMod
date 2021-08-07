@@ -22,9 +22,9 @@ namespace ScoreMod {
         private static List<KeyValuePair<int, int>> activeSpinStates;
         private static List<KeyValuePair<int, int>> activeScratchStates;
 
-        private static void EndPlay() {
+        private static void EndPlay(bool success) {
             Playing = false;
-            ModState.LogPlayData(PlayState.TrackInfoRef.asset.title);
+            ModState.LogPlayData(PlayState.TrackInfoRef.asset.title, success);
             ModState.SavePlayData(LevelSelectUI.GetTrackId(PlayState.trackData));
             CompleteScreenUI.UpdateUI();
         }
@@ -297,12 +297,12 @@ namespace ScoreMod {
 
         [HarmonyPatch(typeof(Track), nameof(Track.CompleteSong)), HarmonyPostfix]
         private static void Track_CompleteSong_Postfix() {
-            EndPlay();
+            EndPlay(true);
         }
         
         [HarmonyPatch(typeof(Track), nameof(Track.FailSong)), HarmonyPostfix]
         private static void Track_FailSong_Postfix() {
-            EndPlay();
+            EndPlay(false);
         }
 
         [HarmonyPatch(typeof(XDPauseMenu), nameof(XDPauseMenu.ExitButtonPressed)), HarmonyPostfix]

@@ -266,7 +266,7 @@ namespace ScoreMod {
             }
         }
 
-        public bool GetIsPfc() => isPfc && (MaxScore == 0 || Score == MaxScore);
+        public bool GetIsPfc(bool checkMaxScore) => isPfc && (!checkMaxScore || Score == MaxScore);
 
         public bool GetIsHighScore() => Score > HighScore;
 
