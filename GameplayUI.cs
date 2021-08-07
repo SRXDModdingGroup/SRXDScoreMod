@@ -60,7 +60,7 @@ namespace ScoreMod {
         [HarmonyPatch(typeof(TextNumber), nameof(TextNumber.Update)), HarmonyPrefix]
         private static bool TextNumber_Update_Prefix(TextNumber __instance) {
             if (ModState.ShowModdedScore && GameplayState.Playing && __instance == scoreNumber)
-                __instance.desiredNumber = ModState.CurrentContainer.Score;
+                __instance.desiredNumber = ModState.CurrentContainer.MaxScore - ModState.CurrentContainer.MaxScoreSoFar + ModState.CurrentContainer.Score;
 
             return true;
         }

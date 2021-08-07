@@ -25,6 +25,9 @@ namespace ScoreMod {
         public int Multiplier { get; private set; }
         public int HighScore { get; private set; }
         public int MaxScore { get; private set; }
+        public int MaxScoreSoFar { get; private set; }
+        public Dictionary<PointSource, int> MaxScoreBySource { get; }
+        public Dictionary<PointSource, int> MaxScoreSoFarBySource { get; }
 
         private int pointsToNextMultiplier;
         private int timedNoteScore;
@@ -53,57 +56,119 @@ namespace ScoreMod {
                 { Accuracy.Good, 0 },
                 { Accuracy.Okay, 0 }
             };
+
+            MaxScoreBySource = new Dictionary<PointSource, int>() {
+                { PointSource.Match, 0 },
+                { PointSource.Tap, 0 },
+                { PointSource.HoldStart, 0 },
+                { PointSource.HoldSustain, 0 },
+                { PointSource.HoldRelease, 0 },
+                { PointSource.Beat, 0 },
+                { PointSource.BeatSustain, 0 },
+                { PointSource.BeatRelease, 0 },
+                { PointSource.SpinStart, 0 },
+                { PointSource.SpinSustain, 0 },
+                { PointSource.ScratchStart, 0 },
+                { PointSource.ScratchSustain, 0 }
+            };
+            
+            MaxScoreSoFarBySource = new Dictionary<PointSource, int>() {
+                { PointSource.Match, 0 },
+                { PointSource.Tap, 0 },
+                { PointSource.HoldStart, 0 },
+                { PointSource.HoldSustain, 0 },
+                { PointSource.HoldRelease, 0 },
+                { PointSource.Beat, 0 },
+                { PointSource.BeatSustain, 0 },
+                { PointSource.BeatRelease, 0 },
+                { PointSource.SpinStart, 0 },
+                { PointSource.SpinSustain, 0 },
+                { PointSource.ScratchStart, 0 },
+                { PointSource.ScratchSustain, 0 }
+            };
         }
 
-        public Accuracy AddScoreFromSource(NoteType noteType, float timingOffset = 0f) {
+        public Accuracy AddScoreFromNoteType(NoteType noteType, PointSource source, float timingOffset, bool addToMaxSoFar) {
             switch (noteType) {
                 case NoteType.Match:
-                    AddScore(Profile.MatchNoteValue);
+                    AddFlatScore(Profile.MatchNoteValue, source, addToMaxSoFar);
 
                     return Accuracy.Perfect;
                 case NoteType.Tap:
                 case NoteType.HoldStart:
                 case NoteType.DrumStart:
-                    return AddTimedNoteScore(timingOffset, Profile.PressNoteWindows);
+                    return AddTimedNoteScore(timingOffset, Profile.PressNoteWindows, source, addToMaxSoFar);
                 case NoteType.SectionContinuationOrEnd:
                 case NoteType.DrumEnd:
-                    return AddTimedNoteScore(timingOffset, Profile.ReleaseNoteWindows);
+                    return AddTimedNoteScore(timingOffset, Profile.ReleaseNoteWindows, source, addToMaxSoFar);
             }
 
             return Accuracy.Perfect;
         }
         
-        public void AddFlatScore(int amount) => AddScore(amount);
+        public void AddFlatScore(int amount, PointSource source, bool addToMaxSoFar) {
+            AddScore(amount);
+            
+            if (addToMaxSoFar)
+                AddMaxScoreSoFar(amount, source);
+        }
 
-        public void AddMaxScoreFromSource(NoteType noteType) {
+        public void AddMaxScoreFromNoteType(NoteType noteType, PointSource source) {
             switch (noteType) {
                 case NoteType.Match:
-                    AddMaxScore(Profile.MatchNoteValue);
+                    AddMaxScore(Profile.MatchNoteValue, source);
 
                     return;
                 case NoteType.Tap:
                 case NoteType.HoldStart:
                 case NoteType.DrumStart:
-                    AddMaxScore(Profile.PressNoteWindows[0].MaxValue);
+                    AddMaxScore(Profile.PressNoteWindows[0].MaxValue, source);
                     
                     return;
                 case NoteType.SectionContinuationOrEnd:
                 case NoteType.DrumEnd:
-                    AddMaxScore(Profile.ReleaseNoteWindows[0].MaxValue);
+                    AddMaxScore(Profile.ReleaseNoteWindows[0].MaxValue, source);
                     
                     return;
             }
         }
 
-        public void AddFlatMaxScore(int amount) => AddMaxScore(amount);
+        public void AddFlatMaxScore(int amount, PointSource source) => AddMaxScore(amount, source);
 
-        public void Miss(bool dropMultiplier = true) {
-            accuracyCounters[Accuracy.Miss]++;
-            
-            if (dropMultiplier)
-                ResetMultiplier();
+        public void MissScoreFromNoteType(NoteType noteType, PointSource source) {
+            switch (noteType) {
+                case NoteType.Match:
+                    AddMaxScoreSoFar(Profile.MatchNoteValue, source);
+
+                    return;
+                case NoteType.Tap:
+                case NoteType.HoldStart:
+                case NoteType.DrumStart:
+                    AddMaxScoreSoFar(Profile.PressNoteWindows[0].MaxValue, source);
+                    
+                    return;
+                case NoteType.SectionContinuationOrEnd:
+                case NoteType.DrumEnd:
+                    AddMaxScoreSoFar(Profile.ReleaseNoteWindows[0].MaxValue, source);
+                    
+                    return;
+                case NoteType.SpinStart:
+                case NoteType.SpinLeftStart:
+                case NoteType.SpinRightStart:
+                    AddMaxScoreSoFar(12, source);
+
+                    return;
+                case NoteType.ScratchStart:
+                    AddMaxScoreSoFar(1, source);
+
+                    return;
+            }
         }
-        
+
+        public void MissFlatScore(int amount, PointSource source) => AddMaxScoreSoFar(amount, source);
+
+        public void AddMiss() => accuracyCounters[Accuracy.Miss]++;
+
         public void ResetMultiplier() {
             Multiplier = 1;
             pointsToNextMultiplier = Profile.PointsPerMultiplier;
@@ -117,6 +182,7 @@ namespace ScoreMod {
             Score = 0;
             Multiplier = Profile.MaxMultiplier;
             MaxScore = 0;
+            MaxScoreSoFar = 0;
             timedNoteScore = 0;
             potentialTimedNoteScore = 0;
             pointsToNextMultiplier = Profile.PointsPerMultiplier;
@@ -124,14 +190,42 @@ namespace ScoreMod {
             lates = 0;
             isPfc = true;
             rank = null;
+            
             accuracyCounters[Accuracy.Perfect] = 0;
             accuracyCounters[Accuracy.Great] = 0;
             accuracyCounters[Accuracy.Good] = 0;
             accuracyCounters[Accuracy.Okay] = 0;
             accuracyCounters[Accuracy.Miss] = 0;
+            
             detailedLossToAccuracy[Accuracy.Great] = 0;
             detailedLossToAccuracy[Accuracy.Good] = 0;
             detailedLossToAccuracy[Accuracy.Okay] = 0;
+            
+            MaxScoreBySource[PointSource.Match] = 0;
+            MaxScoreBySource[PointSource.Tap] = 0;
+            MaxScoreBySource[PointSource.HoldStart] = 0;
+            MaxScoreBySource[PointSource.HoldSustain] = 0;
+            MaxScoreBySource[PointSource.HoldRelease] = 0;
+            MaxScoreBySource[PointSource.Beat] = 0;
+            MaxScoreBySource[PointSource.BeatSustain] = 0;
+            MaxScoreBySource[PointSource.BeatRelease] = 0;
+            MaxScoreBySource[PointSource.SpinStart] = 0;
+            MaxScoreBySource[PointSource.SpinSustain] = 0;
+            MaxScoreBySource[PointSource.ScratchStart] = 0;
+            MaxScoreBySource[PointSource.ScratchSustain] = 0;
+            
+            MaxScoreSoFarBySource[PointSource.Match] = 0;
+            MaxScoreSoFarBySource[PointSource.Tap] = 0;
+            MaxScoreSoFarBySource[PointSource.HoldStart] = 0;
+            MaxScoreSoFarBySource[PointSource.HoldSustain] = 0;
+            MaxScoreSoFarBySource[PointSource.HoldRelease] = 0;
+            MaxScoreSoFarBySource[PointSource.Beat] = 0;
+            MaxScoreSoFarBySource[PointSource.BeatSustain] = 0;
+            MaxScoreSoFarBySource[PointSource.BeatRelease] = 0;
+            MaxScoreSoFarBySource[PointSource.SpinStart] = 0;
+            MaxScoreSoFarBySource[PointSource.SpinSustain] = 0;
+            MaxScoreSoFarBySource[PointSource.ScratchStart] = 0;
+            MaxScoreSoFarBySource[PointSource.ScratchSustain] = 0;
         }
         
         public void GetLoss(out int lossToMisses, out int lossToAccuracy) {
@@ -233,9 +327,17 @@ namespace ScoreMod {
             Score += Multiplier * acc;
         }
         
-        private void AddMaxScore(int amount) => MaxScore += Profile.MaxMultiplier * amount;
-        
-        private Accuracy AddTimedNoteScore(float timingOffset, IList<ScoreSystemProfile.TimedNoteWindow> noteWindows) {
+        private void AddMaxScore(int amount, PointSource source) {
+            MaxScore += Profile.MaxMultiplier * amount;
+            MaxScoreBySource[source] += Profile.MaxMultiplier * amount;
+        }
+
+        private void AddMaxScoreSoFar(int amount, PointSource source) {
+            MaxScoreSoFar += Profile.MaxMultiplier * amount;
+            MaxScoreSoFarBySource[source] += Profile.MaxMultiplier * amount;
+        }
+
+        private Accuracy AddTimedNoteScore(float timingOffset, IList<ScoreSystemProfile.TimedNoteWindow> noteWindows, PointSource source, bool addToMaxSoFar) {
             int amount = GetValueFromTiming(timingOffset, noteWindows, out var accuracy);
             int maxAmount = noteWindows[0].MaxValue;
             
@@ -243,6 +345,9 @@ namespace ScoreMod {
             accuracyCounters[accuracy]++;
             timedNoteScore += amount;
             potentialTimedNoteScore += maxAmount;
+            
+            if (addToMaxSoFar)
+                AddMaxScoreSoFar(maxAmount, source);
 
             if (accuracy == Accuracy.Perfect)
                 return accuracy;
@@ -291,7 +396,5 @@ namespace ScoreMod {
         }
 
         private static int IntMap(float x, float a, float b, int y, int z) => (int) Math.Ceiling((z - y) * (x - a) / (b - a) + y);
-
-
     }
 }

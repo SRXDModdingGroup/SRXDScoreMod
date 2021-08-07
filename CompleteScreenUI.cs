@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
 using TMPro;
-using UnityEngine;
 
 namespace ScoreMod {
     public class CompleteScreenUI {

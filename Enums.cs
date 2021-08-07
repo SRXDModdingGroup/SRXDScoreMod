@@ -6,4 +6,19 @@ namespace ScoreMod {
         Okay,
         Miss
     }
+
+    public enum PointSource {
+        Match,
+        Tap,
+        HoldStart,
+        HoldSustain,
+        HoldRelease,
+        Beat,
+        BeatSustain,
+        BeatRelease,
+        SpinStart,
+        SpinSustain,
+        ScratchStart,
+        ScratchSustain
+    }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace ScoreMod {
@@ -10,6 +11,10 @@ namespace ScoreMod {
         private static string logFilePath;
         private static ScoreContainer[] scoreContainers;
         private static StringTable outputTable;
+        private static Dictionary<int, KeyValuePair<int, float>> remainingNotes;
+        private static Dictionary<int, KeyValuePair<int, float>> remainingNoteTicks;
+        private static Dictionary<int, int> releaseIndicesFromStart;
+        private static HashSet<int> trackedMisses;
 
         public static void Initialize(string trackId) {
             if (scoreContainers == null) {
@@ -20,7 +25,27 @@ namespace ScoreMod {
                 foreach (var container in scoreContainers)
                     container.Clear();
             }
-            
+
+            if (remainingNoteTicks == null)
+                remainingNoteTicks = new Dictionary<int, KeyValuePair<int, float>>();
+            else
+                remainingNoteTicks.Clear();
+
+            if (releaseIndicesFromStart == null)
+                releaseIndicesFromStart = new Dictionary<int, int>();
+            else
+                releaseIndicesFromStart.Clear();
+
+            if (remainingNotes == null)
+                remainingNotes = new Dictionary<int, KeyValuePair<int, float>>();
+            else
+                remainingNotes.Clear();
+
+            if (trackedMisses == null)
+                trackedMisses = new HashSet<int>();
+            else
+                trackedMisses.Clear();
+
             if (string.IsNullOrWhiteSpace(trackId))
                 return;
 
@@ -59,19 +84,33 @@ namespace ScoreMod {
             return true;
         }
 
-        public static void AddScore(int amount, float offset, bool isSustainedNoteTick, NoteType noteType) {
+        public static void AddScore(int amount, float offset, bool isSustainedNoteTick, NoteType noteType, int noteIndex) {
             int oldMultiplier = CurrentContainer.Multiplier;
             bool oldIsPfc = CurrentContainer.GetIsPfc();
+            var source = GetSourceFromNoteType(noteType, isSustainedNoteTick);
 
             if (isSustainedNoteTick) {
+                bool ticksRemain = remainingNoteTicks.TryGetValue(noteIndex, out var pair);
+                
                 foreach (var container in scoreContainers)
-                    container.AddFlatScore(amount);
+                    container.AddFlatScore(amount, source, ticksRemain);
+
+                if (ticksRemain) {
+                    int currentTicks = pair.Key;
+
+                    if (amount >= currentTicks)
+                        remainingNoteTicks.Remove(noteIndex);
+                    else
+                        remainingNoteTicks[noteIndex] = new KeyValuePair<int, float>(currentTicks - amount, pair.Value);
+                }
             }
             else {
+                bool noteRemains = remainingNotes.Remove(noteIndex);
+                
                 switch (noteType) {
                     case NoteType.Match: {
                         foreach (var container in scoreContainers)
-                            container.AddScoreFromSource(NoteType.Match);
+                            container.AddScoreFromNoteType(NoteType.Match, source, 0f, noteRemains);
 
                         break;
                     }
@@ -81,7 +120,7 @@ namespace ScoreMod {
                     case NoteType.SectionContinuationOrEnd:
                     case NoteType.DrumEnd:
                         foreach (var container in scoreContainers) {
-                            var accuracyForContainer = container.AddScoreFromSource(noteType, offset);
+                            var accuracyForContainer = container.AddScoreFromNoteType(noteType, source, offset, noteRemains);
 
                             if (container == CurrentContainer)
                                 LastAccuracy = accuracyForContainer;
@@ -90,7 +129,7 @@ namespace ScoreMod {
                         break;
                     default:
                         foreach (var container in scoreContainers)
-                            container.AddFlatScore(amount);
+                            container.AddFlatScore(amount, source, noteRemains);
 
                         break;
                 }
@@ -106,10 +145,17 @@ namespace ScoreMod {
                 GameplayUI.UpdateFcStar();
         }
 
-        public static void AddMaxScore(int amount, bool isSustainedNoteTick, NoteType noteType) {
+        public static void AddMaxScore(int amount, bool isSustainedNoteTick, NoteType noteType, int noteIndex, float noteTime) {
+            var source = GetSourceFromNoteType(noteType, isSustainedNoteTick);
+            
             if (isSustainedNoteTick) {
                 foreach (var container in scoreContainers)
-                    container.AddFlatMaxScore(amount);
+                    container.AddFlatMaxScore(amount, source);
+
+                if (remainingNoteTicks.TryGetValue(noteIndex, out var pair))
+                    remainingNoteTicks[noteIndex] = new KeyValuePair<int, float>(pair.Key + amount, pair.Value);
+                else
+                    remainingNoteTicks.Add(noteIndex, new KeyValuePair<int, float>(amount, noteTime));
             }
             else {
                 switch (noteType) {
@@ -120,21 +166,58 @@ namespace ScoreMod {
                     case NoteType.SectionContinuationOrEnd:
                     case NoteType.DrumEnd:
                         foreach (var container in scoreContainers)
-                            container.AddMaxScoreFromSource(noteType);
+                            container.AddMaxScoreFromNoteType(noteType, source);
 
                         break;
                     default:
                         foreach (var container in scoreContainers)
-                            container.AddFlatMaxScore(amount);
+                            container.AddFlatMaxScore(amount, source);
 
                         break;
                 }
+
+                remainingNotes.Add(noteIndex, new KeyValuePair<int, float>(noteIndex, noteTime));
             }
         }
-        
-        public static void Miss() {
+
+        public static void AddReleaseNotePairing(int startIndex, int endIndex) => releaseIndicesFromStart.Add(startIndex, endIndex);
+
+        public static void Miss(NoteType noteType, int noteIndex, bool countMiss, bool trackMiss) {
+            if (remainingNotes.Remove(noteIndex)) {
+                var source = GetSourceFromNoteType(noteType, false);
+                    
+                foreach (var container in scoreContainers)
+                    container.MissScoreFromNoteType(noteType, source);
+            }
+
+            AddMiss(noteIndex, countMiss, trackMiss);
+        }
+
+        public static void MissRemainingNoteTicks(NoteType noteType, int noteIndex) {
+            if (!remainingNoteTicks.TryGetValue(noteIndex, out var pair))
+                return;
+
+            var source = GetSourceFromNoteType(noteType, true);
+            
             foreach (var container in scoreContainers)
-                container.Miss();
+                container.MissFlatScore(pair.Key, source);
+
+            remainingNoteTicks.Remove(noteIndex);
+        }
+        
+        public static void MissReleaseNoteFromStart(NoteType startNoteType, int startNoteIndex) {
+            if (!releaseIndicesFromStart.TryGetValue(startNoteIndex, out int endIndex))
+                return;
+            
+            if (startNoteType == NoteType.HoldStart)
+                Miss(NoteType.SectionContinuationOrEnd, endIndex, true, true);
+            else
+                Miss(NoteType.DrumEnd, endIndex, true, true);
+        }
+
+        public static void ResetMultiplier() {
+            foreach (var container in scoreContainers)
+                container.ResetMultiplier();
         }
 
         public static void PfcLost() {
@@ -231,6 +314,49 @@ namespace ScoreMod {
 
                 LogToFile(writer);
             }
+
+            bool anyDiscrepancies = remainingNotes.Count > 0 || remainingNoteTicks.Count > 0;
+            
+            foreach (object obj in Enum.GetValues(typeof(PointSource))) {
+                var source = (PointSource)obj;
+                int max = CurrentContainer.MaxScoreBySource[source];
+                int maxSoFar = CurrentContainer.MaxScoreSoFarBySource[source];
+
+                if (maxSoFar == max)
+                    continue;
+
+                anyDiscrepancies = true;
+
+                break;
+            }
+            
+            if (!anyDiscrepancies)
+                return;
+            
+            Main.Logger.LogWarning("WARNING: Some discrepancies were found during score prediction");
+            
+            foreach (object obj in Enum.GetValues(typeof(PointSource))) {
+                var source = (PointSource)obj;
+                int max = CurrentContainer.MaxScoreBySource[source];
+                int maxSoFar = CurrentContainer.MaxScoreSoFarBySource[source];
+                
+                if (maxSoFar != max)
+                    Main.Logger.LogWarning($"{source}: {maxSoFar} - {max} = {maxSoFar - max}");
+            }
+
+            if (remainingNotes.Count > 0) {
+                Main.Logger.LogWarning("");
+
+                foreach (var pair in remainingNotes)
+                    Main.Logger.LogWarning($"{pair.Key} {pair.Value.Key} {pair.Value.Value}");
+            }
+
+            if (remainingNoteTicks.Count > 0) {
+                Main.Logger.LogWarning("");
+
+                foreach (var pair in remainingNoteTicks)
+                    Main.Logger.LogWarning($"{pair.Key} {pair.Value.Key} {pair.Value.Value}");
+            }
         }
 
         public static void SavePlayData(string trackId) {
@@ -252,6 +378,21 @@ namespace ScoreMod {
                 scoreContainers[i] = new ScoreContainer(ScoreSystemProfile.Profiles[i]);
         }
 
+        private static void AddMiss(int noteIndex, bool countMiss, bool trackMiss) {
+            if (trackMiss) {
+                if (trackedMisses.Contains(noteIndex))
+                    return;
+                
+                trackedMisses.Add(noteIndex);
+            }
+            
+            if (!countMiss)
+                return;
+
+            foreach (var container in scoreContainers)
+                container.AddMiss();
+        }
+
         private static void LogToFile(StreamWriter writer, string text) {
             Main.Logger.LogMessage(text);
             writer.WriteLine(text);
@@ -271,6 +412,43 @@ namespace ScoreMod {
             logFilePath = Path.Combine(fileDirectory, "History.txt");
 
             return true;
+        }
+        
+        private static PointSource GetSourceFromNoteType(NoteType noteType, bool isSustainedNoteTick) {
+            switch (noteType) {
+                case NoteType.Match:
+                    return PointSource.Match;
+                case NoteType.Tap:
+                    return PointSource.Tap;
+                case NoteType.HoldStart:
+                    if (isSustainedNoteTick)
+                        return PointSource.HoldSustain;
+
+                    return PointSource.HoldStart;
+                case NoteType.SectionContinuationOrEnd:
+                    return PointSource.HoldRelease;
+                case NoteType.DrumStart:
+                    if (isSustainedNoteTick)
+                        return PointSource.BeatSustain;
+
+                    return PointSource.Beat;
+                case NoteType.DrumEnd:
+                    return PointSource.BeatRelease;
+                case NoteType.SpinStart:
+                case NoteType.SpinRightStart:
+                case NoteType.SpinLeftStart:
+                    if (isSustainedNoteTick)
+                        return PointSource.SpinSustain;
+
+                    return PointSource.SpinStart;
+                case NoteType.ScratchStart:
+                    if (isSustainedNoteTick)
+                        return PointSource.ScratchSustain;
+
+                    return PointSource.ScratchStart;
+            }
+
+            return PointSource.ScratchStart;
         }
     }
 }

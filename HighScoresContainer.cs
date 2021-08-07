@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 
 namespace ScoreMod {
     public class HighScoresContainer {

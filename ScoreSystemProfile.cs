@@ -1,5 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using static ScoreMod.ScoreContainer;
 
 namespace ScoreMod {
     public class ScoreSystemProfile {
@@ -66,6 +65,15 @@ namespace ScoreMod {
                     new TimedNoteWindow(Accuracy.Great, 9, 0.0575f),
                     new TimedNoteWindow(Accuracy.Good, 6, 0.065f),
                     new TimedNoteWindow(Accuracy.Okay, 3, 0.08f)
+                }),
+            new ScoreSystemProfile("Perfect", 4, 0, 4,
+                new [] {
+                    new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
+                    new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
+                },
+                new [] {
+                    new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
+                    new TimedNoteWindow(Accuracy.Perfect, 12, 0f)
                 })
         });
         
