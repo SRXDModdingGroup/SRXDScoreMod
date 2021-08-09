@@ -111,7 +111,7 @@ namespace ScoreMod {
                 GameplayUI.UpdateFcStar();
         }
 
-        public static void AddMaxScore(int amount, bool isSustainedNoteTick, NoteType noteType, int noteIndex, float noteTime) {
+        public static void AddMaxScore(int amount, bool isSustainedNoteTick, NoteType noteType, int noteIndex) {
             if (isSustainedNoteTick) {
                 foreach (var container in scoreContainers)
                     container.AddFlatMaxScore(amount, noteIndex, true);

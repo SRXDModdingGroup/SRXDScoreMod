@@ -128,7 +128,7 @@ namespace ScoreMod {
             }
 
             if (calculatingMaxScore)
-                ModState.AddMaxScore(amount, isSustainedNoteTick, noteType, noteIndex, note.time);
+                ModState.AddMaxScore(amount, isSustainedNoteTick, noteType, noteIndex);
             else
                 ModState.AddScore(amount, LastOffset ?? 0f, isSustainedNoteTick, noteType, noteIndex);
         }
