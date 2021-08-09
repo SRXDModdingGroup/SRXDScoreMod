@@ -36,6 +36,7 @@ namespace ScoreMod {
         private string rank;
         private Dictionary<Accuracy, int> accuracyCounters;
         private Dictionary<Accuracy, int> detailedLossToAccuracy;
+        private PointHistoryItem[] maxScoreHistory;
 
         public ScoreContainer(ScoreSystemProfile profile) {
             Profile = profile;
@@ -56,99 +57,10 @@ namespace ScoreMod {
             };
         }
 
-        public Accuracy AddScoreFromNoteType(NoteType noteType, float timingOffset, bool addToMaxSoFar) {
-            switch (noteType) {
-                case NoteType.Match:
-                    AddFlatScore(Profile.MatchNoteValue, addToMaxSoFar);
-
-                    return Accuracy.Perfect;
-                case NoteType.Tap:
-                case NoteType.HoldStart:
-                case NoteType.DrumStart:
-                    return AddTimedNoteScore(timingOffset, Profile.PressNoteWindows, addToMaxSoFar);
-                case NoteType.SectionContinuationOrEnd:
-                case NoteType.DrumEnd:
-                    return AddTimedNoteScore(timingOffset, Profile.ReleaseNoteWindows, addToMaxSoFar);
-            }
-
-            return Accuracy.Perfect;
-        }
-        
-        public void AddFlatScore(int amount, bool addToMaxSoFar) {
-            AddScore(amount);
-            
-            if (addToMaxSoFar)
-                AddMaxScoreSoFar(amount);
-        }
-
-        public void AddMaxScoreFromNoteType(NoteType noteType) {
-            switch (noteType) {
-                case NoteType.Match:
-                    AddMaxScore(Profile.MatchNoteValue);
-
-                    return;
-                case NoteType.Tap:
-                case NoteType.HoldStart:
-                case NoteType.DrumStart:
-                    AddMaxScore(Profile.PressNoteWindows[0].MaxValue);
-                    
-                    return;
-                case NoteType.SectionContinuationOrEnd:
-                case NoteType.DrumEnd:
-                    AddMaxScore(Profile.ReleaseNoteWindows[0].MaxValue);
-                    
-                    return;
-            }
-        }
-
-        public void AddFlatMaxScore(int amount) => AddMaxScore(amount);
-
-        public void MissScoreFromNoteType(NoteType noteType) {
-            switch (noteType) {
-                case NoteType.Match:
-                    AddMaxScoreSoFar(Profile.MatchNoteValue);
-
-                    return;
-                case NoteType.Tap:
-                case NoteType.HoldStart:
-                case NoteType.DrumStart:
-                    AddMaxScoreSoFar(Profile.PressNoteWindows[0].MaxValue);
-                    
-                    return;
-                case NoteType.SectionContinuationOrEnd:
-                case NoteType.DrumEnd:
-                    AddMaxScoreSoFar(Profile.ReleaseNoteWindows[0].MaxValue);
-                    
-                    return;
-                case NoteType.SpinStart:
-                case NoteType.SpinLeftStart:
-                case NoteType.SpinRightStart:
-                    AddMaxScoreSoFar(12);
-
-                    return;
-                case NoteType.ScratchStart:
-                    AddMaxScoreSoFar(1);
-
-                    return;
-            }
-        }
-
-        public void MissFlatScore(int amount) => AddMaxScoreSoFar(amount);
-
-        public void AddMiss() => accuracyCounters[Accuracy.Miss]++;
-
-        public void ResetMultiplier() {
-            Multiplier = 1;
-            pointsToNextMultiplier = Profile.PointsPerMultiplier;
-        }
-        
-        public void PfcLost() => isPfc = false;
-
-        public void SetTrackId(string trackId) => HighScore = HighScoresContainer.GetHighScore(trackId, Profile.GetUniqueId(), out _);
-
-        public void Clear() {
+        public void Initialize(string trackId, int noteCount) {
             Score = 0;
             Multiplier = Profile.MaxMultiplier;
+            HighScore = HighScoresContainer.GetHighScore(trackId, Profile.GetUniqueId(), out _);
             MaxScore = 0;
             MaxScoreSoFar = 0;
             timedNoteScore = 0;
@@ -168,7 +80,73 @@ namespace ScoreMod {
             detailedLossToAccuracy[Accuracy.Great] = 0;
             detailedLossToAccuracy[Accuracy.Good] = 0;
             detailedLossToAccuracy[Accuracy.Okay] = 0;
+            
+            if (noteCount == 0)
+                return;
+
+            if (maxScoreHistory == null || noteCount > maxScoreHistory.Length)
+                maxScoreHistory = new PointHistoryItem[noteCount];
+            
+            for (int i = 0; i < noteCount; i++)
+                maxScoreHistory[i] = new PointHistoryItem();
         }
+
+        public Accuracy AddScoreFromNoteType(NoteType noteType, float timingOffset) {
+            switch (noteType) {
+                case NoteType.Match:
+                    AddFlatScore(Profile.MatchNoteValue);
+
+                    return Accuracy.Perfect;
+                case NoteType.Tap:
+                case NoteType.HoldStart:
+                case NoteType.DrumStart:
+                    return AddTimedNoteScore(timingOffset, Profile.PressNoteWindows);
+                case NoteType.SectionContinuationOrEnd:
+                case NoteType.DrumEnd:
+                    return AddTimedNoteScore(timingOffset, Profile.ReleaseNoteWindows);
+            }
+
+            return Accuracy.Perfect;
+        }
+        
+        public void AddFlatScore(int amount) => AddScore(amount);
+
+        public void AddMaxScoreFromNoteType(NoteType noteType, int noteIndex) {
+            switch (noteType) {
+                case NoteType.Match:
+                    AddMaxScore(Profile.MatchNoteValue, noteIndex, false);
+
+                    return;
+                case NoteType.Tap:
+                case NoteType.HoldStart:
+                case NoteType.DrumStart:
+                    AddMaxScore(Profile.PressNoteWindows[0].MaxValue, noteIndex, false);
+                    
+                    return;
+                case NoteType.SectionContinuationOrEnd:
+                case NoteType.DrumEnd:
+                    AddMaxScore(Profile.ReleaseNoteWindows[0].MaxValue, noteIndex, false);
+                    
+                    return;
+            }
+        }
+
+        public void AddFlatMaxScore(int amount, int noteIndex, bool isSustainedNoteTick) => AddMaxScore(amount, noteIndex, isSustainedNoteTick);
+
+        public void PopMaxScoreNote(int noteIndex) => MaxScoreSoFar += maxScoreHistory[noteIndex].PopNoteValue();
+        
+        public void PopMaxScoreSingleTick(int noteIndex) => MaxScoreSoFar += maxScoreHistory[noteIndex].PopSingleTickValue(Profile.MaxMultiplier);
+        
+        public void PopMaxScoreAllTicks(int noteIndex) => MaxScoreSoFar += maxScoreHistory[noteIndex].PopAllTickValue();
+
+        public void AddMiss() => accuracyCounters[Accuracy.Miss]++;
+
+        public void ResetMultiplier() {
+            Multiplier = 1;
+            pointsToNextMultiplier = Profile.PointsPerMultiplier;
+        }
+        
+        public void PfcLost() => isPfc = false;
         
         public void GetLoss(out int lossToMisses, out int lossToAccuracy) {
             int totalLoss = MaxScore - Score;
@@ -212,6 +190,15 @@ namespace ScoreMod {
 
         public bool GetIsHighScore() => Score > HighScore;
 
+        public bool GetAnyMaxScoreSoFarUnchecked() {
+            foreach (var item in maxScoreHistory) {
+                if (item.PopNoteValue() > 0 || item.PopAllTickValue() > 0)
+                    return true;
+            }
+
+            return false;
+        }
+
         public int GetAccuracyCount(Accuracy accuracy, out int loss) {
             if (accuracy == Accuracy.Perfect || accuracy == Accuracy.Miss)
                 loss = 0;
@@ -220,6 +207,8 @@ namespace ScoreMod {
             
             return accuracyCounters[accuracy];
         }
+        
+        public int GetPace() => MaxScore + Score - MaxScoreSoFar - HighScore;
 
         public float GetAccuracyRating() {
             if (potentialTimedNoteScore == 0)
@@ -269,11 +258,18 @@ namespace ScoreMod {
             Score += Multiplier * acc;
         }
         
-        private void AddMaxScore(int amount) => MaxScore += Profile.MaxMultiplier * amount;
+        private void AddMaxScore(int amount, int noteIndex, bool isSustainedNoteTick) {
+            int scaledAmount = Profile.MaxMultiplier * amount;
+            
+            MaxScore += scaledAmount;
+            
+            if (isSustainedNoteTick)
+                maxScoreHistory[noteIndex].PushTickValue(scaledAmount);
+            else
+                maxScoreHistory[noteIndex].PushNoteValue(scaledAmount);
+        }
 
-        private void AddMaxScoreSoFar(int amount) => MaxScoreSoFar += Profile.MaxMultiplier * amount;
-
-        private Accuracy AddTimedNoteScore(float timingOffset, IList<ScoreSystemProfile.TimedNoteWindow> noteWindows, bool addToMaxSoFar) {
+        private Accuracy AddTimedNoteScore(float timingOffset, IList<ScoreSystemProfile.TimedNoteWindow> noteWindows) {
             int amount = GetValueFromTiming(timingOffset, noteWindows, out var accuracy);
             int maxAmount = noteWindows[0].MaxValue;
             
@@ -282,8 +278,6 @@ namespace ScoreMod {
             timedNoteScore += amount;
             potentialTimedNoteScore += maxAmount;
             
-            if (addToMaxSoFar)
-                AddMaxScoreSoFar(maxAmount);
 
             if (accuracy == Accuracy.Perfect)
                 return accuracy;
@@ -332,5 +326,39 @@ namespace ScoreMod {
         }
 
         private static int IntMap(float x, float a, float b, int y, int z) => (int) Math.Ceiling((z - y) * (x - a) / (b - a) + y);
+
+        private struct PointHistoryItem {
+            private int noteValue;
+            private int tickValue;
+
+            public void PushNoteValue(int value) => noteValue += value;
+
+            public void PushTickValue(int value) => tickValue += value;
+
+            public int PopNoteValue() {
+                int value = noteValue;
+
+                noteValue = 0;
+
+                return value;
+            }
+
+            public int PopSingleTickValue(int amount) {
+                if (amount > tickValue)
+                    amount = tickValue;
+
+                tickValue -= amount;
+
+                return amount;
+            }
+
+            public int PopAllTickValue() {
+                int value = tickValue;
+
+                tickValue = 0;
+
+                return value;
+            }
+        }
     }
 }

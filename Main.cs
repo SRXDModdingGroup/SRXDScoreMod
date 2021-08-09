@@ -22,8 +22,8 @@ namespace ScoreMod {
             harmony.PatchAll(typeof(CompleteScreenUI));
             harmony.PatchAll(typeof(LevelSelectUI));
             
-            ModState.Initialize(string.Empty);
             HighScoresContainer.LoadHighScores();
+            ModState.Initialize(string.Empty, 0);
         }
 
         public static bool TryGetFileDirectory(out string directory) {

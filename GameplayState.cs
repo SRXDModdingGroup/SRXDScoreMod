@@ -143,7 +143,7 @@ namespace ScoreMod {
 
             switch (noteType) {
                 case NoteType.DrumStart:
-                    ModState.MissRemainingNoteTicks(noteType, noteIndex);
+                    ModState.MissRemainingNoteTicks(noteIndex);
                     ModState.MissReleaseNoteFromStart(noteType, noteIndex);
 
                     break;
@@ -165,7 +165,7 @@ namespace ScoreMod {
                     break;
             }
             
-            ModState.Miss(noteType, noteIndex, true, false);
+            ModState.Miss(noteIndex, true, false);
             ModState.ResetMultiplier();
             GameplayUI.UpdateMultiplierText();
         }
@@ -190,7 +190,7 @@ namespace ScoreMod {
                 var releaseState = state.releaseState;
                 
                 if (state.failed)
-                    ModState.MissRemainingNoteTicks(NoteType.HoldStart, index);
+                    ModState.MissRemainingNoteTicks(index);
 
                 if (releaseState == FreestyleSectionState.ReleaseState.Failed
                     || releaseState == FreestyleSectionState.ReleaseState.DidntLetGo
@@ -210,8 +210,8 @@ namespace ScoreMod {
                 var state = PlayState.spinSectionStates[pair.Value];
                 
                 if (state.failed) {
-                    ModState.Miss(NoteType.SpinStart, index, false, false);
-                    ModState.MissRemainingNoteTicks(NoteType.SpinStart, index);
+                    ModState.Miss(index, false, false);
+                    ModState.MissRemainingNoteTicks(index);
                 }
                 
                 if (!state.IsDoneWith)
@@ -227,8 +227,8 @@ namespace ScoreMod {
                 var state = PlayState.scratchSectionStates[pair.Value];
                 
                 if (state.failed) {
-                    ModState.Miss(NoteType.ScratchStart, index, false, false);
-                    ModState.MissRemainingNoteTicks(NoteType.ScratchStart, index);
+                    ModState.Miss(index, false, false);
+                    ModState.MissRemainingNoteTicks(index);
                 }
                 
                 if (!state.failed && !state.hasExited)
@@ -244,7 +244,7 @@ namespace ScoreMod {
             Playing = false;
             PlayState = __instance.playStateFirst;
             noteData = PlayState.trackData.NoteData;
-            ModState.Initialize(LevelSelectUI.GetTrackId(PlayState.trackData));
+            ModState.Initialize(LevelSelectUI.GetTrackId(PlayState.trackData), noteData.noteCount);
 
             if (holdStates == null)
                 holdStates = new Dictionary<int, int>();

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 
 namespace ScoreMod {
@@ -11,56 +10,35 @@ namespace ScoreMod {
         private static string logFilePath;
         private static ScoreContainer[] scoreContainers;
         private static StringTable outputTable;
-        private static Dictionary<int, KeyValuePair<int, float>> remainingNotes;
-        private static Dictionary<int, KeyValuePair<int, float>> remainingNoteTicks;
         private static Dictionary<int, int> releaseIndicesFromStart;
         private static HashSet<int> trackedMisses;
 
-        public static void Initialize(string trackId) {
+        public static void Initialize(string trackId, int noteCount) {
             if (scoreContainers == null) {
-                InitScoreContainers();
+                scoreContainers = new ScoreContainer[ScoreSystemProfile.Profiles.Count];
+
+                for (int i = 0; i < scoreContainers.Length; i++)
+                    scoreContainers[i] = new ScoreContainer(ScoreSystemProfile.Profiles[i]);
+                
                 CurrentContainer = scoreContainers[0];
             }
-            else {
-                foreach (var container in scoreContainers)
-                    container.Clear();
-            }
-
-            if (remainingNoteTicks == null)
-                remainingNoteTicks = new Dictionary<int, KeyValuePair<int, float>>();
-            else
-                remainingNoteTicks.Clear();
+            
+            foreach (var container in scoreContainers)
+                container.Initialize(trackId, noteCount);
 
             if (releaseIndicesFromStart == null)
                 releaseIndicesFromStart = new Dictionary<int, int>();
             else
                 releaseIndicesFromStart.Clear();
 
-            if (remainingNotes == null)
-                remainingNotes = new Dictionary<int, KeyValuePair<int, float>>();
-            else
-                remainingNotes.Clear();
-
             if (trackedMisses == null)
                 trackedMisses = new HashSet<int>();
             else
                 trackedMisses.Clear();
-
-            if (string.IsNullOrWhiteSpace(trackId))
-                return;
-
-            foreach (var container in scoreContainers)
-                container.SetTrackId(trackId);
         }
 
         public static void ToggleModdedScoring() {
             ShowModdedScore = !ShowModdedScore;
-            
-            if (scoreContainers == null) {
-                InitScoreContainers();
-                CurrentContainer = scoreContainers[0];
-            }
-            
             GameplayUI.UpdateUI();
             CompleteScreenUI.UpdateUI();
             LevelSelectUI.UpdateModScore();
@@ -68,9 +46,6 @@ namespace ScoreMod {
         }
 
         public static bool PickScoringSystem(int index) {
-            if (scoreContainers == null)
-                InitScoreContainers();
-                
             if (index >= scoreContainers.Length)
                 return false;
 
@@ -89,27 +64,16 @@ namespace ScoreMod {
             bool oldIsPfc = CurrentContainer.GetIsPfc(false);
 
             if (isSustainedNoteTick) {
-                bool ticksRemain = remainingNoteTicks.TryGetValue(noteIndex, out var pair);
-                
-                foreach (var container in scoreContainers)
-                    container.AddFlatScore(amount, ticksRemain);
-
-                if (ticksRemain) {
-                    int currentTicks = pair.Key;
-
-                    if (amount >= currentTicks)
-                        remainingNoteTicks.Remove(noteIndex);
-                    else
-                        remainingNoteTicks[noteIndex] = new KeyValuePair<int, float>(currentTicks - amount, pair.Value);
+                foreach (var container in scoreContainers) {
+                    container.AddFlatScore(amount);
+                    container.PopMaxScoreSingleTick(noteIndex);
                 }
             }
             else {
-                bool noteRemains = remainingNotes.Remove(noteIndex);
-                
                 switch (noteType) {
                     case NoteType.Match: {
                         foreach (var container in scoreContainers)
-                            container.AddScoreFromNoteType(NoteType.Match, 0f, noteRemains);
+                            container.AddScoreFromNoteType(NoteType.Match, 0f);
 
                         break;
                     }
@@ -119,7 +83,7 @@ namespace ScoreMod {
                     case NoteType.SectionContinuationOrEnd:
                     case NoteType.DrumEnd:
                         foreach (var container in scoreContainers) {
-                            var accuracyForContainer = container.AddScoreFromNoteType(noteType, offset, noteRemains);
+                            var accuracyForContainer = container.AddScoreFromNoteType(noteType, offset);
 
                             if (container == CurrentContainer)
                                 LastAccuracy = accuracyForContainer;
@@ -128,10 +92,13 @@ namespace ScoreMod {
                         break;
                     default:
                         foreach (var container in scoreContainers)
-                            container.AddFlatScore(amount, noteRemains);
+                            container.AddFlatScore(amount);
 
                         break;
                 }
+
+                foreach (var container in scoreContainers)
+                    container.PopMaxScoreNote(noteIndex);
             }
 
             if (!ShowModdedScore)
@@ -147,12 +114,7 @@ namespace ScoreMod {
         public static void AddMaxScore(int amount, bool isSustainedNoteTick, NoteType noteType, int noteIndex, float noteTime) {
             if (isSustainedNoteTick) {
                 foreach (var container in scoreContainers)
-                    container.AddFlatMaxScore(amount);
-
-                if (remainingNoteTicks.TryGetValue(noteIndex, out var pair))
-                    remainingNoteTicks[noteIndex] = new KeyValuePair<int, float>(pair.Key + amount, pair.Value);
-                else
-                    remainingNoteTicks.Add(noteIndex, new KeyValuePair<int, float>(amount, noteTime));
+                    container.AddFlatMaxScore(amount, noteIndex, true);
             }
             else {
                 switch (noteType) {
@@ -163,39 +125,30 @@ namespace ScoreMod {
                     case NoteType.SectionContinuationOrEnd:
                     case NoteType.DrumEnd:
                         foreach (var container in scoreContainers)
-                            container.AddMaxScoreFromNoteType(noteType);
+                            container.AddMaxScoreFromNoteType(noteType, noteIndex);
 
                         break;
                     default:
                         foreach (var container in scoreContainers)
-                            container.AddFlatMaxScore(amount);
+                            container.AddFlatMaxScore(amount, noteIndex, false);
 
                         break;
                 }
-
-                remainingNotes.Add(noteIndex, new KeyValuePair<int, float>(noteIndex, noteTime));
             }
         }
 
         public static void AddReleaseNotePairing(int startIndex, int endIndex) => releaseIndicesFromStart.Add(startIndex, endIndex);
 
-        public static void Miss(NoteType noteType, int noteIndex, bool countMiss, bool trackMiss) {
-            if (remainingNotes.Remove(noteIndex)) {
-                foreach (var container in scoreContainers)
-                    container.MissScoreFromNoteType(noteType);
-            }
+        public static void Miss(int noteIndex, bool countMiss, bool trackMiss) {
+            foreach (var container in scoreContainers)
+                container.PopMaxScoreNote(noteIndex);
 
             AddMiss(noteIndex, countMiss, trackMiss);
         }
 
-        public static void MissRemainingNoteTicks(NoteType noteType, int noteIndex) {
-            if (!remainingNoteTicks.TryGetValue(noteIndex, out var pair))
-                return;
-            
+        public static void MissRemainingNoteTicks(int noteIndex) {
             foreach (var container in scoreContainers)
-                container.MissFlatScore(pair.Key);
-
-            remainingNoteTicks.Remove(noteIndex);
+                container.PopMaxScoreAllTicks(noteIndex);
         }
         
         public static void MissReleaseNoteFromStart(NoteType startNoteType, int startNoteIndex) {
@@ -203,9 +156,9 @@ namespace ScoreMod {
                 return;
             
             if (startNoteType == NoteType.HoldStart)
-                Miss(NoteType.SectionContinuationOrEnd, endIndex, true, true);
+                Miss(endIndex, true, true);
             else
-                Miss(NoteType.DrumEnd, endIndex, true, true);
+                Miss(endIndex, true, true);
         }
 
         public static void ResetMultiplier() {
@@ -308,24 +261,8 @@ namespace ScoreMod {
                 LogToFile(writer);
             }
 
-            if (!logDiscrepancies || remainingNotes.Count == 0 && remainingNoteTicks.Count == 0)
-                return;
-            
-            Main.Logger.LogWarning("WARNING: Some discrepancies were found during score prediction");
-            
-            if (remainingNotes.Count > 0) {
-                Main.Logger.LogWarning("");
-
-                foreach (var pair in remainingNotes)
-                    Main.Logger.LogWarning($"{pair.Key} {pair.Value.Key} {pair.Value.Value}");
-            }
-
-            if (remainingNoteTicks.Count > 0) {
-                Main.Logger.LogWarning("");
-
-                foreach (var pair in remainingNoteTicks)
-                    Main.Logger.LogWarning($"{pair.Key} {pair.Value.Key} {pair.Value.Value}");
-            }
+            if (logDiscrepancies && (CurrentContainer.MaxScoreSoFar != CurrentContainer.MaxScore || CurrentContainer.GetAnyMaxScoreSoFarUnchecked()))
+                Main.Logger.LogWarning("WARNING: Some discrepancies were found during score prediction");
         }
 
         public static void SavePlayData(string trackId) {
@@ -338,13 +275,6 @@ namespace ScoreMod {
             
             if (anyChanged)
                 HighScoresContainer.SaveHighScores();
-        }
-        
-        private static void InitScoreContainers() {
-            scoreContainers = new ScoreContainer[ScoreSystemProfile.Profiles.Count];
-
-            for (int i = 0; i < scoreContainers.Length; i++)
-                scoreContainers[i] = new ScoreContainer(ScoreSystemProfile.Profiles[i]);
         }
 
         private static void AddMiss(int noteIndex, bool countMiss, bool trackMiss) {

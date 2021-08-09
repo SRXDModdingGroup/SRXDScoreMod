@@ -89,7 +89,7 @@ namespace ScoreMod {
             
             __instance.desiredNumber = container.Score;
             
-            int pace = container.MaxScore - container.MaxScoreSoFar + container.Score - container.HighScore;
+            int pace = container.GetPace();
             string paceString;
 
             if (pace >= 0) {
