@@ -51,8 +51,6 @@ namespace ScoreMod {
             }
         }
 
-        public static bool IsNewBest(string trackId, ScoreContainer container) => !highScores.TryGetValue($"{trackId}_{container.Profile.GetUniqueId()}", out var item) || container.Score > item.Score;
-
         public static bool TrySetHighScore(string trackId, ScoreContainer container) {
             var profile = container.Profile;
             string id = $"{trackId}_{profile.GetUniqueId()}";

@@ -14,13 +14,35 @@ namespace ScoreMod {
         private static HashSet<int> trackedMisses;
 
         public static void Initialize(string trackId, int noteCount) {
+            var profiles = ScoreSystemProfile.Profiles;
+            
             if (scoreContainers == null) {
-                scoreContainers = new ScoreContainer[ScoreSystemProfile.Profiles.Count];
+                scoreContainers = new ScoreContainer[profiles.Count];
 
                 for (int i = 0; i < scoreContainers.Length; i++)
-                    scoreContainers[i] = new ScoreContainer(ScoreSystemProfile.Profiles[i]);
+                    scoreContainers[i] = new ScoreContainer(profiles[i]);
+
+                string defaultProfile = Main.DefaultProfile.Value;
                 
-                CurrentContainer = scoreContainers[0];
+                if (int.TryParse(defaultProfile, out int index)) {
+                    if (index >= 0 && index < profiles.Count)
+                        CurrentContainer = scoreContainers[index];
+                }
+                else {
+                    for (int i = 0; i < profiles.Count; i++) {
+                        if (profiles[i].Name != defaultProfile)
+                            continue;
+
+                        CurrentContainer = scoreContainers[i];
+
+                        break;
+                    }
+                }
+
+                if (CurrentContainer == null) {
+                    CurrentContainer = scoreContainers[0];
+                    Main.DefaultProfile.SetSerializedValue("0");
+                }
             }
             
             foreach (var container in scoreContainers)
@@ -259,6 +281,7 @@ namespace ScoreMod {
                     LogToFile(writer, row);
 
                 LogToFile(writer);
+                writer.Flush();
             }
 
             if (logDiscrepancies && (CurrentContainer.MaxScoreSoFar != CurrentContainer.MaxScore || CurrentContainer.GetAnyMaxScoreSoFarUnchecked()))

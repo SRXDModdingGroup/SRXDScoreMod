@@ -7,6 +7,7 @@ namespace ScoreMod {
     public class GameplayUI {
         private static bool spawnBestPossibleText;
         private static bool timingFeedbackSpawned;
+        private static bool showPace;
         private static Color defaultScoreNumberColor;
         private static GameObject timingFeedbackObject;
         private static XDHudCanvases canvases;
@@ -32,7 +33,7 @@ namespace ScoreMod {
                 fcStar.sprite = pfcSprite;
             
             if (bestPossibleText != null)
-                bestPossibleText.gameObject.SetActive(ModState.ShowModdedScore);
+                bestPossibleText.gameObject.SetActive(ModState.ShowModdedScore && showPace);
 
             if (ModState.ShowModdedScore)
                 multiplierNumber.Text = GetMultiplierAsText();
@@ -63,7 +64,8 @@ namespace ScoreMod {
             fcStar = __instance.fcStar;
             fcSprite = __instance.fcStarSprite;
             pfcSprite = __instance.pfcStarSprite;
-            spawnBestPossibleText = true;
+            showPace = Main.ShowPace.Value;
+            spawnBestPossibleText = showPace;
         }
         
         [HarmonyPatch(typeof(TextNumber), nameof(TextNumber.Update)), HarmonyPrefix]
@@ -88,6 +90,9 @@ namespace ScoreMod {
             var container = ModState.CurrentContainer;
             
             __instance.desiredNumber = container.Score;
+
+            if (!showPace)
+                return true;
             
             int pace = container.GetPace();
             string paceString;

@@ -14,6 +14,8 @@ namespace ScoreMod {
         private static int lastBeatIndex;
         private static int lastSpinIndex;
         private static int lastScratchIndex;
+        private static float tapOffset;
+        private static float beatOffset;
         private static PlayableNoteData noteData;
         private static Dictionary<int, int> holdStates;
         private static Dictionary<int, int> spinStates;
@@ -292,6 +294,10 @@ namespace ScoreMod {
             lastBeatIndex = -1;
             lastSpinIndex = -1;
             lastScratchIndex = -1;
+
+            tapOffset = 0.001f * Main.TapTimingOffset.Value;
+            beatOffset = 0.001f * Main.BeatTimingOffset.Value;
+            
             GameplayUI.UpdateUI();
         }
 
@@ -313,13 +319,13 @@ namespace ScoreMod {
         [HarmonyPatch(typeof(GameplayVariables), nameof(GameplayVariables.GetTimingAccuracy)), HarmonyPostfix]
         private static void GameplayVariables_GetTimingAccuracy_Postfix(float timeOffset) {
             if (Playing)
-                LastOffset = timeOffset;
+                LastOffset = timeOffset + tapOffset;
         }
 
         [HarmonyPatch(typeof(GameplayVariables), nameof(GameplayVariables.GetTimingAccuracyForBeat)), HarmonyPostfix]
         private static void GameplayVariables_GetTimingAccuracyForBeat_Postfix(float timeOffset) {
             if (Playing)
-                LastOffset = timeOffset;
+                LastOffset = timeOffset + beatOffset;
         }
     }
 }
