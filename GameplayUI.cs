@@ -5,9 +5,16 @@ using UnityEngine.UI;
 
 namespace ScoreMod {
     public class GameplayUI {
+        private enum PaceType {
+            Score,
+            Delta,
+            Both
+        }
+        
         private static bool spawnBestPossibleText;
         private static bool timingFeedbackSpawned;
         private static bool showPace;
+        private static PaceType paceType;
         private static Color defaultScoreNumberColor;
         private static GameObject timingFeedbackObject;
         private static XDHudCanvases canvases;
@@ -64,7 +71,7 @@ namespace ScoreMod {
             fcStar = __instance.fcStar;
             fcSprite = __instance.fcStarSprite;
             pfcSprite = __instance.pfcStarSprite;
-            showPace = Main.ShowPace.Value;
+            showPace = Main.PaceType.Value != "Hide";
             spawnBestPossibleText = showPace;
         }
         
@@ -84,7 +91,23 @@ namespace ScoreMod {
                 bestPossibleText.fontSize = 8f;
                 bestPossibleText.overflowMode = TextOverflowModes.Overflow;
                 bestPossibleText.horizontalAlignment = HorizontalAlignmentOptions.Right;
+                bestPossibleText.verticalAlignment = VerticalAlignmentOptions.Top;
                 spawnBestPossibleText = false;
+
+                switch (Main.PaceType.Value) {
+                    case "Score":
+                        paceType = PaceType.Score;
+
+                        break;
+                    case "Delta":
+                        paceType = PaceType.Delta;
+
+                        break;
+                    case "Both":
+                        paceType = PaceType.Both;
+
+                        break;
+                }
             }
 
             var container = ModState.CurrentContainer;
@@ -94,19 +117,29 @@ namespace ScoreMod {
             if (!showPace)
                 return true;
             
-            int pace = container.GetPace();
-            string paceString;
-
-            if (pace >= 0) {
-                paceString = $"+{pace}";
-                bestPossibleText.color = Color.cyan;
-            }
-            else {
-                paceString = pace.ToString();
-                bestPossibleText.color = Color.gray * 0.5f;
-            }
+            int bestPossible = container.GetBestPossible();
+            int delta = bestPossible - container.HighScore;
             
-            bestPossibleText.SetText($"Pace: {paceString,6}");
+            if (delta >= 0)
+                bestPossibleText.color = Color.cyan;
+            else
+                bestPossibleText.color = Color.gray * 0.75f;
+
+            if (paceType == PaceType.Delta || paceType == PaceType.Both) {
+                string paceString;
+                
+                if (delta >= 0)
+                    paceString = $"+{delta}";
+                else
+                    paceString = delta.ToString();
+
+                if (paceType == PaceType.Both)
+                    bestPossibleText.SetText($"Pace: {bestPossible.ToString(),7}\n{paceString}");
+                else
+                    bestPossibleText.SetText($"Pace: {paceString,7}");
+            }
+            else
+                bestPossibleText.SetText($"Pace: {bestPossible.ToString(),7}");
 
             return true;
         }

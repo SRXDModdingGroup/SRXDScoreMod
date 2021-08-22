@@ -208,7 +208,7 @@ namespace ScoreMod {
             return accuracyCounters[accuracy];
         }
         
-        public int GetPace() => MaxScore + Score - MaxScoreSoFar - HighScore;
+        public int GetBestPossible() => MaxScore + Score - MaxScoreSoFar;
 
         public float GetAccuracyRating() {
             if (potentialTimedNoteScore == 0)
