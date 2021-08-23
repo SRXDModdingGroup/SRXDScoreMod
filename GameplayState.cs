@@ -24,6 +24,8 @@ namespace ScoreMod {
         private static List<KeyValuePair<int, int>> activeSpinStates;
         private static List<KeyValuePair<int, int>> activeScratchStates;
 
+        public static NoteType GetNoteType(int noteIndex) => noteData.GetNote(noteIndex).NoteType;
+        
         private static void EndPlay(bool success) {
             Playing = false;
             ModState.LogPlayData(PlayState.TrackInfoRef.asset.title, success);

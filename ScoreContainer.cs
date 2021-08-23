@@ -83,12 +83,8 @@ namespace ScoreMod {
             
             if (noteCount == 0)
                 return;
-
-            if (maxScoreHistory == null || noteCount > maxScoreHistory.Length)
-                maxScoreHistory = new PointHistoryItem[noteCount];
             
-            for (int i = 0; i < noteCount; i++)
-                maxScoreHistory[i] = new PointHistoryItem();
+            maxScoreHistory = new PointHistoryItem[noteCount];
         }
 
         public Accuracy AddScoreFromNoteType(NoteType noteType, float timingOffset) {
@@ -190,15 +186,6 @@ namespace ScoreMod {
 
         public bool GetIsHighScore() => Score > HighScore;
 
-        public bool GetAnyMaxScoreSoFarUnchecked() {
-            foreach (var item in maxScoreHistory) {
-                if (item.PopNoteValue() > 0 || item.PopAllTickValue() > 0)
-                    return true;
-            }
-
-            return false;
-        }
-
         public int GetAccuracyCount(Accuracy accuracy, out int loss) {
             if (accuracy == Accuracy.Perfect || accuracy == Accuracy.Miss)
                 loss = 0;
@@ -215,6 +202,17 @@ namespace ScoreMod {
                 return 1f;
             
             return (float) timedNoteScore / potentialTimedNoteScore;
+        }
+
+        public IEnumerable<string> GetMaxScoreSoFarUnchecked() {
+            for (int i = 0; i < maxScoreHistory.Length; i++) {
+                var item = maxScoreHistory[i];
+                int value = item.PopNoteValue();
+                int ticks = item.PopAllTickValue();
+
+                if (value > 0 || ticks > 0)
+                    yield return $"Note {i}: Type {GameplayState.GetNoteType(i)}, Value {value}, Ticks {ticks}";
+            }
         }
 
         public string GetRank() => rank ?? (rank = GetRank(Score, MaxScore)) ?? string.Empty;

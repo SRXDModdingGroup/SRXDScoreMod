@@ -283,9 +283,34 @@ namespace ScoreMod {
                 LogToFile(writer);
                 writer.Flush();
             }
+            
+            if (!logDiscrepancies)
+                return;
 
-            if (logDiscrepancies && (CurrentContainer.MaxScoreSoFar != CurrentContainer.MaxScore || CurrentContainer.GetAnyMaxScoreSoFarUnchecked()))
+            bool first = true;
+
+            if (CurrentContainer.MaxScoreSoFar != CurrentContainer.MaxScore) {
                 Main.Logger.LogWarning("WARNING: Some discrepancies were found during score prediction");
+                Main.Logger.LogMessage("");
+                first = false;
+            }
+
+            bool any = false;
+
+            foreach (string s in CurrentContainer.GetMaxScoreSoFarUnchecked()) {
+                any = true;
+                
+                if (first) {
+                    Main.Logger.LogWarning("WARNING: Some discrepancies were found during score prediction");
+                    Main.Logger.LogMessage("");
+                    first = false;
+                }
+                
+                Main.Logger.LogWarning(s);
+            }
+            
+            if (any)
+                Main.Logger.LogMessage("");
         }
 
         public static void SavePlayData(string trackId) {
