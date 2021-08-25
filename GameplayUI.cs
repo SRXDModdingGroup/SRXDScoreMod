@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 namespace ScoreMod {
+    // Contains patch functions to show modded scores and pace prediction on the in-game HUD
     public class GameplayUI {
         private enum PaceType {
             Score,

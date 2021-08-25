@@ -3,6 +3,7 @@ using HarmonyLib;
 using UnityEngine;
 
 namespace ScoreMod {
+    // Contains patch functions for receiving data from gameplay
     public class GameplayState {
         public static bool Playing { get; private set; }
         public static float? LastOffset { get; private set; }
@@ -24,8 +25,10 @@ namespace ScoreMod {
         private static List<KeyValuePair<int, int>> activeSpinStates;
         private static List<KeyValuePair<int, int>> activeScratchStates;
 
+        // For debug purposes. Gets the type of a given note
         public static NoteType GetNoteType(int noteIndex) => noteData.GetNote(noteIndex).NoteType;
         
+        // Log play results, save high scores, and update UI after completing or failing a track
         private static void EndPlay(bool success) {
             Playing = false;
             ModState.LogPlayData(PlayState.TrackInfoRef.asset.title, success);
@@ -33,6 +36,7 @@ namespace ScoreMod {
             CompleteScreenUI.UpdateUI();
         }
         
+        // Used to handle inputs for toggling mod score and selecting different scoring profiles
         [HarmonyPatch(typeof(Game), nameof(Game.Update)), HarmonyPostfix]
         private static void Game_Update_Postfix() {
             if (Input.GetKeyDown(KeyCode.P))
@@ -63,6 +67,7 @@ namespace ScoreMod {
                 ModState.ToggleModdedScoring();
         }
         
+        // Gets points added to regular score and adds them to modded score as well
         [HarmonyPatch(typeof(PlayState.ScoreState), nameof(PlayState.ScoreState.AddScore)), HarmonyPostfix]
         private static void ScoreState_AddScore_Postfix(PlayState.ScoreState __instance, int amount, int noteIndex) {
             if ((!Playing || __instance.isMaxPossibleCalculation) && !calculatingMaxScore)
@@ -72,6 +77,7 @@ namespace ScoreMod {
             var noteType = note.NoteType;
             bool isSustainedNoteTick = false;
 
+            // Check if the points are coming from a sustained note tick and begin tracking sustained note states
             switch (noteType) {
                 case NoteType.HoldStart:
                     if (amount == 1 || noteIndex == lastHoldIndex)
@@ -137,6 +143,7 @@ namespace ScoreMod {
                 ModState.AddScore(amount, LastOffset ?? 0f, isSustainedNoteTick, noteType, noteIndex);
         }
 
+        // Reset mod score multiplier after missing a note or overbeating, and track the states of missed sustained notes
         [HarmonyPatch(typeof(PlayState.ScoreState), nameof(PlayState.ScoreState.DropMultiplier)), HarmonyPostfix]
         private static void ScoreState_DropMultiplier_Postfix(int noteIndex) {
             if (!Playing)
@@ -174,6 +181,7 @@ namespace ScoreMod {
             GameplayUI.UpdateMultiplierText();
         }
 
+        // Unset mod PFC state when regular PFC is lost
         [HarmonyPatch(typeof(PlayState.ScoreState), nameof(PlayState.ScoreState.PerfectFullComboLost)), HarmonyPrefix]
         private static bool ScoreState_PerfectFullComboLost_PreFix() {
             if (Playing)
@@ -182,6 +190,7 @@ namespace ScoreMod {
             return true;
         }
 
+        // Continuously track the state of active sustained notes
         [HarmonyPatch(typeof(Track), nameof(Track.Update)), HarmonyPostfix]
         private static void Track_Update_Postfix() {
             if (!Playing)
@@ -243,6 +252,7 @@ namespace ScoreMod {
             }
         }
 
+        // Initialize mod values when starting a track
         [HarmonyPatch(typeof(Track), nameof(Track.PlayTrack)), HarmonyPostfix]
         private static void Track_PlayTrack_Postfix(Track __instance) {
             Playing = false;
@@ -287,9 +297,12 @@ namespace ScoreMod {
             lastBeatIndex = -1;
             lastSpinIndex = -1;
             lastScratchIndex = -1;
+            
+            // Create a max score state early for pace prediction
             calculatingMaxScore = true;
             noteData.GetMaxPossibleScoreState(new IntRange(0, noteData.noteCount));
             calculatingMaxScore = false;
+            
             Playing = true;
             LastOffset = null;
             lastHoldIndex = -1;
@@ -302,28 +315,33 @@ namespace ScoreMod {
             
             GameplayUI.UpdateUI();
         }
-
+        
+        // Check when a track is completed
         [HarmonyPatch(typeof(Track), nameof(Track.CompleteSong)), HarmonyPostfix]
         private static void Track_CompleteSong_Postfix() {
             EndPlay(true);
         }
         
+        // Check when a track is failed
         [HarmonyPatch(typeof(Track), nameof(Track.FailSong)), HarmonyPostfix]
         private static void Track_FailSong_Postfix() {
             EndPlay(false);
         }
 
+        // Check when the player exits a track
         [HarmonyPatch(typeof(XDPauseMenu), nameof(XDPauseMenu.ExitButtonPressed)), HarmonyPostfix]
         private static void XDPauseMenu_ExitButtonPressed_Postfix() {
             Playing = false;
         }
         
+        // Store the timing value passed in when the player hits a tap or liftoff
         [HarmonyPatch(typeof(GameplayVariables), nameof(GameplayVariables.GetTimingAccuracy)), HarmonyPostfix]
         private static void GameplayVariables_GetTimingAccuracy_Postfix(float timeOffset) {
             if (Playing)
                 LastOffset = timeOffset + tapOffset;
         }
 
+        // Store the timing value passed in when the player hits a beat or hard beat release
         [HarmonyPatch(typeof(GameplayVariables), nameof(GameplayVariables.GetTimingAccuracyForBeat)), HarmonyPostfix]
         private static void GameplayVariables_GetTimingAccuracyForBeat_Postfix(float timeOffset) {
             if (Playing)

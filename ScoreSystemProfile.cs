@@ -1,11 +1,13 @@
 ﻿using System.Collections.ObjectModel;
 
 namespace ScoreMod {
+    // Contains information about note point values, timing windows, and points per multiplier for each score container
     public class ScoreSystemProfile {
         private const uint HASH_BIAS = 2166136261u;
         private const int HASH_COEFF = 486187739;
 
         public static ReadOnlyCollection<ScoreSystemProfile> Profiles { get; } = new ReadOnlyCollection<ScoreSystemProfile>(new[] {
+            // Default and recommended score profile. Low cost Greats, high cost Goods and Okays, and a very fast building multiplier
             new ScoreSystemProfile("Lenient (PPM 16)", 4, 16, 4,
                 new [] {
                     new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
@@ -21,6 +23,7 @@ namespace ScoreMod {
                     new TimedNoteWindow(Accuracy.Good, 8, 0.065f),
                     new TimedNoteWindow(Accuracy.Okay, 1, 0.075f)
                 }),
+            // Same as above, but with a much slower building multiplier
             new ScoreSystemProfile("Lenient (PPM 32)", 4, 32, 4,
                 new [] {
                     new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
@@ -36,6 +39,7 @@ namespace ScoreMod {
                     new TimedNoteWindow(Accuracy.Good, 8, 0.065f),
                     new TimedNoteWindow(Accuracy.Okay, 1, 0.075f)
                 }),
+            // Less lenient, likely obsolete score profile. Has less costly Goods and Okays, but much more costly Greats
             new ScoreSystemProfile("Strict (PPM 16)", 4, 16, 4,
                 new [] {
                     new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
@@ -51,6 +55,7 @@ namespace ScoreMod {
                     new TimedNoteWindow(Accuracy.Good, 6, 0.065f),
                     new TimedNoteWindow(Accuracy.Okay, 3, 0.08f)
                 }),
+            // Same as above, but with a much slower building multiplier
             new ScoreSystemProfile("Strict (PPM 32)", 4, 32, 4,
                 new [] {
                     new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
@@ -68,11 +73,17 @@ namespace ScoreMod {
                 })
         });
         
+        // The name of the score profile
         public string Name { get; }
+        // The maximum multiplier for the profile
         public int MaxMultiplier { get; }
+        // The amount of (unscaled) points needed to gain one multiplier
         public int PointsPerMultiplier { get; }
+        // The point value of a match note
         public int MatchNoteValue { get; }
+        // The accuracy type, point value, and lower bounds for all timing windows for press notes
         public ReadOnlyCollection<TimedNoteWindow> PressNoteWindows { get; }
+        // The accuracy type, point value, and lower bounds for all timing windows for release notes
         public ReadOnlyCollection<TimedNoteWindow> ReleaseNoteWindows { get; }
 
         private readonly int hash;
@@ -105,9 +116,13 @@ namespace ScoreMod {
 
         public override int GetHashCode() => hash;
 
+        // Stores data about a single timing window
         public class TimedNoteWindow {
+            // The accuracy type of this window
             public Accuracy Accuracy { get; }
+            // The maximum points to be gained at the lower bound of this window
             public int MaxValue { get; }
+            // The minimum timing offset that falls within this window
             public float LowerBound { get; }
 
             private readonly int hash;

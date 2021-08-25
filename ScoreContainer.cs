@@ -3,12 +3,9 @@ using System.Collections.Generic;
 
 namespace ScoreMod {
     public class ScoreContainer {
-        // public static void Main() {
-        //     foreach (var window in PRESS_NOTE_WINDOWS)
-        //         Console.WriteLine($"{window.Accuracy}: {window.LowerBound} {window.MaxValue} {GetValueFromTiming(window.LowerBound, PRESS_NOTE_WINDOWS, out var accuracy)} {accuracy}");
-        // }
-
+        // The player must lose fewer than this amount of points to get an S+
         private static readonly int S_PLUS_THRESHOLD = 96;
+        // The lower score threshold for each possible rank
         private static readonly List<KeyValuePair<float, string>> RANKS = new List<KeyValuePair<float, string>> {
             new KeyValuePair<float, string>(0.98f, "S"),
             new KeyValuePair<float, string>(0.965f, "A+"),
@@ -20,11 +17,17 @@ namespace ScoreMod {
             new KeyValuePair<float, string>(0.75f, "D+")
         };
 
+        // The scoring profile used by this score container
         public ScoreSystemProfile Profile { get; }
+        // The score currently stored by this container
         public int Score { get; private set; }
+        // The current multiplier for this container
         public int Multiplier { get; private set; }
+        // The high score for the current track with this container's scoring profile
         public int HighScore { get; private set; }
+        // The maximum possible score for the current track with this container's scoring profile
         public int MaxScore { get; private set; }
+        // The maximum possible score that could be gained by the notes the player has hit or missed so far
         public int MaxScoreSoFar { get; private set; }
 
         private int pointsToNextMultiplier;
@@ -57,6 +60,7 @@ namespace ScoreMod {
             };
         }
 
+        // Reset all values and initialize max score history
         public void Initialize(string trackId, int noteCount) {
             Score = 0;
             Multiplier = Profile.MaxMultiplier;
@@ -87,6 +91,7 @@ namespace ScoreMod {
             maxScoreHistory = new PointHistoryItem[noteCount];
         }
 
+        // Adds points for a given note type and timing offset. Returns the accuracy type for the given offset
         public Accuracy AddScoreFromNoteType(NoteType noteType, float timingOffset) {
             switch (noteType) {
                 case NoteType.Match:
@@ -105,8 +110,10 @@ namespace ScoreMod {
             return Accuracy.Perfect;
         }
         
+        // Adds a flat amount of points
         public void AddFlatScore(int amount) => AddScore(amount);
 
+        // Adds points to the max score for a given note type and timing offset. Returns the accuracy type for the given offset
         public void AddMaxScoreFromNoteType(NoteType noteType, int noteIndex) {
             switch (noteType) {
                 case NoteType.Match:
@@ -127,23 +134,31 @@ namespace ScoreMod {
             }
         }
 
+        // Adds a flat amount of points to the max score
         public void AddFlatMaxScore(int amount, int noteIndex, bool isSustainedNoteTick) => AddMaxScore(amount, noteIndex, isSustainedNoteTick);
 
+        // Moves points for a note from the max score history to the max score so far
         public void PopMaxScoreNote(int noteIndex) => MaxScoreSoFar += maxScoreHistory[noteIndex].PopNoteValue();
         
+        // Moves points for a single sustained note tick from the max score history to the max score so far
         public void PopMaxScoreSingleTick(int noteIndex) => MaxScoreSoFar += maxScoreHistory[noteIndex].PopSingleTickValue(Profile.MaxMultiplier);
         
+        // Moves points for all ticks of a sustained note from the max score history to the max score so far
         public void PopMaxScoreAllTicks(int noteIndex) => MaxScoreSoFar += maxScoreHistory[noteIndex].PopAllTickValue();
 
+        // Adds a single miss to the miss counter
         public void AddMiss() => accuracyCounters[Accuracy.Miss]++;
 
+        // Sets the current multiplier to 1 and resets the points to the next multiplier
         public void ResetMultiplier() {
             Multiplier = 1;
             pointsToNextMultiplier = Profile.PointsPerMultiplier;
         }
         
+        // Deactivates the PFC state for this container
         public void PfcLost() => isPfc = false;
         
+        // Gets the total amount of points lost to misses and to mistimings
         public void GetLoss(out int lossToMisses, out int lossToAccuracy) {
             int totalLoss = MaxScore - Score;
             
@@ -155,6 +170,7 @@ namespace ScoreMod {
             lossToMisses = totalLoss - lossToAccuracy;
         }
         
+        // Gets the ratio between early mistimings and late mistimings
         public void GetEarlyLateBalance(out int early, out int late) {
             if (earlies == 0 && lates == 0) {
                 early = 0;
@@ -182,10 +198,13 @@ namespace ScoreMod {
             }
         }
 
+        // Checks if the current score is a PFC
         public bool GetIsPfc(bool checkMaxScore) => isPfc && (!checkMaxScore || Score == MaxScore);
 
+        // Checks if the current score is a new high score
         public bool GetIsHighScore() => Score > HighScore;
 
+        // Gets the total number of notes hit with a given accuracy
         public int GetAccuracyCount(Accuracy accuracy, out int loss) {
             if (accuracy == Accuracy.Perfect || accuracy == Accuracy.Miss)
                 loss = 0;
@@ -195,8 +214,10 @@ namespace ScoreMod {
             return accuracyCounters[accuracy];
         }
         
+        // Gets the highest attainable score given the current score
         public int GetBestPossible() => MaxScore + Score - MaxScoreSoFar;
 
+        // Gets the percentage of possible points gained from timed note hits
         public float GetAccuracyRating() {
             if (potentialTimedNoteScore == 0)
                 return 1f;
@@ -204,19 +225,10 @@ namespace ScoreMod {
             return (float) timedNoteScore / potentialTimedNoteScore;
         }
 
-        public IEnumerable<string> GetMaxScoreSoFarUnchecked() {
-            for (int i = 0; i < maxScoreHistory.Length; i++) {
-                var item = maxScoreHistory[i];
-                int value = item.PopNoteValue();
-                int ticks = item.PopAllTickValue();
-
-                if (value > 0 || ticks > 0)
-                    yield return $"Note {i}: Type {GameplayState.GetNoteType(i)}, Value {value}, Ticks {ticks}";
-            }
-        }
-
+        // Gets the rank given the current score
         public string GetRank() => rank ?? (rank = GetRank(Score, MaxScore)) ?? string.Empty;
 
+        // Gets the rank given a score and its corresponding max score
         public static string GetRank(int score, int maxScore) {
             if (maxScore == 0)
                 return null;
@@ -240,6 +252,19 @@ namespace ScoreMod {
             return "D";
         }
 
+        // For debugging purposes. Gets all notes in the max score history that went unchecked by the end of a track
+        public IEnumerable<string> GetMaxScoreSoFarUnchecked() {
+            for (int i = 0; i < maxScoreHistory.Length; i++) {
+                var item = maxScoreHistory[i];
+                int value = item.PopNoteValue();
+                int ticks = item.PopAllTickValue();
+
+                if (value > 0 || ticks > 0)
+                    yield return $"Note {i}: Type {GameplayState.GetNoteType(i)}, Value {value}, Ticks {ticks}";
+            }
+        }
+
+        // Adds points to this container and increments the multiplier, splitting points between multipliers if necessary
         private void AddScore(int amount) {
             int acc = amount;
             
@@ -256,6 +281,7 @@ namespace ScoreMod {
             Score += Multiplier * acc;
         }
         
+        // Adds points to the max possible score and tracks those points in the max score history
         private void AddMaxScore(int amount, int noteIndex, bool isSustainedNoteTick) {
             int scaledAmount = Profile.MaxMultiplier * amount;
             
@@ -267,6 +293,7 @@ namespace ScoreMod {
                 maxScoreHistory[noteIndex].PushNoteValue(scaledAmount);
         }
 
+        // Adds points to this container given a timing offset and a set of timing windows
         private Accuracy AddTimedNoteScore(float timingOffset, IList<ScoreSystemProfile.TimedNoteWindow> noteWindows) {
             int amount = GetValueFromTiming(timingOffset, noteWindows, out var accuracy);
             int maxAmount = noteWindows[0].MaxValue;
@@ -291,6 +318,7 @@ namespace ScoreMod {
             return accuracy;
         }
 
+        // Gets the amount of points to be gained from a given timing offset. Also returns the accuracy type for that offset
         private static int GetValueFromTiming(float timingOffset, IList<ScoreSystemProfile.TimedNoteWindow> noteWindows, out Accuracy accuracy) {
             timingOffset = Math.Abs(timingOffset);
 
@@ -323,8 +351,10 @@ namespace ScoreMod {
             return last.MaxValue;
         }
 
+        // Integer interpolation function used for calculating timed note point values
         private static int IntMap(float x, float a, float b, int y, int z) => (int) Math.Ceiling((z - y) * (x - a) / (b - a) + y);
 
+        // Stores the maximum possible points to gain from a given note
         private struct PointHistoryItem {
             private int noteValue;
             private int tickValue;

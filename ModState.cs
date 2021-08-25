@@ -2,9 +2,13 @@
 using System.IO;
 
 namespace ScoreMod {
+    // Contains code to manage the state of all mod score containers
     public class ModState {
+        // Whether modded score or normal score should be displayed
         public static bool ShowModdedScore { get; private set; }
+        // The score container to be displayed
         public static ScoreContainer CurrentContainer { get; private set; }
+        // The accuracy type of the last timed note hit
         public static Accuracy LastAccuracy { get; private set; }
 
         private static string logFilePath;
@@ -13,6 +17,7 @@ namespace ScoreMod {
         private static Dictionary<int, int> releaseIndicesFromStart;
         private static HashSet<int> trackedMisses;
 
+        // Creates or clears all score containers
         public static void Initialize(string trackId, int noteCount) {
             var profiles = ScoreSystemProfile.Profiles;
             
@@ -59,6 +64,7 @@ namespace ScoreMod {
                 trackedMisses.Clear();
         }
 
+        // Toggles modded scoring visibility and updates UI
         public static void ToggleModdedScoring() {
             ShowModdedScore = !ShowModdedScore;
             GameplayUI.UpdateUI();
@@ -67,6 +73,7 @@ namespace ScoreMod {
             LevelSelectUI.UpdateUI();
         }
 
+        // Sets the active scoring profile and updates UI
         public static bool PickScoringSystem(int index) {
             if (index >= scoreContainers.Length)
                 return false;
@@ -81,10 +88,12 @@ namespace ScoreMod {
             return true;
         }
 
+        // Adds points to all score containers
         public static void AddScore(int amount, float offset, bool isSustainedNoteTick, NoteType noteType, int noteIndex) {
             int oldMultiplier = CurrentContainer.Multiplier;
             bool oldIsPfc = CurrentContainer.GetIsPfc(false);
 
+            // Process sustained note ticks and regular note hits differently
             if (isSustainedNoteTick) {
                 foreach (var container in scoreContainers) {
                     container.AddFlatScore(amount);
@@ -93,12 +102,14 @@ namespace ScoreMod {
             }
             else {
                 switch (noteType) {
+                    // Use modded match point value for match notes
                     case NoteType.Match: {
                         foreach (var container in scoreContainers)
                             container.AddScoreFromNoteType(NoteType.Match, 0f);
 
                         break;
                     }
+                    // Only use timing offset for timed note types
                     case NoteType.Tap:
                     case NoteType.HoldStart:
                     case NoteType.DrumStart:
@@ -112,6 +123,7 @@ namespace ScoreMod {
                         }
 
                         break;
+                    // Use regular point values for spins and scratches
                     default:
                         foreach (var container in scoreContainers)
                             container.AddFlatScore(amount);
@@ -133,13 +145,16 @@ namespace ScoreMod {
                 GameplayUI.UpdateFcStar();
         }
 
+        // Adds points to the max possible score, recording the added points in the score containers' max score history
         public static void AddMaxScore(int amount, bool isSustainedNoteTick, NoteType noteType, int noteIndex) {
+            // Process sustained note ticks and regular note hits differently
             if (isSustainedNoteTick) {
                 foreach (var container in scoreContainers)
                     container.AddFlatMaxScore(amount, noteIndex, true);
             }
             else {
                 switch (noteType) {
+                    // Use modded match point value for match notes and timed notes
                     case NoteType.Match:
                     case NoteType.Tap:
                     case NoteType.HoldStart:
@@ -150,6 +165,7 @@ namespace ScoreMod {
                             container.AddMaxScoreFromNoteType(noteType, noteIndex);
 
                         break;
+                    // Use regular point values for spins and scratches
                     default:
                         foreach (var container in scoreContainers)
                             container.AddFlatMaxScore(amount, noteIndex, false);
@@ -159,8 +175,10 @@ namespace ScoreMod {
             }
         }
 
+        // Links start and end of holds and beat holds so that misses apply to both
         public static void AddReleaseNotePairing(int startIndex, int endIndex) => releaseIndicesFromStart.Add(startIndex, endIndex);
 
+        // Mark a note as missed
         public static void Miss(int noteIndex, bool countMiss, bool trackMiss) {
             foreach (var container in scoreContainers)
                 container.PopMaxScoreNote(noteIndex);
@@ -168,11 +186,13 @@ namespace ScoreMod {
             AddMiss(noteIndex, countMiss, trackMiss);
         }
 
+        // Mark the remaining ticks of a sustained note as missed
         public static void MissRemainingNoteTicks(int noteIndex) {
             foreach (var container in scoreContainers)
                 container.PopMaxScoreAllTicks(noteIndex);
         }
         
+        // Miss the release note that is linked to the given start note
         public static void MissReleaseNoteFromStart(NoteType startNoteType, int startNoteIndex) {
             if (!releaseIndicesFromStart.TryGetValue(startNoteIndex, out int endIndex))
                 return;
@@ -183,16 +203,19 @@ namespace ScoreMod {
                 Miss(endIndex, true, true);
         }
 
+        // Reset the multiplier of all score containers
         public static void ResetMultiplier() {
             foreach (var container in scoreContainers)
                 container.ResetMultiplier();
         }
 
+        // Lose the PFC state for all score containers
         public static void PfcLost() {
             foreach (var container in scoreContainers)
                 container.PfcLost();
         }
 
+        // Write detailed score data to the console and to a file
         public static void LogPlayData(string trackName, bool logDiscrepancies) {
             if (!TryGetLogFilePath())
                 return;
@@ -313,6 +336,7 @@ namespace ScoreMod {
                 Main.Logger.LogMessage("");
         }
 
+        // Check and save new high scores
         public static void SavePlayData(string trackId) {
             bool anyChanged = false;
             
@@ -325,6 +349,7 @@ namespace ScoreMod {
                 HighScoresContainer.SaveHighScores();
         }
 
+        // Adds a single miss to all miss counters, making sure that a given note never gets counted twice
         private static void AddMiss(int noteIndex, bool countMiss, bool trackMiss) {
             if (trackMiss) {
                 if (trackedMisses.Contains(noteIndex))
@@ -340,6 +365,7 @@ namespace ScoreMod {
                 container.AddMiss();
         }
 
+        // Logs a string to both the console and a file
         private static void LogToFile(StreamWriter writer, string text) {
             Main.Logger.LogMessage(text);
             writer.WriteLine(text);
@@ -349,6 +375,7 @@ namespace ScoreMod {
             writer.WriteLine();
         }
         
+        // Try to get the path of the logging file
         private static bool TryGetLogFilePath() {
             if (!string.IsNullOrWhiteSpace(logFilePath))
                 return true;

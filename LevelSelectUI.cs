@@ -4,6 +4,7 @@ using HarmonyLib;
 using TMPro;
 
 namespace ScoreMod {
+    // Contains patch functions to make the level select menu show modded scores
     public class LevelSelectUI {
         private static readonly Regex MATCH_BASE_ID = new Regex(@"(.+?)_Stats");
         private static readonly Regex MATCH_CUSTOM_ID = new Regex(@"CUSTOM_(.+?)_(\-?\d+)_Stats");

@@ -2,6 +2,7 @@
 using TMPro;
 
 namespace ScoreMod {
+    // Contains patch functions to display modded scores on the track complete screen
     public class CompleteScreenUI {
         private static bool completeMenuLoaded;
         private static string realRank;

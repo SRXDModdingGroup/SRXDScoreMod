@@ -2,6 +2,7 @@
 using System.IO;
 
 namespace ScoreMod {
+    // Contains a set of modded high scores and manages the high score file
     public class HighScoresContainer {
         private const uint HASH_BIAS = 2166136261u;
         private const int HASH_COEFF = 486187739;
