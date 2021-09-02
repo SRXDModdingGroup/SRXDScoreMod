@@ -226,7 +226,9 @@ namespace ScoreMod {
                 outputTable.SetHeader(
                     "Profile",
                     "Score",
+                    string.Empty,
                     "Best",
+                    string.Empty,
                     "Max",
                     "Rank",
                     string.Empty,
@@ -246,6 +248,8 @@ namespace ScoreMod {
 
                 outputTable.SetDataAlignment(
                     StringTable.Alignment.Left,
+                    StringTable.Alignment.Right,
+                    StringTable.Alignment.Right,
                     StringTable.Alignment.Right,
                     StringTable.Alignment.Right,
                     StringTable.Alignment.Right,
@@ -277,7 +281,9 @@ namespace ScoreMod {
                 outputTable.SetRow(i + 1,
                     container.Profile.Name,
                     container.Score.ToString(),
+                    $"+{container.SuperPerfects}",
                     container.HighScore.ToString(),
+                    $"+{container.HighScoreSuperPerfects}",
                     container.MaxScore.ToString(),
                     container.GetRank(),
                     $"({(float) container.Score / container.MaxScore:P})",

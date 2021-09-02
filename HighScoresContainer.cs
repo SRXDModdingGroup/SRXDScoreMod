@@ -69,6 +69,7 @@ namespace ScoreMod {
             string id = $"{trackId}_{profile.GetUniqueId()}";
             int score = container.Score;
             int maxScore = container.MaxScore;
+            int superPerfects = container.SuperPerfects;
 
             if (highScores.TryGetValue(id, out var item)) {
                 if (maxScore != item.MaxScore) {
@@ -83,11 +84,11 @@ namespace ScoreMod {
                     return false;
                 }
 
-                if (score <= item.Score)
+                if (score < item.Score || score == item.Score && superPerfects <= item.SuperPerfectCount)
                     return false;
             }
 
-            highScores[id] = new HighScoreItem(id, score, maxScore, 0);
+            highScores[id] = new HighScoreItem(id, score, maxScore, superPerfects);
 
             return true;
 

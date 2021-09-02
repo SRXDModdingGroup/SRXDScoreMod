@@ -21,10 +21,14 @@ namespace ScoreMod {
         public ScoreSystemProfile Profile { get; }
         // The score currently stored by this container
         public int Score { get; private set; }
+        // The total number of Super Perfects hit
+        public int SuperPerfects { get; private set; }
         // The current multiplier for this container
         public int Multiplier { get; private set; }
         // The high score for the current track with this container's scoring profile
         public int HighScore { get; private set; }
+        // The number of Super Perfects hit in the high score
+        public int HighScoreSuperPerfects { get; private set; }
         // The maximum possible score for the current track with this container's scoring profile
         public int MaxScore { get; private set; }
         // The maximum possible score that could be gained by the notes the player has hit or missed so far
@@ -35,8 +39,6 @@ namespace ScoreMod {
         private int potentialTimedNoteScore;
         private int earlies;
         private int lates;
-        private int superPerfects;
-        private int highScoreSuperPerfects;
         private bool isPfc;
         private string rank;
         private Dictionary<Accuracy, int> accuracyCounters;
@@ -66,7 +68,8 @@ namespace ScoreMod {
         public void Initialize(string trackId, int noteCount) {
             Score = 0;
             Multiplier = Profile.MaxMultiplier;
-            HighScore = HighScoresContainer.GetHighScore(trackId, Profile.GetUniqueId(), out highScoreSuperPerfects, out _);
+            HighScore = HighScoresContainer.GetHighScore(trackId, Profile.GetUniqueId(), out int highScoreSuperPerfects, out _);
+            HighScoreSuperPerfects = highScoreSuperPerfects;
             MaxScore = 0;
             MaxScoreSoFar = 0;
             timedNoteScore = 0;
@@ -74,7 +77,7 @@ namespace ScoreMod {
             pointsToNextMultiplier = Profile.PointsPerMultiplier;
             earlies = 0;
             lates = 0;
-            superPerfects = 0;
+            SuperPerfects = 0;
             isPfc = true;
             rank = null;
             
@@ -205,7 +208,7 @@ namespace ScoreMod {
         public bool GetIsPfc(bool checkMaxScore) => isPfc && (!checkMaxScore || Score == MaxScore);
 
         // Checks if the current score is a new high score
-        public bool GetIsHighScore() => Score > HighScore || Score == HighScore;
+        public bool GetIsHighScore() => Score > HighScore || Score == HighScore && SuperPerfects > HighScoreSuperPerfects;
 
         // Gets the total number of notes hit with a given accuracy
         public int GetAccuracyCount(Accuracy accuracy, out int loss) {
@@ -307,7 +310,7 @@ namespace ScoreMod {
             potentialTimedNoteScore += maxAmount;
 
             if (Math.Abs(timingOffset) < Profile.SuperPerfectWindow)
-                superPerfects++;
+                SuperPerfects++;
 
             if (accuracy == Accuracy.Perfect)
                 return accuracy;
