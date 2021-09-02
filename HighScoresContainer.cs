@@ -30,10 +30,22 @@ namespace ScoreMod {
                     if (split.Length < 4 || !int.TryParse(split[1], out int score) || !int.TryParse(split[2], out int maxScore))
                         continue;
 
+                    int superPerfectCount;
+                    string securityKey;
+
+                    if (split.Length == 4) {
+                        superPerfectCount = 0;
+                        securityKey = split[3];
+                    }
+                    else if (!int.TryParse(split[3], out superPerfectCount))
+                        continue;
+                    else
+                        securityKey = split[4];
+
                     string id = split[0];
-                    var newItem = new HighScoreItem(id, score, maxScore);
+                    var newItem = new HighScoreItem(id, score, maxScore, superPerfectCount);
                     
-                    if (newItem.SecurityKey == split[3])
+                    if (newItem.SecurityKey == securityKey)
                         highScores.Add(id, newItem);
                 }
             }
@@ -47,7 +59,7 @@ namespace ScoreMod {
                 foreach (var pair in highScores) {
                     var item = pair.Value;
                     
-                    writer.WriteLine($"{pair.Key} {item.Score} {item.MaxScore} {item.SecurityKey}");
+                    writer.WriteLine($"{pair.Key} {item.Score} {item.MaxScore} {item.SuperPerfectCount} {item.SecurityKey}");
                 }
             }
         }
@@ -75,20 +87,22 @@ namespace ScoreMod {
                     return false;
             }
 
-            highScores[id] = new HighScoreItem(id, score, maxScore);
+            highScores[id] = new HighScoreItem(id, score, maxScore, 0);
 
             return true;
 
         }
 
-        public static int GetHighScore(string trackId, string scoreProfileId, out string rank) {
+        public static int GetHighScore(string trackId, string scoreProfileId, out int superPerfectCount, out string rank) {
             if (highScores.TryGetValue($"{trackId}_{scoreProfileId}", out var item)) {
+                superPerfectCount = item.SuperPerfectCount;
                 rank = ScoreContainer.GetRank(item.Score, item.MaxScore);
-
+                
                 return item.Score;
             }
 
-            rank = "D";
+            superPerfectCount = 0;
+            rank = "-";
 
             return 0;
         }
@@ -108,16 +122,21 @@ namespace ScoreMod {
         private readonly struct HighScoreItem {
             public int Score { get; }
             public int MaxScore { get; }
+            public int SuperPerfectCount { get; }
             public string SecurityKey { get; }
             
-            public HighScoreItem(string id, int score, int maxScore) {
+            public HighScoreItem(string id, int score, int maxScore, int superPerfectCount) {
                 Score = score;
                 MaxScore = maxScore;
+                SuperPerfectCount = superPerfectCount;
                 
                 unchecked {
                     int hash = (int) HASH_BIAS * HASH_COEFF ^ score.GetHashCode();
 
                     hash = hash * HASH_COEFF ^ maxScore.GetHashCode();
+                    
+                    if (superPerfectCount > 0)
+                        hash = hash * HASH_COEFF ^ superPerfectCount.GetHashCode();
                     
                     SecurityKey = ((uint) (hash * HASH_COEFF ^ id.GetHashCode())).ToString("x8");
                 }

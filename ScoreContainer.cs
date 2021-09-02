@@ -35,6 +35,8 @@ namespace ScoreMod {
         private int potentialTimedNoteScore;
         private int earlies;
         private int lates;
+        private int superPerfects;
+        private int highScoreSuperPerfects;
         private bool isPfc;
         private string rank;
         private Dictionary<Accuracy, int> accuracyCounters;
@@ -64,7 +66,7 @@ namespace ScoreMod {
         public void Initialize(string trackId, int noteCount) {
             Score = 0;
             Multiplier = Profile.MaxMultiplier;
-            HighScore = HighScoresContainer.GetHighScore(trackId, Profile.GetUniqueId(), out _);
+            HighScore = HighScoresContainer.GetHighScore(trackId, Profile.GetUniqueId(), out highScoreSuperPerfects, out _);
             MaxScore = 0;
             MaxScoreSoFar = 0;
             timedNoteScore = 0;
@@ -72,6 +74,7 @@ namespace ScoreMod {
             pointsToNextMultiplier = Profile.PointsPerMultiplier;
             earlies = 0;
             lates = 0;
+            superPerfects = 0;
             isPfc = true;
             rank = null;
             
@@ -202,7 +205,7 @@ namespace ScoreMod {
         public bool GetIsPfc(bool checkMaxScore) => isPfc && (!checkMaxScore || Score == MaxScore);
 
         // Checks if the current score is a new high score
-        public bool GetIsHighScore() => Score > HighScore;
+        public bool GetIsHighScore() => Score > HighScore || Score == HighScore;
 
         // Gets the total number of notes hit with a given accuracy
         public int GetAccuracyCount(Accuracy accuracy, out int loss) {
@@ -302,7 +305,9 @@ namespace ScoreMod {
             accuracyCounters[accuracy]++;
             timedNoteScore += amount;
             potentialTimedNoteScore += maxAmount;
-            
+
+            if (Math.Abs(timingOffset) < Profile.SuperPerfectWindow)
+                superPerfects++;
 
             if (accuracy == Accuracy.Perfect)
                 return accuracy;

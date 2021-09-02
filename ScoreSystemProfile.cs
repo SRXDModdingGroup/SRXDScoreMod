@@ -8,69 +8,61 @@ namespace ScoreMod {
 
         public static ReadOnlyCollection<ScoreSystemProfile> Profiles { get; } = new ReadOnlyCollection<ScoreSystemProfile>(new[] {
             // Default and recommended score profile. Low cost Greats, high cost Goods and Okays, and a very fast building multiplier
-            new ScoreSystemProfile("Lenient (PPM 16)", 4, 16, 4,
-                new [] {
-                    new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
-                    new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
-                    new TimedNoteWindow(Accuracy.Great, 14, 0.0425f),
-                    new TimedNoteWindow(Accuracy.Good, 12, 0.05f),
-                    new TimedNoteWindow(Accuracy.Okay, 1, 0.065f)
-                },
-                new [] {
-                    new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
-                    new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
-                    new TimedNoteWindow(Accuracy.Great, 10, 0.0575f),
-                    new TimedNoteWindow(Accuracy.Good, 8, 0.065f),
-                    new TimedNoteWindow(Accuracy.Okay, 1, 0.075f)
-                }),
+            new ScoreSystemProfile("Lenient (PPM 16)", 4, 16, 4, 0.015f, new [] {
+                new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
+                new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
+                new TimedNoteWindow(Accuracy.Great, 14, 0.0425f),
+                new TimedNoteWindow(Accuracy.Good, 12, 0.05f),
+                new TimedNoteWindow(Accuracy.Okay, 1, 0.065f)
+            }, new [] {
+                new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
+                new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
+                new TimedNoteWindow(Accuracy.Great, 10, 0.0575f),
+                new TimedNoteWindow(Accuracy.Good, 8, 0.065f),
+                new TimedNoteWindow(Accuracy.Okay, 1, 0.075f)
+            }),
             // Same as above, but with a much slower building multiplier
-            new ScoreSystemProfile("Lenient (PPM 32)", 4, 32, 4,
-                new [] {
-                    new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
-                    new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
-                    new TimedNoteWindow(Accuracy.Great, 14, 0.0425f),
-                    new TimedNoteWindow(Accuracy.Good, 12, 0.05f),
-                    new TimedNoteWindow(Accuracy.Okay, 1, 0.065f)
-                },
-                new [] {
-                    new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
-                    new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
-                    new TimedNoteWindow(Accuracy.Great, 10, 0.0575f),
-                    new TimedNoteWindow(Accuracy.Good, 8, 0.065f),
-                    new TimedNoteWindow(Accuracy.Okay, 1, 0.075f)
-                }),
+            new ScoreSystemProfile("Lenient (PPM 32)", 4, 32, 4, 0.015f, new [] {
+                new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
+                new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
+                new TimedNoteWindow(Accuracy.Great, 14, 0.0425f),
+                new TimedNoteWindow(Accuracy.Good, 12, 0.05f),
+                new TimedNoteWindow(Accuracy.Okay, 1, 0.065f)
+            }, new [] {
+                new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
+                new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
+                new TimedNoteWindow(Accuracy.Great, 10, 0.0575f),
+                new TimedNoteWindow(Accuracy.Good, 8, 0.065f),
+                new TimedNoteWindow(Accuracy.Okay, 1, 0.075f)
+            }),
             // Less lenient, likely obsolete score profile. Has less costly Goods and Okays, but much more costly Greats
-            new ScoreSystemProfile("Strict (PPM 16)", 4, 16, 4,
-                new [] {
-                    new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
-                    new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
-                    new TimedNoteWindow(Accuracy.Great, 13, 0.0425f),
-                    new TimedNoteWindow(Accuracy.Good, 8, 0.05f),
-                    new TimedNoteWindow(Accuracy.Okay, 4, 0.07f)
-                },
-                new [] {
-                    new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
-                    new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
-                    new TimedNoteWindow(Accuracy.Great, 9, 0.0575f),
-                    new TimedNoteWindow(Accuracy.Good, 6, 0.065f),
-                    new TimedNoteWindow(Accuracy.Okay, 3, 0.08f)
-                }),
+            new ScoreSystemProfile("Strict (PPM 16)", 4, 16, 4, 0.015f, new [] {
+                new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
+                new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
+                new TimedNoteWindow(Accuracy.Great, 13, 0.0425f),
+                new TimedNoteWindow(Accuracy.Good, 8, 0.05f),
+                new TimedNoteWindow(Accuracy.Okay, 4, 0.07f)
+            }, new [] {
+                new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
+                new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
+                new TimedNoteWindow(Accuracy.Great, 9, 0.0575f),
+                new TimedNoteWindow(Accuracy.Good, 6, 0.065f),
+                new TimedNoteWindow(Accuracy.Okay, 3, 0.08f)
+            }),
             // Same as above, but with a much slower building multiplier
-            new ScoreSystemProfile("Strict (PPM 32)", 4, 32, 4,
-                new [] {
-                    new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
-                    new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
-                    new TimedNoteWindow(Accuracy.Great, 13, 0.0425f),
-                    new TimedNoteWindow(Accuracy.Good, 8, 0.05f),
-                    new TimedNoteWindow(Accuracy.Okay, 4, 0.07f)
-                },
-                new [] {
-                    new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
-                    new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
-                    new TimedNoteWindow(Accuracy.Great, 9, 0.0575f),
-                    new TimedNoteWindow(Accuracy.Good, 6, 0.065f),
-                    new TimedNoteWindow(Accuracy.Okay, 3, 0.08f)
-                })
+            new ScoreSystemProfile("Strict (PPM 32)", 4, 32, 4, 0.015f, new [] {
+                new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
+                new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
+                new TimedNoteWindow(Accuracy.Great, 13, 0.0425f),
+                new TimedNoteWindow(Accuracy.Good, 8, 0.05f),
+                new TimedNoteWindow(Accuracy.Okay, 4, 0.07f)
+            }, new [] {
+                new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
+                new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
+                new TimedNoteWindow(Accuracy.Great, 9, 0.0575f),
+                new TimedNoteWindow(Accuracy.Good, 6, 0.065f),
+                new TimedNoteWindow(Accuracy.Okay, 3, 0.08f)
+            })
         });
         
         // The name of the score profile
@@ -85,31 +77,37 @@ namespace ScoreMod {
         public ReadOnlyCollection<TimedNoteWindow> PressNoteWindows { get; }
         // The accuracy type, point value, and lower bounds for all timing windows for release notes
         public ReadOnlyCollection<TimedNoteWindow> ReleaseNoteWindows { get; }
+        // The window for a Super Perfect, which is used as a tiebreaker
+        public float SuperPerfectWindow { get; }
 
         private readonly int hash;
         private readonly string uniqueId;
 
         public string GetUniqueId() => uniqueId;
 
-        private ScoreSystemProfile(string name, int maxMultiplier, int pointsPerMultiplier, int matchNoteValue, TimedNoteWindow[] pressNoteWindows, TimedNoteWindow[] releaseNoteWindows) {
+        private ScoreSystemProfile(string name, int maxMultiplier, int pointsPerMultiplier, int matchNoteValue, float superPerfectWindow, TimedNoteWindow[] pressNoteWindows, TimedNoteWindow[] releaseNoteWindows) {
             Name = name;
             MaxMultiplier = maxMultiplier;
             PointsPerMultiplier = pointsPerMultiplier;
             MatchNoteValue = matchNoteValue;
             PressNoteWindows = new ReadOnlyCollection<TimedNoteWindow>(pressNoteWindows);
             ReleaseNoteWindows = new ReadOnlyCollection<TimedNoteWindow>(releaseNoteWindows);
+            SuperPerfectWindow = superPerfectWindow;
             
             unchecked {
                 hash = (int) HASH_BIAS * HASH_COEFF ^ MaxMultiplier.GetHashCode();
                 hash = hash * HASH_COEFF ^ PointsPerMultiplier.GetHashCode();
                 hash = hash * HASH_COEFF ^ MatchNoteValue.GetHashCode();
+                
+                if (SuperPerfectWindow != 0.015f)
+                    hash = hash * HASH_COEFF ^ SuperPerfectWindow.GetHashCode();
 
                 foreach (var window in PressNoteWindows)
                     hash = hash * HASH_COEFF ^ window.GetHashCode();
                 
                 foreach (var window in ReleaseNoteWindows)
                     hash = hash * HASH_COEFF ^ window.GetHashCode();
-                
+
                 uniqueId = ((uint) hash).ToString("x8");
             }
         }
