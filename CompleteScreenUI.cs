@@ -14,30 +14,33 @@ namespace ScoreMod {
                 return;
 
             if (ModState.ShowModdedScore) {
-                levelCompleteMenu.pfcBonusText.SetText(ModState.CurrentContainer.Profile.Name);
-                levelCompleteMenu.accuracyBonusText.SetText(ModState.CurrentContainer.GetAccuracyRating().ToString("P"));
-                levelCompleteMenu.PfcBonusGameObject.SetActive(true);
-                levelCompleteMenu.accuracyGameObject.SetActive(true);
-                levelCompleteMenu.pfcStatusText.SetText(ModState.CurrentContainer.GetIsPfc(true) ? "PFC" : "FC");
-                levelCompleteMenu.scoreValueText.SetText(ModState.CurrentContainer.Score.ToString());
-                levelCompleteMenu.rankAnimator.SetText(ModState.CurrentContainer.GetRank());
-                levelCompleteMenu.newBestGameObject.SetActive(ModState.CurrentContainer.GetIsHighScore());
-                levelCompleteMenu.extendedStats.translatedRhythmHeader.text.SetText("Rhythm ( : )");
+                var container = ModState.CurrentContainer;
+                
                 pfcLabel.SetText("Current Profile");
+                levelCompleteMenu.PfcBonusGameObject.SetActive(true);
+                levelCompleteMenu.pfcBonusText.SetText(container.Profile.Name);
+                levelCompleteMenu.accuracyGameObject.SetActive(true);
+                levelCompleteMenu.accuracyBonusText.SetText($"{container.GetAccuracyRating():P} +{container.SuperPerfects}");
+                levelCompleteMenu.pfcStatusText.SetText(container.GetIsPfc(true) ? "PFC" : "FC");
+                levelCompleteMenu.scoreValueText.SetText(container.Score.ToString());
+                levelCompleteMenu.rankAnimator.SetText(container.GetRank());
+                levelCompleteMenu.newBestGameObject.SetActive(container.GetIsHighScore());
+                levelCompleteMenu.extendedStats.translatedRhythmHeader.text.SetText("Rhythm ( : )");
             }
             else {
                 bool realIsPfc = GameplayState.PlayState.fullComboState == FullComboState.PerfectFullCombo;
-
-                levelCompleteMenu.pfcBonusText.SetText(GameplayState.PlayState.scoreState.PfcBonus.ToString());
-                levelCompleteMenu.accuracyBonusText.SetText(GameplayState.PlayState.scoreState.AccuracyBonus.ToString());
+                var scoreState = GameplayState.PlayState.scoreState;
+                
+                pfcLabel.SetText("PFC");
+                levelCompleteMenu.pfcBonusText.SetText(scoreState.PfcBonus.ToString());
+                levelCompleteMenu.accuracyBonusText.SetText(scoreState.AccuracyBonus.ToString());
                 levelCompleteMenu.PfcBonusGameObject.SetActive(realIsPfc);
-                levelCompleteMenu.accuracyGameObject.SetActive(GameplayState.PlayState.scoreState.AccuracyBonus > 0);
+                levelCompleteMenu.accuracyGameObject.SetActive(scoreState.AccuracyBonus > 0);
                 levelCompleteMenu.pfcStatusText.SetText(realIsPfc ? "PFC" : "FC");
                 levelCompleteMenu.scoreValueText.SetText(GameplayState.PlayState.TotalScore.ToString());
                 levelCompleteMenu.rankAnimator.SetText(realRank);
                 levelCompleteMenu.newBestGameObject.SetActive(levelCompleteMenu.newBest);
                 levelCompleteMenu.extendedStats.translatedRhythmHeader.ChangeText();
-                pfcLabel.SetText("PFC");
             }
         }
 

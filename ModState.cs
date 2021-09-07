@@ -221,7 +221,7 @@ namespace ScoreMod {
                 return;
             
             if (outputTable == null) {
-                outputTable = new StringTable(19, scoreContainers.Length + 1);
+                outputTable = new StringTable(21, scoreContainers.Length + 1);
 
                 outputTable.SetHeader(
                     "Profile",
