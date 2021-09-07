@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using HarmonyLib;
 using TMPro;
+using UnityEngine;
 
 namespace ScoreMod {
     // Contains patch functions to make the level select menu show modded scores
@@ -15,8 +16,9 @@ namespace ScoreMod {
         };
         
         private static bool menuLoaded;
+        private static bool textPositionsAdjusted;
         private static string realHighScore;
-        private static string modHighScore;        
+        private static string modHighScore;
         private static string realRank;
         private static string modRank;
         private static string selectedTrackStatString;
@@ -44,7 +46,7 @@ namespace ScoreMod {
 
         public static void UpdateModScore() {
             if (!string.IsNullOrWhiteSpace(selectedTrackId))
-                modHighScore = HighScoresContainer.GetHighScore(selectedTrackId, ModState.CurrentContainer.Profile.GetUniqueId(), out _, out modRank).ToString();
+                modHighScore = $"<line-height=50%>{HighScoresContainer.GetHighScore(selectedTrackId, ModState.CurrentContainer.Profile.GetUniqueId(), out int superPerfectCount, out modRank)}\n<size=50%>+{superPerfectCount}";
         }
 
         public static string GetTrackId(PlayableTrackData trackData) => GetTrackId(trackData.TrackInfoRef.StatsUniqueString, trackData.Difficulty);
@@ -84,6 +86,18 @@ namespace ScoreMod {
         private static void XDLevelSelectMenuBase_ShowSongDetails_Postfix(XDLevelSelectMenuBase __instance) {
             scoreText = __instance.score[0];
             rankText = __instance.rank[0];
+
+            if (!textPositionsAdjusted) {
+                var parent = scoreText.transform.parent;
+                
+                for (int i = 2; i < 7; i++) {
+                    var child = parent.GetChild(i);
+
+                    child.position += 0.1f * Vector3.down;
+                }
+                
+                textPositionsAdjusted = true;
+            }
             
             if (__instance.haveContentTracklistTracksLoaded)
                 menuLoaded = true;
