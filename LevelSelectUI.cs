@@ -16,7 +16,6 @@ namespace ScoreMod {
         };
         
         private static bool menuLoaded;
-        private static bool textPositionsAdjusted;
         private static string realHighScore;
         private static string modHighScore;
         private static string realRank;
@@ -86,17 +85,17 @@ namespace ScoreMod {
         private static void XDLevelSelectMenuBase_ShowSongDetails_Postfix(XDLevelSelectMenuBase __instance) {
             scoreText = __instance.score[0];
             rankText = __instance.rank[0];
+            
+            var parent = scoreText.transform.parent;
 
-            if (!textPositionsAdjusted) {
-                var parent = scoreText.transform.parent;
+            if (parent.localScale.x > 0.95f) {
+                parent.localScale = 0.9f * Vector3.one;
                 
                 for (int i = 2; i < 7; i++) {
                     var child = parent.GetChild(i);
 
-                    child.position += 0.1f * Vector3.down;
+                    child.localPosition += 10f * Vector3.down;
                 }
-                
-                textPositionsAdjusted = true;
             }
             
             if (__instance.haveContentTracklistTracksLoaded)
