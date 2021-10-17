@@ -35,33 +35,37 @@ namespace ScoreMod {
                 new TimedNoteWindow(Accuracy.Good, 8, 0.065f),
                 new TimedNoteWindow(Accuracy.Okay, 1, 0.075f)
             }),
-            // Less lenient, likely obsolete score profile. Has less costly Goods and Okays, but much more costly Greats
-            new ScoreSystemProfile("Strict (PPM 16)", 4, 16, 4, 0.015f, new [] {
+            // Score profile with flat instead of linear windows
+            new ScoreSystemProfile("Flat (PPM 16)", 4, 16, 4, 0.015f, new [] {
                 new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
                 new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
-                new TimedNoteWindow(Accuracy.Great, 13, 0.0425f),
+                new TimedNoteWindow(Accuracy.Great, 15, 0.05f),
                 new TimedNoteWindow(Accuracy.Good, 8, 0.05f),
-                new TimedNoteWindow(Accuracy.Okay, 4, 0.07f)
+                new TimedNoteWindow(Accuracy.Good, 8, 0.065f),
+                new TimedNoteWindow(Accuracy.Okay, 1, 0.065f)
             }, new [] {
                 new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
-                new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
-                new TimedNoteWindow(Accuracy.Great, 9, 0.0575f),
+                new TimedNoteWindow(Accuracy.Great, 10, 0.05f),
+                new TimedNoteWindow(Accuracy.Great, 10, 0.065f),
                 new TimedNoteWindow(Accuracy.Good, 6, 0.065f),
-                new TimedNoteWindow(Accuracy.Okay, 3, 0.08f)
+                new TimedNoteWindow(Accuracy.Good, 6, 0.075f),
+                new TimedNoteWindow(Accuracy.Okay, 1, 0.075f)
             }),
             // Same as above, but with a much slower building multiplier
-            new ScoreSystemProfile("Strict (PPM 32)", 4, 32, 4, 0.015f, new [] {
+            new ScoreSystemProfile("Flat (PPM 32)", 4, 32, 4, 0.015f, new [] {
                 new TimedNoteWindow(Accuracy.Perfect, 16, 0f),
                 new TimedNoteWindow(Accuracy.Great, 15, 0.035f),
-                new TimedNoteWindow(Accuracy.Great, 13, 0.0425f),
+                new TimedNoteWindow(Accuracy.Great, 15, 0.05f),
                 new TimedNoteWindow(Accuracy.Good, 8, 0.05f),
-                new TimedNoteWindow(Accuracy.Okay, 4, 0.07f)
+                new TimedNoteWindow(Accuracy.Good, 8, 0.065f),
+                new TimedNoteWindow(Accuracy.Okay, 1, 0.065f)
             }, new [] {
                 new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
-                new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
-                new TimedNoteWindow(Accuracy.Great, 9, 0.0575f),
+                new TimedNoteWindow(Accuracy.Great, 10, 0.05f),
+                new TimedNoteWindow(Accuracy.Great, 10, 0.065f),
                 new TimedNoteWindow(Accuracy.Good, 6, 0.065f),
-                new TimedNoteWindow(Accuracy.Okay, 3, 0.08f)
+                new TimedNoteWindow(Accuracy.Good, 6, 0.075f),
+                new TimedNoteWindow(Accuracy.Okay, 1, 0.075f)
             })
         });
         
