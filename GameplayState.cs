@@ -39,6 +39,9 @@ namespace ScoreMod {
         // Used to handle inputs for toggling mod score and selecting different scoring profiles
         [HarmonyPatch(typeof(Game), nameof(Game.Update)), HarmonyPostfix]
         private static void Game_Update_Postfix() {
+            if (PlayState != null && PlayState.isInPracticeMode)
+                return;
+
             if (Input.GetKeyDown(KeyCode.P))
                 pickedNewScoreSystem = false;
 
@@ -87,7 +90,7 @@ namespace ScoreMod {
 
                         if (calculatingMaxScore)
                             holdStates.Add(noteIndex, holdStates.Count);
-                        else
+                        else if (!PlayState.isInPracticeMode)
                             activeHoldStates.Add(new KeyValuePair<int, int>(noteIndex, holdStates[noteIndex]));
                     }
 
@@ -109,7 +112,7 @@ namespace ScoreMod {
                         
                         if (calculatingMaxScore)
                             spinStates.Add(noteIndex, spinStates.Count);
-                        else
+                        else if (!PlayState.isInPracticeMode)
                             activeSpinStates.Add(new KeyValuePair<int, int>(noteIndex, spinStates[noteIndex]));
                     }
 
@@ -122,7 +125,7 @@ namespace ScoreMod {
                         
                         if (calculatingMaxScore)
                             scratchStates.Add(noteIndex, scratchStates.Count);
-                        else
+                        else if (!PlayState.isInPracticeMode)
                             activeScratchStates.Add(new KeyValuePair<int, int>(noteIndex, scratchStates[noteIndex]));
                     }
 
@@ -148,35 +151,38 @@ namespace ScoreMod {
         private static void ScoreState_DropMultiplier_Postfix(int noteIndex) {
             if (!Playing)
                 return;
-            
-            var note = noteData.GetNote(noteIndex);
-            var noteType = note.NoteType;
 
-            switch (noteType) {
-                case NoteType.DrumStart:
-                    ModState.MissRemainingNoteTicks(noteIndex);
-                    ModState.MissReleaseNoteFromStart(noteType, noteIndex);
+            if (!PlayState.isInPracticeMode) {
+                var note = noteData.GetNote(noteIndex);
+                var noteType = note.NoteType;
 
-                    break;
-                case NoteType.HoldStart:
-                    if (noteIndex != lastHoldIndex)
-                        activeHoldStates.Add(new KeyValuePair<int, int>(noteIndex, holdStates[noteIndex]));
-                    
-                    break;
-                case NoteType.SpinLeftStart:
-                case NoteType.SpinRightStart:
-                    if (noteIndex != lastSpinIndex)
-                        activeSpinStates.Add(new KeyValuePair<int, int>(noteIndex, spinStates[noteIndex]));
+                switch (noteType) {
+                    case NoteType.DrumStart:
+                        ModState.MissRemainingNoteTicks(noteIndex);
+                        ModState.MissReleaseNoteFromStart(noteType, noteIndex);
 
-                    break;
-                case NoteType.ScratchStart:
-                    if (noteIndex != lastScratchIndex)
-                        activeScratchStates.Add(new KeyValuePair<int, int>(noteIndex, scratchStates[noteIndex]));
+                        break;
+                    case NoteType.HoldStart:
+                        if (noteIndex != lastHoldIndex)
+                            activeHoldStates.Add(new KeyValuePair<int, int>(noteIndex, holdStates[noteIndex]));
 
-                    break;
+                        break;
+                    case NoteType.SpinLeftStart:
+                    case NoteType.SpinRightStart:
+                        if (noteIndex != lastSpinIndex)
+                            activeSpinStates.Add(new KeyValuePair<int, int>(noteIndex, spinStates[noteIndex]));
+
+                        break;
+                    case NoteType.ScratchStart:
+                        if (noteIndex != lastScratchIndex)
+                            activeScratchStates.Add(new KeyValuePair<int, int>(noteIndex, scratchStates[noteIndex]));
+
+                        break;
+                }
+
+                ModState.Miss(noteIndex, true, false);
             }
             
-            ModState.Miss(noteIndex, true, false);
             ModState.ResetMultiplier();
             GameplayUI.UpdateMultiplierText();
         }
@@ -193,7 +199,7 @@ namespace ScoreMod {
         // Continuously track the state of active sustained notes
         [HarmonyPatch(typeof(Track), nameof(Track.Update)), HarmonyPostfix]
         private static void Track_Update_Postfix() {
-            if (!Playing)
+            if (!Playing || PlayState.isInPracticeMode)
                 return;
             
             for (int i = 0; i < activeHoldStates.Count; i++) {
@@ -257,8 +263,6 @@ namespace ScoreMod {
         private static void Track_PlayTrack_Postfix(Track __instance) {
             Playing = false;
             PlayState = __instance.playStateFirst;
-            noteData = PlayState.trackData.NoteData;
-            ModState.Initialize(LevelSelectUI.GetTrackId(PlayState.trackData), noteData.noteCount);
 
             if (holdStates == null)
                 holdStates = new Dictionary<int, int>();
@@ -290,18 +294,43 @@ namespace ScoreMod {
             else
                 activeScratchStates.Clear();
 
-            if (__instance.IsInEditMode || PlayState.isInPracticeMode)
+            if (__instance.IsInEditMode)
                 return;
+            
+            noteData = PlayState.trackData.NoteData;
+            ModState.Initialize(LevelSelectUI.GetTrackId(PlayState.trackData), noteData.noteCount);
 
             lastHoldIndex = -1;
             lastBeatIndex = -1;
             lastSpinIndex = -1;
             lastScratchIndex = -1;
+
+            if (!PlayState.isInPracticeMode) {
+                // Create a max score state early for pace prediction
+                calculatingMaxScore = true;
+                noteData.GetMaxPossibleScoreState(new IntRange(0, noteData.noteCount));
+                calculatingMaxScore = false;
+            }
             
-            // Create a max score state early for pace prediction
-            calculatingMaxScore = true;
-            noteData.GetMaxPossibleScoreState(new IntRange(0, noteData.noteCount));
-            calculatingMaxScore = false;
+            Playing = true;
+            LastOffset = null;
+            lastHoldIndex = -1;
+            lastBeatIndex = -1;
+            lastSpinIndex = -1;
+            lastScratchIndex = -1;
+
+            tapOffset = 0.001f * Main.TapTimingOffset.Value;
+            beatOffset = 0.001f * Main.BeatTimingOffset.Value;
+            
+            GameplayUI.UpdateUI();
+        }
+        
+        // Reset score and multiplier when looping in Practice mode
+        [HarmonyPatch(typeof(Track), nameof(Track.PracticeTrack)), HarmonyPostfix]
+        private static void Track_PracticeTrack_Postfix(Track __instance) {
+            PlayState = __instance.playStateFirst;
+            noteData = PlayState.trackData.NoteData;
+            ModState.Initialize(LevelSelectUI.GetTrackId(PlayState.trackData), noteData.noteCount);
             
             Playing = true;
             LastOffset = null;

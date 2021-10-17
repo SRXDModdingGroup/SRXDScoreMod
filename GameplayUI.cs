@@ -111,13 +111,26 @@ namespace ScoreMod {
                 }
             }
 
-            var container = ModState.CurrentContainer;
             
-            __instance.desiredNumber = container.Score;
+            var container = ModState.CurrentContainer;
+            bool inPractice = GameplayState.PlayState.isInPracticeMode;
+            
+            if (inPractice)
+                __instance.desiredNumber = 0;
+            else
+                __instance.desiredNumber = container.Score;
 
             if (!showPace)
                 return true;
+
+            if (GameplayState.PlayState.isInPracticeMode) {
+                bestPossibleText.gameObject.SetActive(false);
+
+                return true;
+            }
             
+            bestPossibleText.gameObject.SetActive(true);
+
             int bestPossible = container.GetBestPossible();
             int delta = bestPossible - container.HighScore;
             
