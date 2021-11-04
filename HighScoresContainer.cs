@@ -27,25 +27,16 @@ namespace ScoreMod {
                     
                     var split = line.Split(' ');
                     
-                    if (split.Length < 4 || !int.TryParse(split[1], out int score) || !int.TryParse(split[2], out int maxScore))
+                    if (split.Length < 5
+                        || !int.TryParse(split[1], out int score)
+                        || !int.TryParse(split[2], out int maxScore)
+                        || !int.TryParse(split[3], out int superPerfectCount))
                         continue;
-
-                    int superPerfectCount;
-                    string securityKey;
-
-                    if (split.Length == 4) {
-                        superPerfectCount = 0;
-                        securityKey = split[3];
-                    }
-                    else if (!int.TryParse(split[3], out superPerfectCount))
-                        continue;
-                    else
-                        securityKey = split[4];
 
                     string id = split[0];
                     var newItem = new HighScoreItem(id, score, maxScore, superPerfectCount);
                     
-                    if (newItem.SecurityKey == securityKey)
+                    if (newItem.Hash == split[4])
                         highScores.Add(id, newItem);
                 }
             }
@@ -59,7 +50,7 @@ namespace ScoreMod {
                 foreach (var pair in highScores) {
                     var item = pair.Value;
                     
-                    writer.WriteLine($"{pair.Key} {item.Score} {item.MaxScore} {item.SuperPerfectCount} {item.SecurityKey}");
+                    writer.WriteLine($"{pair.Key} {item.Score} {item.MaxScore} {item.SuperPerfectCount} {item.Hash}");
                 }
             }
         }
@@ -124,7 +115,7 @@ namespace ScoreMod {
             public int Score { get; }
             public int MaxScore { get; }
             public int SuperPerfectCount { get; }
-            public string SecurityKey { get; }
+            public string Hash { get; }
             
             public HighScoreItem(string id, int score, int maxScore, int superPerfectCount) {
                 Score = score;
@@ -135,11 +126,9 @@ namespace ScoreMod {
                     int hash = (int) HASH_BIAS * HASH_COEFF ^ score.GetHashCode();
 
                     hash = hash * HASH_COEFF ^ maxScore.GetHashCode();
+                    hash = hash * HASH_COEFF ^ superPerfectCount.GetHashCode();
                     
-                    if (superPerfectCount > 0)
-                        hash = hash * HASH_COEFF ^ superPerfectCount.GetHashCode();
-                    
-                    SecurityKey = ((uint) (hash * HASH_COEFF ^ id.GetHashCode())).ToString("x8");
+                    Hash = ((uint) (hash * HASH_COEFF ^ id.GetHashCode())).ToString("x8");
                 }
             }
         }

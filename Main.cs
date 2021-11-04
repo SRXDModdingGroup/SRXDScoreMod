@@ -8,7 +8,7 @@ using HarmonyLib;
 
 namespace ScoreMod {
     // Contains code to initialize the mod
-    [BepInPlugin("ScoreMod", "ScoreMod", "1.0.0.0")]
+    [BepInPlugin("ScoreMod", "ScoreMod", "1.1.0.0")]
     public class Main : BasePlugin {
         public static ManualLogSource Logger { get; private set; }
         public static ConfigEntry<bool> StartEnabled { get; private set; }
@@ -29,9 +29,9 @@ namespace ScoreMod {
             harmony.PatchAll(typeof(CompleteScreenUI));
             harmony.PatchAll(typeof(LevelSelectUI));
 
-            StartEnabled = Config.Bind("Settings", "StartEnabled", false, "Enable modded score on startup");
+            StartEnabled = Config.Bind("Settings", "StartEnabled", true, "Enable modded score on startup");
             DefaultProfile = Config.Bind("Settings", "DefaultProfile", "0", "The name or index of the default scoring profile");
-            PaceType = Config.Bind("Settings", "PaceType", "Delta", new ConfigDescription("Whether to show the max possible score, its delta relative to PB, both, or hide the Pace display", new AcceptableValueList<string>("Delta", "Score", "Both", "Hide")));
+            PaceType = Config.Bind("Settings", "PaceType", "Both", new ConfigDescription("Whether to show the max possible score, its delta relative to PB, both, or hide the Pace display", new AcceptableValueList<string>("Delta", "Score", "Both", "Hide")));
             TapTimingOffset = Config.Bind("Settings", "TapTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for taps and liftoffs");
             BeatTimingOffset = Config.Bind("Settings", "BeatTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for beats and hard beat releases");
             
