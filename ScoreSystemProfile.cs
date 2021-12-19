@@ -14,14 +14,14 @@ namespace ScoreMod {
                 new TimedNoteWindow(Accuracy.Great, 15, 0.05f),
                 new TimedNoteWindow(Accuracy.Good, 8, 0.05f),
                 new TimedNoteWindow(Accuracy.Good, 8, 0.0667f),
-                new TimedNoteWindow(Accuracy.Okay, 1, 0.0667f)
+                new TimedNoteWindow(Accuracy.Okay, 4, 0.0667f)
             }, new [] {
                 new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
                 new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
                 new TimedNoteWindow(Accuracy.Great, 11, 0.0667f),
                 new TimedNoteWindow(Accuracy.Good, 6, 0.0667f),
                 new TimedNoteWindow(Accuracy.Good, 6, 0.0834f),
-                new TimedNoteWindow(Accuracy.Okay, 1, 0.0834f)
+                new TimedNoteWindow(Accuracy.Okay, 3, 0.0834f)
             }),
             // Same as above, but with a much slower building multiplier
             new ScoreSystemProfile("Flat (PPM 32)", 4, 32, 4, 0.0167f, new [] {
@@ -30,14 +30,14 @@ namespace ScoreMod {
                 new TimedNoteWindow(Accuracy.Great, 15, 0.05f),
                 new TimedNoteWindow(Accuracy.Good, 8, 0.05f),
                 new TimedNoteWindow(Accuracy.Good, 8, 0.0667f),
-                new TimedNoteWindow(Accuracy.Okay, 1, 0.0667f)
+                new TimedNoteWindow(Accuracy.Okay, 4, 0.0667f)
             }, new [] {
                 new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
                 new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
                 new TimedNoteWindow(Accuracy.Great, 11, 0.0667f),
                 new TimedNoteWindow(Accuracy.Good, 6, 0.0667f),
                 new TimedNoteWindow(Accuracy.Good, 6, 0.0834f),
-                new TimedNoteWindow(Accuracy.Okay, 1, 0.0834f)
+                new TimedNoteWindow(Accuracy.Okay, 3, 0.0834f)
             }),
             // Score profile with linear instead of flat windows
             new ScoreSystemProfile("Linear (PPM 16)", 4, 16, 4, 0.0167f, new [] {
@@ -45,13 +45,13 @@ namespace ScoreMod {
                 new TimedNoteWindow(Accuracy.Great, 15, 0.0334f),
                 new TimedNoteWindow(Accuracy.Great, 14, 0.0417f),
                 new TimedNoteWindow(Accuracy.Good, 12, 0.05f),
-                new TimedNoteWindow(Accuracy.Okay, 1, 0.0667f)
+                new TimedNoteWindow(Accuracy.Okay, 4, 0.0667f)
             }, new [] {
                 new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
                 new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
                 new TimedNoteWindow(Accuracy.Great, 10, 0.0584f),
                 new TimedNoteWindow(Accuracy.Good, 8, 0.0667f),
-                new TimedNoteWindow(Accuracy.Okay, 1, 0.0834f)
+                new TimedNoteWindow(Accuracy.Okay, 3, 0.0834f)
             }),
             // Same as above, but with a much slower building multiplier
             new ScoreSystemProfile("Linear (PPM 32)", 4, 32, 4, 0.0167f, new [] {
@@ -59,14 +59,14 @@ namespace ScoreMod {
                 new TimedNoteWindow(Accuracy.Great, 15, 0.0334f),
                 new TimedNoteWindow(Accuracy.Great, 14, 0.0417f),
                 new TimedNoteWindow(Accuracy.Good, 12, 0.05f),
-                new TimedNoteWindow(Accuracy.Okay, 1, 0.0667f)
+                new TimedNoteWindow(Accuracy.Okay, 4, 0.0667f)
             }, new [] {
                 new TimedNoteWindow(Accuracy.Perfect, 12, 0f),
                 new TimedNoteWindow(Accuracy.Great, 11, 0.05f),
                 new TimedNoteWindow(Accuracy.Great, 10, 0.0584f),
                 new TimedNoteWindow(Accuracy.Good, 8, 0.0667f),
-                new TimedNoteWindow(Accuracy.Okay, 1, 0.0834f)
-            }),
+                new TimedNoteWindow(Accuracy.Okay, 3, 0.0834f)
+            })
         });
         
         // The name of the score profile

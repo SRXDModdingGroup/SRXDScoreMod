@@ -38,8 +38,8 @@ namespace ScoreMod {
             }
 
             if (fcStar != null)
-                fcStar.sprite = pfcSprite;
-            
+                UpdateFcStar();
+
             if (bestPossibleText != null)
                 bestPossibleText.gameObject.SetActive(ModState.ShowModdedScore && showPace);
 
@@ -51,7 +51,10 @@ namespace ScoreMod {
         
         public static void UpdateMultiplierText() => multiplierNumber.Text = GetMultiplierAsText();
 
-        public static void UpdateFcStar() => fcStar.sprite = fcSprite;
+        public static void UpdateFcStar() {
+            fcStar.sprite = fcSprite;
+            fcStar.color = !ModState.ShowModdedScore || ModState.CurrentContainer.GetIsPfc(false) ? Color.cyan : Color.green;
+        }
 
         private static string GetMultiplierAsText() => $"{ModState.CurrentContainer.Multiplier}<size=65%>x</size>";
 
@@ -168,8 +171,13 @@ namespace ScoreMod {
 
         [HarmonyPatch(typeof(Image), nameof(Image.sprite), MethodType.Setter), HarmonyPrefix]
         private static bool Image_Sprite_Set_Prefix(Image __instance, ref Sprite value) {
-            if (GameplayState.Playing && __instance == fcStar)
-                value = GameplayState.PlayState.fullComboState == FullComboState.PerfectFullCombo && (!ModState.ShowModdedScore || ModState.CurrentContainer.GetIsPfc(false)) ? pfcSprite : fcSprite;
+            if (!GameplayState.Playing || __instance != fcStar)
+                return true;
+            
+            if (ModState.ShowModdedScore)
+                value = ModState.CurrentContainer.GetIsPfc(false) || ModState.CurrentContainer.GetIsSPlus() ? pfcSprite : fcSprite;
+            else
+                value = GameplayState.PlayState.fullComboState == FullComboState.PerfectFullCombo ? pfcSprite : fcSprite;
 
             return true;
         }

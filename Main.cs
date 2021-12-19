@@ -8,7 +8,7 @@ using HarmonyLib;
 
 namespace ScoreMod {
     // Contains code to initialize the mod
-    [BepInPlugin("ScoreMod", "ScoreMod", "1.1.0.0")]
+    [BepInPlugin("ScoreMod", "ScoreMod", "1.1.1.0")]
     public class Main : BasePlugin {
         public static ManualLogSource Logger { get; private set; }
         public static ConfigEntry<bool> StartEnabled { get; private set; }

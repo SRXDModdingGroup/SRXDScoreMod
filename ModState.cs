@@ -92,6 +92,7 @@ namespace ScoreMod {
         public static void AddScore(int amount, float offset, bool isSustainedNoteTick, NoteType noteType, int noteIndex) {
             int oldMultiplier = CurrentContainer.Multiplier;
             bool oldIsPfc = CurrentContainer.GetIsPfc(false);
+            bool oldIsSPlus = CurrentContainer.GetIsSPlus();
 
             // Process sustained note ticks and regular note hits differently
             if (isSustainedNoteTick) {
@@ -141,7 +142,7 @@ namespace ScoreMod {
             if (CurrentContainer.Multiplier != oldMultiplier)
                 GameplayUI.UpdateMultiplierText();
 
-            if (CurrentContainer.GetIsPfc(false) != oldIsPfc)
+            if (CurrentContainer.GetIsPfc(false) != oldIsPfc || CurrentContainer.GetIsSPlus() != oldIsSPlus)
                 GameplayUI.UpdateFcStar();
         }
 

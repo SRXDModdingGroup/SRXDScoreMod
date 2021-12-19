@@ -207,6 +207,8 @@ namespace ScoreMod {
         // Checks if the current score is a PFC
         public bool GetIsPfc(bool checkMaxScore) => isPfc && (!checkMaxScore || Score == MaxScore);
 
+        public bool GetIsSPlus() => MaxScoreSoFar - Score < S_PLUS_THRESHOLD && (float) GetBestPossible() / MaxScore > RANKS[0].Key;
+
         // Checks if the current score is a new high score
         public bool GetIsHighScore() => Score > HighScore || Score == HighScore && SuperPerfects > HighScoreSuperPerfects;
 
