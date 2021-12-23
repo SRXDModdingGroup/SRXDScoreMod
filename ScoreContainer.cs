@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace ScoreMod {
+namespace SRXDScoreMod {
     public class ScoreContainer {
         // The player must lose fewer than this amount of points to get an S+
         private static readonly int S_PLUS_THRESHOLD = 96;

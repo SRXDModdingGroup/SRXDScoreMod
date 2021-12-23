@@ -4,7 +4,7 @@ using HarmonyLib;
 using TMPro;
 using UnityEngine;
 
-namespace ScoreMod {
+namespace SRXDScoreMod {
     // Contains patch functions to make the level select menu show modded scores
     public class LevelSelectUI {
         private static readonly Regex MATCH_BASE_ID = new Regex(@"(.+?)_Stats");

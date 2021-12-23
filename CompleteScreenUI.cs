@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 using TMPro;
 
-namespace ScoreMod {
+namespace SRXDScoreMod {
     // Contains patch functions to display modded scores on the track complete screen
     public class CompleteScreenUI {
         private static bool completeMenuLoaded;

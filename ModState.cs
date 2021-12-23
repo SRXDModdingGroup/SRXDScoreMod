@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 
-namespace ScoreMod {
+namespace SRXDScoreMod {
     // Contains code to manage the state of all mod score containers
     public class ModState {
         // Whether modded score or normal score should be displayed

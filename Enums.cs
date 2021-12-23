@@ -1,4 +1,4 @@
-namespace ScoreMod {
+namespace SRXDScoreMod {
     // Modded timed note accuracy types
     public enum Accuracy {
         Perfect,

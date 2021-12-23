@@ -2,7 +2,7 @@
 using HarmonyLib;
 using UnityEngine;
 
-namespace ScoreMod {
+namespace SRXDScoreMod {
     // Contains patch functions for receiving data from gameplay
     public class GameplayState {
         public static bool Playing { get; private set; }

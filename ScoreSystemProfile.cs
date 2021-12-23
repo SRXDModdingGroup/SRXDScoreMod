@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 
-namespace ScoreMod {
+namespace SRXDScoreMod {
     // Contains information about note point values, timing windows, and points per multiplier for each score container
     public class ScoreSystemProfile {
         private const uint HASH_BIAS = 2166136261u;

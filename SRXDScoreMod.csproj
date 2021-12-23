@@ -7,8 +7,8 @@
         <ProjectGuid>{5663FE63-E6FB-41E4-B080-A626D1CF0F10}</ProjectGuid>
         <OutputType>Library</OutputType>
         <AppDesignerFolder>Properties</AppDesignerFolder>
-        <RootNamespace>ScoreMod</RootNamespace>
-        <AssemblyName>ScoreMod</AssemblyName>
+        <RootNamespace>SRXDScoreMod</RootNamespace>
+        <AssemblyName>SRXDScoreMod</AssemblyName>
         <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
     </PropertyGroup>
@@ -35,44 +35,32 @@
         <Reference Include="0Harmony, Version=2.4.2.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\0Harmony.dll</HintPath>
         </Reference>
-        <Reference Include="Assembly-CSharp, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\Assembly-CSharp.dll</HintPath>
         </Reference>
-        <Reference Include="BepInEx.Core, Version=6.0.0.367, Culture=neutral, PublicKeyToken=null">
-          <HintPath>Libs\BepInEx.Core.dll</HintPath>
+        <Reference Include="BepInEx, Version=5.4.17.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>Libs\BepInEx.dll</HintPath>
         </Reference>
-        <Reference Include="BepInEx.IL2CPP, Version=6.0.0.367, Culture=neutral, PublicKeyToken=null">
-          <HintPath>Libs\BepInEx.IL2CPP.dll</HintPath>
+        <Reference Include="SSD.Game, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>Libs\SSD.Game.dll</HintPath>
         </Reference>
-        <Reference Include="Il2Cppmscorlib, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
-          <HintPath>Libs\Il2Cppmscorlib.dll</HintPath>
-        </Reference>
-        <Reference Include="Il2CppSystem, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
-          <HintPath>Libs\Il2CppSystem.dll</HintPath>
-        </Reference>
-        <Reference Include="SSD.Types, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="SSD.Types, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\SSD.Types.dll</HintPath>
         </Reference>
         <Reference Include="System" />
-        <Reference Include="System.Core" />
-        <Reference Include="System.Data" />
-        <Reference Include="System.Xml" />
-        <Reference Include="UnhollowerBaseLib, Version=0.4.14.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>Libs\UnhollowerBaseLib.dll</HintPath>
-        </Reference>
-        <Reference Include="Unity.TextMeshPro, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="Unity.TextMeshPro, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\Unity.TextMeshPro.dll</HintPath>
         </Reference>
-        <Reference Include="UnityEngine, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\UnityEngine.dll</HintPath>
         </Reference>
-        <Reference Include="UnityEngine.CoreModule, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\UnityEngine.CoreModule.dll</HintPath>
         </Reference>
-        <Reference Include="UnityEngine.InputLegacyModule, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="UnityEngine.InputLegacyModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\UnityEngine.InputLegacyModule.dll</HintPath>
         </Reference>
-        <Reference Include="UnityEngine.UI, Version=3.7.1.6, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\UnityEngine.UI.dll</HintPath>
         </Reference>
     </ItemGroup>

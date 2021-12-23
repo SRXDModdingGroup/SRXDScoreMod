@@ -2,15 +2,14 @@
 using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
-using BepInEx.IL2CPP;
 using BepInEx.Logging;
 using HarmonyLib;
 
-namespace ScoreMod {
+namespace SRXDScoreMod {
     // Contains code to initialize the mod
-    [BepInPlugin("ScoreMod", "ScoreMod", "1.1.1.0")]
-    public class Main : BasePlugin {
-        public static ManualLogSource Logger { get; private set; }
+    [BepInPlugin("SRXD.ScoreMod", "ScoreMod", "1.1.1.0")]
+    public class Main : BaseUnityPlugin {
+        public new static ManualLogSource Logger { get; private set; }
         public static ConfigEntry<bool> StartEnabled { get; private set; }
         public static ConfigEntry<string> DefaultProfile { get; private set; }
         public static ConfigEntry<string> PaceType { get; private set; }
@@ -19,8 +18,8 @@ namespace ScoreMod {
 
         private static string fileDirectory;
 
-        public override void Load() {
-            Logger = Log;
+        private void Awake() {
+            Logger = base.Logger;
 
             var harmony = new Harmony("ScoreMod");
             

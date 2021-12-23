@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ScoreMod {
+namespace SRXDScoreMod {
     // Used to log play data in a tabular format
     public class StringTable {
         public enum Alignment {

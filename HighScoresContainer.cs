@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 
-namespace ScoreMod {
+namespace SRXDScoreMod {
     // Contains a set of modded high scores and manages the high score file
     public class HighScoresContainer {
         private const uint HASH_BIAS = 2166136261u;
