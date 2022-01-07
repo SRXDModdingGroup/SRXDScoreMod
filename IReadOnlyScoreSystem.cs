@@ -44,6 +44,14 @@ namespace SRXDScoreMod {
 
         string GetRank(int score, int maxScore);
 
+        CustomTimingAccuracy GetTimingAccuracyForTap(float timingOffset);
+        
+        CustomTimingAccuracy GetTimingAccuracyForBeat(float timingOffset);
+        
+        CustomTimingAccuracy GetTimingAccuracyForLiftoff(float timingOffset);
+        
+        CustomTimingAccuracy GetTimingAccuracyForHardBeatRelease(float timingOffset);
+
         HighScoreInfo GetHighScoreInfoForChart(TrackInfoAssetReference trackInfoRef, TrackDataMetadata metadata);
     }
 }

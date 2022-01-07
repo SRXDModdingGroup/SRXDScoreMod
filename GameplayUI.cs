@@ -19,19 +19,36 @@ namespace SRXDScoreMod {
         }
         
         private static bool spawnedBestPossibleText;
-        private static bool timingFeedbackSpawned;
         private static bool showPace;
         private static PaceType paceType;
-        private static GameObject timingFeedbackObject;
+        private static Animation timingFeedbackAnimation;
         private static TMP_Text bestPossibleText;
 
-        public static void UpdateUI() {
-            if (!GameplayState.Playing)
-                return;
+        private static void PlayTimingFeedback(PlayState playState, CustomTimingAccuracy timingAccuracy) {
+            var baseAccuracy = timingAccuracy.BaseAccuracy;
+            
+            TrackGameplayFeedbackObjects.PlayTimingFeedback(playState, baseAccuracy);
 
-            if (bestPossibleText != null)
-                bestPossibleText.gameObject.SetActive(ModState.ShowModdedScore && showPace);
+            int target = baseAccuracy switch {
+                NoteTimingAccuracy.Perfect => 3,
+                NoteTimingAccuracy.Early => 1,
+                NoteTimingAccuracy.Late => 2,
+                _ => 3
+            };
+            
+            var transform = timingFeedbackAnimation.transform.GetChild(target);
+            var feedbackText = transform.GetComponent<TextCharacter>();
+
+            feedbackText.Text = timingAccuracy.Text;
         }
+
+        private static void PlayTimingFeedbackForTap(PlayState playState, float timeOffset) => PlayTimingFeedback(playState, Main.CurrentScoreSystem.GetTimingAccuracyForTap(timeOffset));
+
+        private static void PlayTimingFeedbackForBeat(PlayState playState, float timeOffset) => PlayTimingFeedback(playState, Main.CurrentScoreSystem.GetTimingAccuracyForBeat(timeOffset));
+
+        private static void PlayTimingFeedbackForLiftoff(PlayState playState, float timeOffset) => PlayTimingFeedback(playState, Main.CurrentScoreSystem.GetTimingAccuracyForLiftoff(timeOffset));
+
+        private static void PlayTimingFeedbackForHardBeatRelease(PlayState playState, float timeOffset) => PlayTimingFeedback(playState, Main.CurrentScoreSystem.GetTimingAccuracyForHardBeatRelease(timeOffset));
 
         [HarmonyPatch(typeof(XDHudCanvases), nameof(XDHudCanvases.Start)), HarmonyPostfix]
         private static void XDHudCanvases_Start_Postfix(XDHudCanvases __instance) {
@@ -69,116 +86,25 @@ namespace SRXDScoreMod {
             }
         }
 
-        [HarmonyPatch(typeof(TrackGameplayFeedbackObjects), nameof(TrackGameplayFeedbackObjects.PlayTimingFeedback)), HarmonyPrefix]
-        private static bool TrackGameplayFeedbackObjects_PlayTimingFeedback_Prefix(ref NoteTimingAccuracy noteTimingAccuracy) {
-            if (noteTimingAccuracy == NoteTimingAccuracy.Pending ||
-                noteTimingAccuracy == NoteTimingAccuracy.Valid ||
-                noteTimingAccuracy == NoteTimingAccuracy.Failed ||
-                noteTimingAccuracy == NoteTimingAccuracy.Invalidated)
-                return true;
-
-            timingFeedbackSpawned = true;
-
-            if (!ModState.ShowModdedScore)
-                return true;
-
-            switch (ModState.LastAccuracy) {
-                case Accuracy.Perfect:
-                case Accuracy.Great:
-                    noteTimingAccuracy = NoteTimingAccuracy.Perfect;
-
-                    break;
-                case Accuracy.Good:
-                case Accuracy.Okay: 
-                    if (GameplayState.LastOffset > 0f)
-                        noteTimingAccuracy = NoteTimingAccuracy.Late;
-                    else
-                        noteTimingAccuracy = NoteTimingAccuracy.Early;
-
-                    break;
-            }
-
-            return true;
-        }
-        
-        [HarmonyPatch(typeof(TrackGameplayFeedbackObjects), nameof(TrackGameplayFeedbackObjects.PlayTimingFeedback)), HarmonyPostfix]
-        private static void TrackGameplayFeedbackObjects_PlayTimingFeedback_Postfix(NoteTimingAccuracy noteTimingAccuracy) {
-            if (noteTimingAccuracy == NoteTimingAccuracy.Pending ||
-                noteTimingAccuracy == NoteTimingAccuracy.Valid ||
-                noteTimingAccuracy == NoteTimingAccuracy.Failed ||
-                noteTimingAccuracy == NoteTimingAccuracy.Invalidated ||
-                timingFeedbackObject == null)
-                return;
-
-            string newText;
-            int target;
+        [HarmonyPatch(typeof(TrackGameplayFeedbackObjects), nameof(TrackGameplayFeedbackObjects.PlayTimingFeedback)), HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> TrackGameplayFeedbackObjects_PlayTimingFeedback_Transpiler(IEnumerable<CodeInstruction> instructions) {
+            var instructionsList = new List<CodeInstruction>(instructions);
+            var TrackGameplayFeedbackObjects_PlayFeedbackAnimation = typeof(TrackGameplayFeedbackObjects).GetMethod(nameof(TrackGameplayFeedbackObjects.PlayFeedbackAnimation));
+            var GameplayUI_timingFeedbackAnimation = typeof(GameplayUI).GetField(nameof(timingFeedbackAnimation), BindingFlags.NonPublic | BindingFlags.Static);
             
-            if (ModState.ShowModdedScore) {
-                switch (ModState.LastAccuracy) {
-                    case Accuracy.Perfect:
-                        newText = "Perfect";
-                        target = 3;
-                    
-                        break;
-                    case Accuracy.Great:
-                        newText = "Great";
-                        target = 3;
+            var match = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+                instr => instr.Calls(TrackGameplayFeedbackObjects_PlayFeedbackAnimation),
+                instr => instr.IsStloc()
+            }).First();
 
-                        break;
-                    case Accuracy.Good:
-                        newText = "Good";
+            object operand = instructionsList[match.Start + 1].operand;
+            
+            instructionsList.InsertRange(match.End, new [] {
+                new CodeInstruction(OpCodes.Ldloc_S, operand),
+                new CodeInstruction(OpCodes.Stsfld, GameplayUI_timingFeedbackAnimation)
+            });
 
-                        if (GameplayState.LastOffset > 0f)
-                            target = 2;
-                        else
-                            target = 1;
-                    
-                        break;
-                    default:
-                        newText = "Okay";
-                        
-                        if (GameplayState.LastOffset > 0f)
-                            target = 2;
-                        else
-                            target = 1;
-                    
-                        break;
-                }
-            }
-            else {
-                switch (noteTimingAccuracy) {
-                    case NoteTimingAccuracy.Perfect:
-                        newText = "Perfect";
-                        target = 3;
-                        
-                        break;
-                    case NoteTimingAccuracy.Early:
-                        newText = "Early";
-                        target = 1;
-                        
-                        break;
-                    default:
-                        newText = "Late";
-                        target = 2;
-                        
-                        break;
-                }
-            }
-
-            var transform = timingFeedbackObject.transform.GetChild(target);
-            var feedbackText = transform.GetComponent<TextCharacter>();
-
-            feedbackText.Text = newText;
-            timingFeedbackObject = null;
-        }
-        
-        [HarmonyPatch(typeof(GameObject), nameof(GameObject.SetActive)), HarmonyPostfix]
-        private static void GameObject_SetActive_Postfix(GameObject __instance, bool value) {
-            if (!timingFeedbackSpawned || !value || __instance.name != "AccuracyEffectXD(Clone)")
-                return;
-
-            timingFeedbackObject = __instance;
-            timingFeedbackSpawned = false;
+            return instructionsList;
         }
 
         [HarmonyPatch(typeof(Track), nameof(Track.UpdateUI)), HarmonyTranspiler]
@@ -224,7 +150,7 @@ namespace SRXDScoreMod {
 
         [HarmonyPatch(typeof(Track), nameof(Track.UpdateUI)), HarmonyPostfix]
         private static void Track_UpdateUI_Postfix() {
-            if (!showPace || !spawnedBestPossibleText)
+            if (!spawnedBestPossibleText)
                 return;
             
             var currentScoreSystem = Main.CurrentScoreSystem;

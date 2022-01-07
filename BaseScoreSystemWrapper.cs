@@ -3,7 +3,11 @@ using UnityEngine;
 
 namespace SRXDScoreMod {
     public class BaseScoreSystemWrapper : IReadOnlyScoreSystem {
-        private static Func<float, string> TrackDataMetadata_GetRankFromNormalizedScore =
+        private static readonly CustomTimingAccuracy PERFECT = new("Perfect", NoteTimingAccuracy.Perfect);
+        private static readonly CustomTimingAccuracy EARLY = new("Early", NoteTimingAccuracy.Early);
+        private static readonly CustomTimingAccuracy LATE = new("Late", NoteTimingAccuracy.Late);
+        
+        private static readonly Func<float, string> TrackDataMetadata_GetRankFromNormalizedScore =
             ReflectionUtils.MethodToFunc<float, string>(typeof(TrackDataMetadata), "GetRankFromNormalizedScore");
         
         public string Name => "Base";
@@ -57,10 +61,25 @@ namespace SRXDScoreMod {
             return TrackDataMetadata_GetRankFromNormalizedScore((float) score / maxScore);
         }
 
+        public CustomTimingAccuracy GetTimingAccuracyForTap(float timingOffset) => GetCustomTimingAccuracy(GameplayVariables.Instance.GetTimingAccuracy(timingOffset));
+
+        public CustomTimingAccuracy GetTimingAccuracyForBeat(float timingOffset) => GetCustomTimingAccuracy(GameplayVariables.Instance.GetTimingAccuracyForBeat(timingOffset));
+
+        public CustomTimingAccuracy GetTimingAccuracyForLiftoff(float timingOffset) => GetCustomTimingAccuracy(GameplayVariables.Instance.GetTimingAccuracy(timingOffset));
+
+        public CustomTimingAccuracy GetTimingAccuracyForHardBeatRelease(float timingOffset) => GetCustomTimingAccuracy(GameplayVariables.Instance.GetTimingAccuracyForBeat(timingOffset));
+
         public HighScoreInfo GetHighScoreInfoForChart(TrackInfoAssetReference trackInfoRef, TrackDataMetadata metadata) {
             var stats = trackInfoRef.Stats;
 
             return new HighScoreInfo(stats.GetBestScoreForDifficulty(metadata).GetValue(), stats.GetBestStreakForDifficulty(metadata).GetValue(), metadata.MaxNoteScore, 0);
         }
+
+        private static CustomTimingAccuracy GetCustomTimingAccuracy(NoteTimingAccuracy timingAccuracy) => timingAccuracy switch {
+            NoteTimingAccuracy.Perfect => PERFECT,
+            NoteTimingAccuracy.Early => EARLY,
+            NoteTimingAccuracy.Late => LATE,
+            _ => PERFECT
+        };
     }
 }

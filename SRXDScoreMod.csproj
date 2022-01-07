@@ -78,6 +78,7 @@
         <Compile Include="BaseScoreSystemWrapper.cs" />
         <Compile Include="CompleteScreenUI.cs" />
         <Compile Include="CustomScoreSystem.cs" />
+        <Compile Include="CustomTimingAccuracy.cs" />
         <Compile Include="Enums.cs" />
         <Compile Include="GameplayUI.cs" />
         <Compile Include="GameplayState.cs" />

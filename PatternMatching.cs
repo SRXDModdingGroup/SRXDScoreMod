@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using static SRXDScoreMod.PatternMatching;
 
 namespace SRXDScoreMod {
     public static class PatternMatching {
