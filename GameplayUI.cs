@@ -1,7 +1,13 @@
-﻿using HarmonyLib;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using HarmonyLib;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 namespace SRXDScoreMod {
     // Contains patch functions to show modded scores and pace prediction on the in-game HUD
@@ -12,174 +18,55 @@ namespace SRXDScoreMod {
             Both
         }
         
-        private static bool spawnBestPossibleText;
+        private static bool spawnedBestPossibleText;
         private static bool timingFeedbackSpawned;
         private static bool showPace;
         private static PaceType paceType;
-        private static Color defaultScoreNumberColor;
         private static GameObject timingFeedbackObject;
-        private static XDHudCanvases canvases;
-        private static TextNumber scoreNumber;
-        private static TextCharacter multiplierNumber;
-        private static Image fcStar;
-        private static Sprite fcSprite;
-        private static Sprite pfcSprite;
         private static TMP_Text bestPossibleText;
 
         public static void UpdateUI() {
             if (!GameplayState.Playing)
                 return;
-            
-            if (scoreNumber != null && scoreNumber.gameObject.activeSelf) {
-                if (ModState.ShowModdedScore)
-                    scoreNumber.color = Color.red;
-                else
-                    scoreNumber.color = defaultScoreNumberColor;
-            }
-
-            if (fcStar != null)
-                UpdateFcStar();
 
             if (bestPossibleText != null)
                 bestPossibleText.gameObject.SetActive(ModState.ShowModdedScore && showPace);
-
-            if (ModState.ShowModdedScore)
-                multiplierNumber.Text = GetMultiplierAsText();
-            else
-                multiplierNumber.Text = $"{GameplayState.PlayState.multiplier}<size=65%>x</size>";
         }
-        
-        public static void UpdateMultiplierText() => multiplierNumber.Text = GetMultiplierAsText();
-
-        public static void UpdateFcStar() {
-            fcStar.sprite = fcSprite;
-            fcStar.color = !ModState.ShowModdedScore || ModState.CurrentContainer.GetIsPfc(false) ? Color.cyan : Color.green;
-        }
-
-        private static string GetMultiplierAsText() => $"{ModState.CurrentContainer.Multiplier}<size=65%>x</size>";
 
         [HarmonyPatch(typeof(XDHudCanvases), nameof(XDHudCanvases.Start)), HarmonyPostfix]
         private static void XDHudCanvases_Start_Postfix(XDHudCanvases __instance) {
-            if (scoreNumber == null)
-                defaultScoreNumberColor = __instance.score.color;
-
-            canvases = __instance;
-            scoreNumber = __instance.score;
-            multiplierNumber = __instance.multiplier;
-
-            if (ModState.ShowModdedScore)
-                scoreNumber.color = Color.red;
-            else
-                scoreNumber.color = defaultScoreNumberColor;
-
-            fcStar = __instance.fcStar;
-            fcSprite = __instance.fcStarSprite;
-            pfcSprite = __instance.pfcStarSprite;
             showPace = Main.PaceType.Value != "Hide";
-            spawnBestPossibleText = showPace;
-        }
-        
-        [HarmonyPatch(typeof(TextNumber), nameof(TextNumber.Update)), HarmonyPrefix]
-        private static bool TextNumber_Update_Prefix(TextNumber __instance) {
-            if (!ModState.ShowModdedScore || !GameplayState.Playing || __instance != scoreNumber)
-                return true;
+
+            if (!showPace || spawnedBestPossibleText)
+                return;
+
+            var timeLeftTextContainer = __instance.timeLeftText.transform.parent;
+            var bestPossibleObject = Object.Instantiate(timeLeftTextContainer.gameObject, Vector3.zero, timeLeftTextContainer.rotation, timeLeftTextContainer.parent);
             
-            if (spawnBestPossibleText) {
-                var timeLeftTextContainer = canvases.timeLeftText.transform.parent;
-                var bestPossibleObject = Object.Instantiate(timeLeftTextContainer.gameObject, Vector3.zero, timeLeftTextContainer.rotation, timeLeftTextContainer.parent);
-            
-                bestPossibleObject.transform.localPosition = new Vector3(235f, 67f, 0f);
-                bestPossibleObject.transform.localScale = timeLeftTextContainer.localScale;
-                bestPossibleObject.SetActive(ModState.ShowModdedScore);
-                bestPossibleText = bestPossibleObject.GetComponentInChildren<TMP_Text>();
-                bestPossibleText.fontSize = 8f;
-                bestPossibleText.overflowMode = TextOverflowModes.Overflow;
-                bestPossibleText.horizontalAlignment = HorizontalAlignmentOptions.Right;
-                bestPossibleText.verticalAlignment = VerticalAlignmentOptions.Top;
-                spawnBestPossibleText = false;
+            bestPossibleObject.transform.localPosition = new Vector3(235f, 67f, 0f);
+            bestPossibleObject.transform.localScale = timeLeftTextContainer.localScale;
+            bestPossibleObject.SetActive(ModState.ShowModdedScore);
+            bestPossibleText = bestPossibleObject.GetComponentInChildren<TMP_Text>();
+            bestPossibleText.fontSize = 8f;
+            bestPossibleText.overflowMode = TextOverflowModes.Overflow;
+            bestPossibleText.horizontalAlignment = HorizontalAlignmentOptions.Right;
+            bestPossibleText.verticalAlignment = VerticalAlignmentOptions.Top;
+            spawnedBestPossibleText = true;
 
-                switch (Main.PaceType.Value) {
-                    case "Score":
-                        paceType = PaceType.Score;
+            switch (Main.PaceType.Value) {
+                case "Score":
+                    paceType = PaceType.Score;
 
-                        break;
-                    case "Delta":
-                        paceType = PaceType.Delta;
+                    break;
+                case "Delta":
+                    paceType = PaceType.Delta;
 
-                        break;
-                    case "Both":
-                        paceType = PaceType.Both;
+                    break;
+                case "Both":
+                    paceType = PaceType.Both;
 
-                        break;
-                }
+                    break;
             }
-
-            
-            var container = ModState.CurrentContainer;
-            bool inPractice = GameplayState.PlayState.isInPracticeMode;
-            
-            if (inPractice)
-                __instance.desiredNumber = 0;
-            else
-                __instance.desiredNumber = container.Score;
-
-            if (!showPace)
-                return true;
-
-            if (GameplayState.PlayState.isInPracticeMode) {
-                bestPossibleText.gameObject.SetActive(false);
-
-                return true;
-            }
-            
-            bestPossibleText.gameObject.SetActive(true);
-
-            int bestPossible = container.GetBestPossible();
-            int delta = bestPossible - container.HighScore;
-            
-            if (delta >= 0)
-                bestPossibleText.color = Color.cyan;
-            else
-                bestPossibleText.color = Color.gray * 0.75f;
-
-            if (paceType == PaceType.Delta || paceType == PaceType.Both) {
-                string paceString;
-                
-                if (delta >= 0)
-                    paceString = $"+{delta}";
-                else
-                    paceString = delta.ToString();
-
-                if (paceType == PaceType.Both)
-                    bestPossibleText.SetText($"Pace: {bestPossible.ToString(),7}\n{paceString}");
-                else
-                    bestPossibleText.SetText($"Pace: {paceString,7}");
-            }
-            else
-                bestPossibleText.SetText($"Pace: {bestPossible.ToString(),7}");
-
-            return true;
-        }
-        
-        [HarmonyPatch(typeof(TextCharacter), nameof(TextCharacter.Text), MethodType.Setter), HarmonyPrefix]
-        private static bool TextCharacter_Text_Set_Prefix(TextCharacter __instance, ref string value) {
-            if (ModState.ShowModdedScore && GameplayState.Playing && __instance == multiplierNumber)
-                value = GetMultiplierAsText();
-
-            return true;
-        }
-
-        [HarmonyPatch(typeof(Image), nameof(Image.sprite), MethodType.Setter), HarmonyPrefix]
-        private static bool Image_Sprite_Set_Prefix(Image __instance, ref Sprite value) {
-            if (!GameplayState.Playing || __instance != fcStar)
-                return true;
-            
-            if (ModState.ShowModdedScore)
-                value = ModState.CurrentContainer.GetIsPfc(false) || ModState.CurrentContainer.GetIsSPlus() ? pfcSprite : fcSprite;
-            else
-                value = GameplayState.PlayState.fullComboState == FullComboState.PerfectFullCombo ? pfcSprite : fcSprite;
-
-            return true;
         }
 
         [HarmonyPatch(typeof(TrackGameplayFeedbackObjects), nameof(TrackGameplayFeedbackObjects.PlayTimingFeedback)), HarmonyPrefix]
@@ -292,6 +179,87 @@ namespace SRXDScoreMod {
 
             timingFeedbackObject = __instance;
             timingFeedbackSpawned = false;
+        }
+
+        [HarmonyPatch(typeof(Track), nameof(Track.UpdateUI)), HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> Track_UpdateUI_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
+            var instructionsList = new List<CodeInstruction>(instructions);
+            var currentScoreSystem = generator.DeclareLocal(typeof(IReadOnlyScoreSystem));
+            var PlayState_get_TotalNoteScore = typeof(PlayState).GetProperty(nameof(PlayState.TotalNoteScore)).GetGetMethod();
+            var PlayState_get_combo = typeof(PlayState).GetProperty(nameof(PlayState.combo)).GetGetMethod();
+            var PlayState_get_multiplier = typeof(PlayState).GetProperty(nameof(PlayState.multiplier)).GetGetMethod();
+            var PlayState_get_fullComboState = typeof(PlayState).GetProperty(nameof(PlayState.fullComboState)).GetGetMethod();
+            var Main_get_CurrentScoreSystem = typeof(Main).GetProperty(nameof(Main.CurrentScoreSystem)).GetGetMethod();
+            var IReadOnlyScoreSystem_get_Score = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Score)).GetGetMethod();
+            var IReadOnlyScoreSystem_get_Streak = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Streak)).GetGetMethod();
+            var IReadOnlyScoreSystem_get_Multiplier = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Multiplier)).GetGetMethod();
+            var IReadOnlyScoreSystem_get_StarState = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.StarState)).GetGetMethod();
+            
+            instructionsList.InsertRange(0, new CodeInstruction[] {
+                new(OpCodes.Call, Main_get_CurrentScoreSystem),
+                new(OpCodes.Stloc_S, currentScoreSystem)
+            });
+            
+            ReplaceGetter(PlayState_get_TotalNoteScore, currentScoreSystem, IReadOnlyScoreSystem_get_Score);
+            ReplaceGetter(PlayState_get_combo, currentScoreSystem, IReadOnlyScoreSystem_get_Streak);
+            ReplaceGetter(PlayState_get_multiplier, currentScoreSystem, IReadOnlyScoreSystem_get_Multiplier);
+            ReplaceGetter(PlayState_get_fullComboState, currentScoreSystem, IReadOnlyScoreSystem_get_StarState);
+
+            return instructionsList;
+
+            void ReplaceGetter(MethodInfo fromMethod, LocalBuilder toLocal, MethodInfo toMethod) {
+                var matches = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+                    instr => instr.IsLdloc(),
+                    instr => instr.Calls(fromMethod)
+                });
+
+                foreach (var match in matches) {
+                    int start = match.Start;
+
+                    instructionsList[start].operand = toLocal;
+                    instructionsList[start + 1] = new CodeInstruction(OpCodes.Call, toMethod);
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(Track), nameof(Track.UpdateUI)), HarmonyPostfix]
+        private static void Track_UpdateUI_Postfix() {
+            if (!showPace || !spawnedBestPossibleText)
+                return;
+            
+            var currentScoreSystem = Main.CurrentScoreSystem;
+
+            if (GameplayState.PlayState.isInPracticeMode || !currentScoreSystem.ImplementsScorePrediction) {
+                bestPossibleText.gameObject.SetActive(false);
+
+                return;
+            }
+            
+            bestPossibleText.gameObject.SetActive(true);
+
+            int bestPossible = currentScoreSystem.MaxScore + currentScoreSystem.Score - currentScoreSystem.MaxScoreSoFar;
+            int delta = bestPossible - currentScoreSystem.HighScore;
+            
+            if (delta >= 0)
+                bestPossibleText.color = Color.cyan;
+            else
+                bestPossibleText.color = Color.gray * 0.75f;
+
+            if (paceType == PaceType.Delta || paceType == PaceType.Both) {
+                string paceString;
+                
+                if (delta >= 0)
+                    paceString = $"+{delta}";
+                else
+                    paceString = delta.ToString();
+
+                if (paceType == PaceType.Both)
+                    bestPossibleText.SetText($"Pace: {bestPossible.ToString(),7}\n{paceString}");
+                else
+                    bestPossibleText.SetText($"Pace: {paceString,7}");
+            }
+            else
+                bestPossibleText.SetText($"Pace: {bestPossible.ToString(),7}");
         }
     }
 }

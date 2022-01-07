@@ -12,7 +12,7 @@ namespace SRXDScoreMod {
 
         int Streak { get; }
 
-        FCStarState StarState { get; }
+        FullComboState StarState { get; }
 
         Color StarColor { get; }
 
@@ -21,6 +21,8 @@ namespace SRXDScoreMod {
         int MaxScore { get; }
         
         int MaxScoreSoFar { get; }
+        
+        int HighScore { get; }
 
         bool ImplementsSecondaryScore { get; }
         

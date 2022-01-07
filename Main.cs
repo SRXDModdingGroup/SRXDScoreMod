@@ -15,6 +15,8 @@ namespace SRXDScoreMod {
         public static ConfigEntry<string> PaceType { get; private set; }
         public static ConfigEntry<float> TapTimingOffset { get; private set; }
         public static ConfigEntry<float> BeatTimingOffset { get; private set; }
+        
+        public static IReadOnlyScoreSystem CurrentScoreSystem { get; private set; }
 
         private static string fileDirectory;
 
@@ -35,7 +37,7 @@ namespace SRXDScoreMod {
             BeatTimingOffset = Config.Bind("Settings", "BeatTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for beats and hard beat releases");
             
             HighScoresContainer.LoadHighScores();
-            ModState.Initialize(string.Empty, 0);
+            ModState.Initialize(string.Empty, 0, 0, 0, 0);
             
             if (StartEnabled.Value)
                 ModState.ToggleModdedScoring();

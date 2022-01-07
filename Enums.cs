@@ -8,10 +8,4 @@ namespace SRXDScoreMod {
         Okay,
         Miss
     }
-
-    public enum FCStarState {
-        Hidden,
-        Hollow,
-        Solid
-    }
 }

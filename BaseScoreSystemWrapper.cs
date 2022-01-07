@@ -15,13 +15,8 @@ namespace SRXDScoreMod {
         public int Multiplier => scoreState.Multiplier;
         
         public int Streak => scoreState.combo;
-        
-        public FCStarState StarState => scoreState.fullComboState switch {
-            FullComboState.None => FCStarState.Hidden,
-            FullComboState.FullCombo => FCStarState.Hollow,
-            FullComboState.PerfectFullCombo => FCStarState.Solid,
-            _ => FCStarState.Hidden
-        };
+
+        public FullComboState StarState => scoreState.fullComboState;
         
         public Color StarColor => Color.cyan;
 
@@ -30,6 +25,8 @@ namespace SRXDScoreMod {
         public int MaxScore => 0;
         
         public int MaxScoreSoFar => 0;
+
+        public int HighScore => 0;
 
         public bool ImplementsSecondaryScore => false;
 
