@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 
 namespace SRXDScoreMod {
-    public interface IReadOnlyScoreSystem {
+    public interface IReadOnlyScoreContainer {
         string Name { get; }
         
         int Hash { get; }
@@ -30,6 +30,10 @@ namespace SRXDScoreMod {
         
         FullComboState FullComboState { get; }
         
+        bool IsHighScore { get; }
+        
+        string Rank { get; }
+        
         string PostGameInfo1Name { get; }
         
         string PostGameInfo1Value { get; }
@@ -41,17 +45,5 @@ namespace SRXDScoreMod {
         string PostGameInfo3Name { get; }
         
         string PostGameInfo3Value { get; }
-
-        string GetRank(int score, int maxScore);
-
-        CustomTimingAccuracy GetTimingAccuracyForTap(float timingOffset);
-        
-        CustomTimingAccuracy GetTimingAccuracyForBeat(float timingOffset);
-        
-        CustomTimingAccuracy GetTimingAccuracyForLiftoff(float timingOffset);
-        
-        CustomTimingAccuracy GetTimingAccuracyForHardBeatRelease(float timingOffset);
-
-        HighScoreInfo GetHighScoreInfoForChart(TrackInfoAssetReference trackInfoRef, TrackDataMetadata metadata);
     }
 }

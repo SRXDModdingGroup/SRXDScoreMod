@@ -45,6 +45,9 @@
         <Reference Include="SpinModdingUtilities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\SpinModdingUtilities.dll</HintPath>
         </Reference>
+        <Reference Include="SRXDHelperEvents, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>Libs\SRXDHelperEvents.dll</HintPath>
+        </Reference>
         <Reference Include="SSD.Game, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\SSD.Game.dll</HintPath>
         </Reference>
@@ -75,20 +78,19 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="BaseScoreSystemWrapper.cs" />
+        <Compile Include="BaseScoreContainerWrapper.cs" />
         <Compile Include="CompleteScreenUI.cs" />
-        <Compile Include="CustomScoreSystem.cs" />
+        <Compile Include="CustomScoreContainer.cs" />
         <Compile Include="CustomTimingAccuracy.cs" />
         <Compile Include="Enums.cs" />
         <Compile Include="GameplayUI.cs" />
         <Compile Include="GameplayState.cs" />
         <Compile Include="HighScoreInfo.cs" />
         <Compile Include="HighScoresContainer.cs" />
-        <Compile Include="IReadOnlyScoreSystem.cs" />
+        <Compile Include="IReadOnlyScoreContainer.cs" />
         <Compile Include="LevelSelectUI.cs" />
         <Compile Include="Main.cs" />
         <Compile Include="ModState.cs" />
-        <Compile Include="PatternMatching.cs" />
         <Compile Include="ScoreContainer.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
         <Compile Include="ScoreSystemProfile.cs" />

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using SMU.Utilities;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -42,13 +43,13 @@ namespace SRXDScoreMod {
             feedbackText.Text = timingAccuracy.Text;
         }
 
-        private static void PlayTimingFeedbackForTap(PlayState playState, float timeOffset) => PlayTimingFeedback(playState, Main.CurrentScoreSystem.GetTimingAccuracyForTap(timeOffset));
+        private static void PlayTimingFeedbackForTap(PlayState playState, float timeOffset) => PlayTimingFeedback(playState, Main.CurrentScoreContainer.GetTimingAccuracyForTap(timeOffset));
 
-        private static void PlayTimingFeedbackForBeat(PlayState playState, float timeOffset) => PlayTimingFeedback(playState, Main.CurrentScoreSystem.GetTimingAccuracyForBeat(timeOffset));
+        private static void PlayTimingFeedbackForBeat(PlayState playState, float timeOffset) => PlayTimingFeedback(playState, Main.CurrentScoreContainer.GetTimingAccuracyForBeat(timeOffset));
 
-        private static void PlayTimingFeedbackForLiftoff(PlayState playState, float timeOffset) => PlayTimingFeedback(playState, Main.CurrentScoreSystem.GetTimingAccuracyForLiftoff(timeOffset));
+        private static void PlayTimingFeedbackForLiftoff(PlayState playState, float timeOffset) => PlayTimingFeedback(playState, Main.CurrentScoreContainer.GetTimingAccuracyForLiftoff(timeOffset));
 
-        private static void PlayTimingFeedbackForHardBeatRelease(PlayState playState, float timeOffset) => PlayTimingFeedback(playState, Main.CurrentScoreSystem.GetTimingAccuracyForHardBeatRelease(timeOffset));
+        private static void PlayTimingFeedbackForHardBeatRelease(PlayState playState, float timeOffset) => PlayTimingFeedback(playState, Main.CurrentScoreContainer.GetTimingAccuracyForHardBeatRelease(timeOffset));
 
         [HarmonyPatch(typeof(XDHudCanvases), nameof(XDHudCanvases.Start)), HarmonyPostfix]
         private static void XDHudCanvases_Start_Postfix(XDHudCanvases __instance) {
@@ -95,7 +96,7 @@ namespace SRXDScoreMod {
             var match = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
                 instr => instr.Calls(TrackGameplayFeedbackObjects_PlayFeedbackAnimation),
                 instr => instr.IsStloc()
-            }).First();
+            }).First()[0];
 
             object operand = instructionsList[match.Start + 1].operand;
             
@@ -110,16 +111,16 @@ namespace SRXDScoreMod {
         [HarmonyPatch(typeof(Track), nameof(Track.UpdateUI)), HarmonyTranspiler]
         private static IEnumerable<CodeInstruction> Track_UpdateUI_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
             var instructionsList = new List<CodeInstruction>(instructions);
-            var currentScoreSystem = generator.DeclareLocal(typeof(IReadOnlyScoreSystem));
+            var currentScoreSystem = generator.DeclareLocal(typeof(IReadOnlyScoreContainer));
             var PlayState_get_TotalNoteScore = typeof(PlayState).GetProperty(nameof(PlayState.TotalNoteScore)).GetGetMethod();
             var PlayState_get_combo = typeof(PlayState).GetProperty(nameof(PlayState.combo)).GetGetMethod();
             var PlayState_get_multiplier = typeof(PlayState).GetProperty(nameof(PlayState.multiplier)).GetGetMethod();
             var PlayState_get_fullComboState = typeof(PlayState).GetProperty(nameof(PlayState.fullComboState)).GetGetMethod();
-            var Main_get_CurrentScoreSystem = typeof(Main).GetProperty(nameof(Main.CurrentScoreSystem)).GetGetMethod();
-            var IReadOnlyScoreSystem_get_Score = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Score)).GetGetMethod();
-            var IReadOnlyScoreSystem_get_Streak = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Streak)).GetGetMethod();
-            var IReadOnlyScoreSystem_get_Multiplier = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Multiplier)).GetGetMethod();
-            var IReadOnlyScoreSystem_get_StarState = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.StarState)).GetGetMethod();
+            var Main_get_CurrentScoreSystem = typeof(Main).GetProperty(nameof(Main.CurrentScoreContainer)).GetGetMethod();
+            var IReadOnlyScoreSystem_get_Score = typeof(IReadOnlyScoreContainer).GetProperty(nameof(IReadOnlyScoreContainer.Score)).GetGetMethod();
+            var IReadOnlyScoreSystem_get_Streak = typeof(IReadOnlyScoreContainer).GetProperty(nameof(IReadOnlyScoreContainer.Streak)).GetGetMethod();
+            var IReadOnlyScoreSystem_get_Multiplier = typeof(IReadOnlyScoreContainer).GetProperty(nameof(IReadOnlyScoreContainer.Multiplier)).GetGetMethod();
+            var IReadOnlyScoreSystem_get_StarState = typeof(IReadOnlyScoreContainer).GetProperty(nameof(IReadOnlyScoreContainer.StarState)).GetGetMethod();
             
             instructionsList.InsertRange(0, new CodeInstruction[] {
                 new(OpCodes.Call, Main_get_CurrentScoreSystem),
@@ -140,7 +141,7 @@ namespace SRXDScoreMod {
                 });
 
                 foreach (var match in matches) {
-                    int start = match.Start;
+                    int start = match[0].Start;
 
                     instructionsList[start].operand = toLocal;
                     instructionsList[start + 1] = new CodeInstruction(OpCodes.Call, toMethod);
@@ -153,7 +154,7 @@ namespace SRXDScoreMod {
             if (!spawnedBestPossibleText)
                 return;
             
-            var currentScoreSystem = Main.CurrentScoreSystem;
+            var currentScoreSystem = Main.CurrentScoreContainer;
 
             if (GameplayState.PlayState.isInPracticeMode || !currentScoreSystem.ImplementsScorePrediction) {
                 bestPossibleText.gameObject.SetActive(false);

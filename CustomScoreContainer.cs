@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 
 namespace SRXDScoreMod {
-    public abstract class CustomScoreSystem : IReadOnlyScoreSystem {
+    public abstract class CustomScoreContainer : IReadOnlyScoreContainer {
         public abstract string Name { get; }
         public abstract int Hash { get; }
         public abstract int Score { get; }
