@@ -78,7 +78,6 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="BaseScoreContainerWrapper.cs" />
         <Compile Include="BaseScoreSystemWrapper.cs" />
         <Compile Include="CompleteScreenUI.cs" />
         <Compile Include="CustomScoreContainer.cs" />
@@ -89,7 +88,6 @@
         <Compile Include="HighScoreInfo.cs" />
         <Compile Include="HighScoresContainer.cs" />
         <Compile Include="IReadOnlyScoreSystem.cs" />
-        <Compile Include="IScoreContainer.cs" />
         <Compile Include="IScoreSystem.cs" />
         <Compile Include="LevelSelectUI.cs" />
         <Compile Include="ScoreMod.cs" />

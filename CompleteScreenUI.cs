@@ -19,30 +19,23 @@ internal class CompleteScreenUI {
         if (levelCompleteMenu == null || !levelCompleteMenu.gameObject.activeSelf)
             return;
 
-        var scoreSystem = ScoreMod.CurrentScoreSystem;
-        var container = scoreSystem.ScoreContainer;
+        var scoreSystem = ScoreMod.CurrentScoreSystemInternal;
             
-        levelCompleteMenu.scoreValueText.SetText(container.Score.ToString());
-        levelCompleteMenu.streakValueText.SetText(container.Streak.ToString());
-        levelCompleteMenu.rankAnimator.Setup(container.Rank, null);
-        levelCompleteMenu.pfcStatusText.SetText(container.FullComboState == FullComboState.PerfectFullCombo ? "PFC" : "FC");
-        levelCompleteMenu.newBestGameObject.SetActive(container.IsHighScore);
-        levelCompleteMenu.accuracyGameObject.SetActive(!string.IsNullOrWhiteSpace(container.PostGameInfo1Value));
+        levelCompleteMenu.scoreValueText.SetText(scoreSystem.Score.ToString());
+        levelCompleteMenu.streakValueText.SetText(scoreSystem.Streak.ToString());
+        levelCompleteMenu.rankAnimator.Setup(scoreSystem.Rank, null);
+        levelCompleteMenu.pfcStatusText.SetText(scoreSystem.FullComboState == FullComboState.PerfectFullCombo ? "PFC" : "FC");
+        levelCompleteMenu.newBestGameObject.SetActive(scoreSystem.IsHighScore);
+        levelCompleteMenu.accuracyGameObject.SetActive(!string.IsNullOrWhiteSpace(scoreSystem.PostGameInfo1Value));
         accLabel.textToAppend = scoreSystem.PostGameInfo1Name;
-        levelCompleteMenu.accuracyBonusText.SetText(container.PostGameInfo1Value);
-        levelCompleteMenu.FcBonusGameObject.SetActive(!string.IsNullOrWhiteSpace(container.PostGameInfo2Value));
+        levelCompleteMenu.accuracyBonusText.SetText(scoreSystem.PostGameInfo1Value);
+        levelCompleteMenu.FcBonusGameObject.SetActive(!string.IsNullOrWhiteSpace(scoreSystem.PostGameInfo2Value));
         fcLabel.textToAppend = scoreSystem.PostGameInfo2Name;
-        levelCompleteMenu.fcBonusText.SetText(container.PostGameInfo2Value);
-        levelCompleteMenu.PfcBonusGameObject.SetActive(!string.IsNullOrWhiteSpace(container.PostGameInfo3Value));
+        levelCompleteMenu.fcBonusText.SetText(scoreSystem.PostGameInfo2Value);
+        levelCompleteMenu.PfcBonusGameObject.SetActive(!string.IsNullOrWhiteSpace(scoreSystem.PostGameInfo3Value));
         pfcLabel.textToAppend = scoreSystem.PostGameInfo3Name;
-        levelCompleteMenu.pfcBonusText.SetText(container.PostGameInfo3Value);
+        levelCompleteMenu.pfcBonusText.SetText(scoreSystem.PostGameInfo3Value);
     }
-
-    private static int GetScore() => ScoreMod.CurrentScoreSystem.ScoreContainer.Score;
-
-    private static int GetStreak() => ScoreMod.CurrentScoreSystem.ScoreContainer.Streak;
-
-    private static FullComboState GetFullComboState() => ScoreMod.CurrentScoreSystem.ScoreContainer.FullComboState;
 
     [HarmonyPatch(typeof(XDLevelCompleteMenu), nameof(XDLevelCompleteMenu.Setup)), HarmonyPostfix]
     private static void XDLevelCompleteMenu_Setup_Postfix(XDLevelCompleteMenu __instance, PlayState playState) {
@@ -57,11 +50,19 @@ internal class CompleteScreenUI {
     }
 
     [HarmonyPatch(typeof(RankAnimator), nameof(RankAnimator.Setup)), HarmonyTranspiler]
-    private static IEnumerable<CodeInstruction> RankAnimator_Setup_Transpiler(IEnumerable<CodeInstruction> instructions) {
+    private static IEnumerable<CodeInstruction> RankAnimator_Setup_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
         var operations = new DeferredListOperation<CodeInstruction>();
-        var CompleteScreenUI_GetFullComboState = typeof(CompleteScreenUI).GetMethod(nameof(GetFullComboState), BindingFlags.NonPublic | BindingFlags.Static);
+        var fullComboState = generator.DeclareLocal(typeof(FullComboState));
+        var Main_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod();
+        var IScoreSystem_get_FullComboState = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.FullComboState)).GetGetMethod();
         var PlayState_get_fullComboState = typeof(PlayState).GetProperty(nameof(PlayState.fullComboState)).GetGetMethod();
+        
+        operations.Insert(0, new CodeInstruction[] {
+            new (OpCodes.Call, Main_get_CurrentScoreSystemInternal),
+            new (OpCodes.Callvirt, IScoreSystem_get_FullComboState),
+            new (OpCodes.Stloc_S, fullComboState)
+        });
 
         var matches = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
             instr => instr.opcode == OpCodes.Ldarg_2, // playState
@@ -70,7 +71,7 @@ internal class CompleteScreenUI {
 
         foreach (var match in matches) {
             operations.Replace(match[0].Start, 2, new CodeInstruction[] {
-                new (OpCodes.Call, CompleteScreenUI_GetFullComboState)
+                new (OpCodes.Ldloc_S, fullComboState)
             });
         }
             
@@ -80,13 +81,20 @@ internal class CompleteScreenUI {
     }
 
     [HarmonyPatch(typeof(LevelCompleteCoreAnimationBehaviour), "AnimateText"), HarmonyTranspiler]
-    private static IEnumerable<CodeInstruction> LevelCompleteCoreAnimationBehaviour_AnimateText_Transpiler(IEnumerable<CodeInstruction> instructions) {
+    private static IEnumerable<CodeInstruction> LevelCompleteCoreAnimationBehaviour_AnimateText_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
         var operations = new DeferredListOperation<CodeInstruction>();
-        var CompleteScreenUI_GetScore = typeof(CompleteScreenUI).GetMethod(nameof(GetScore), BindingFlags.NonPublic | BindingFlags.Static);
-        var CompleteScreenUI_GetStreak = typeof(CompleteScreenUI).GetMethod(nameof(GetStreak), BindingFlags.NonPublic | BindingFlags.Static);
+        var currentScoreSystem = generator.DeclareLocal(typeof(IScoreSystem));
+        var Main_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod();
+        var IScoreSystem_get_Score = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.Score)).GetGetMethod();
+        var IScoreSystem_get_Streak = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.Streak)).GetGetMethod();
         var PlayState_get_TotalScore = typeof(PlayState).GetProperty(nameof(PlayState.TotalScore)).GetGetMethod();
         var PlayState_get_maxCombo = typeof(PlayState).GetProperty(nameof(PlayState.maxCombo)).GetGetMethod();
+        
+        operations.Insert(0, new CodeInstruction[] {
+            new (OpCodes.Call, Main_get_CurrentScoreSystemInternal),
+            new (OpCodes.Stloc_S, currentScoreSystem)
+        });
 
         var match = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
             instr => instr.opcode == OpCodes.Ldloc_0, // playState
@@ -94,7 +102,8 @@ internal class CompleteScreenUI {
         }).First()[0];
             
         operations.Replace(match.Start, 2, new CodeInstruction[] {
-            new (OpCodes.Call, CompleteScreenUI_GetScore)
+            new (OpCodes.Ldloc_S, currentScoreSystem),
+            new (OpCodes.Callvirt, IScoreSystem_get_Score)
         });
             
         match = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
@@ -103,7 +112,8 @@ internal class CompleteScreenUI {
         }).First()[0];
             
         operations.Replace(match.Start, 2, new CodeInstruction[] {
-            new (OpCodes.Call, CompleteScreenUI_GetStreak)
+            new (OpCodes.Ldloc_S, currentScoreSystem),
+            new (OpCodes.Callvirt, IScoreSystem_get_Streak)
         });
             
         operations.Execute(instructionsList);
