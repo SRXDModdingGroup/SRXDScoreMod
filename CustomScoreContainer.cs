@@ -1,28 +1,39 @@
 ﻿using UnityEngine;
 
-namespace SRXDScoreMod {
-    public abstract class CustomScoreContainer : IReadOnlyScoreContainer {
-        public abstract string Name { get; }
-        public abstract int Hash { get; }
-        public abstract int Score { get; }
-        public abstract int MaxScore { get; }
-        public abstract int Multiplier { get; }
-        public abstract int Streak { get; }
-        public abstract FCStarState StarState { get; }
-        public abstract Color StarColor { get; }
-        public abstract bool ImplementsScorePrediction { get; }
-        public abstract int MaxScoreSoFar { get; }
-        public abstract bool ImplementsSecondaryScore { get; }
-        public abstract int SecondaryScore { get; }
-        public abstract FullComboState FullComboState { get; }
-        public abstract string PostGameInfo1Name { get; }
-        public abstract string PostGameInfo1Value { get; }
-        public abstract string PostGameInfo2Name { get; }
-        public abstract string PostGameInfo2Value { get; }
-        public abstract string PostGameInfo3Name { get; }
-        public abstract string PostGameInfo3Value { get; }
-        public abstract string GetRank(int score, int maxScore);
-        public abstract HighScoreInfo GetHighScoreInfoForChart(TrackInfoAssetReference trackInfoRef, TrackDataMetadata metadata);
-        public abstract HighScoreInfo GetHighScoreInfoForChart(TrackDataMetadata metadata);
-    }
+namespace SRXDScoreMod; 
+
+internal abstract class CustomScoreContainer : IScoreContainer {
+    public int Score { get; internal set; }
+    
+    public int SecondaryScore { get; internal set; }
+    
+    public int HighScore { get; internal set; }
+    
+    public int HighSecondaryScore { get; internal set; }
+    
+    public int MaxScore { get; internal set; }
+    
+    public int MaxScoreSoFar { get; internal set; }
+    
+    public int Streak { get; internal set; }
+    
+    public int BestStreak { get; internal set; }
+    
+    public bool IsHighScore { get; internal set; }
+    
+    public int Multiplier { get; internal set; }
+    
+    public FullComboState FullComboState { get; internal set; }
+    
+    public FullComboState StarState { get; internal set; }
+    
+    public Color StarColor { get; internal set; }
+    
+    public string Rank { get; internal set; }
+    
+    public string PostGameInfo1Value { get; internal set; }
+    
+    public string PostGameInfo2Value { get; internal set; }
+    
+    public string PostGameInfo3Value { get; internal set; }
 }

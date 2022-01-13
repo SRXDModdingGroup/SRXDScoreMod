@@ -79,6 +79,7 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="BaseScoreContainerWrapper.cs" />
+        <Compile Include="BaseScoreSystemWrapper.cs" />
         <Compile Include="CompleteScreenUI.cs" />
         <Compile Include="CustomScoreContainer.cs" />
         <Compile Include="CustomTimingAccuracy.cs" />
@@ -87,9 +88,10 @@
         <Compile Include="GameplayState.cs" />
         <Compile Include="HighScoreInfo.cs" />
         <Compile Include="HighScoresContainer.cs" />
-        <Compile Include="IReadOnlyScoreContainer.cs" />
+        <Compile Include="IScoreContainer.cs" />
+        <Compile Include="IScoreSystem.cs" />
         <Compile Include="LevelSelectUI.cs" />
-        <Compile Include="Main.cs" />
+        <Compile Include="ScoreMod.cs" />
         <Compile Include="ModState.cs" />
         <Compile Include="ScoreContainer.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
