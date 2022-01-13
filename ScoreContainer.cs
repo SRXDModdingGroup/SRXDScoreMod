@@ -189,12 +189,6 @@ public class ScoreContainer {
 
     // Adds a flat amount of points to the max score
     public void AddFlatMaxScore(int amount, int noteIndex, bool isSustainedNoteTick) => AddMaxScore(amount, noteIndex, isSustainedNoteTick);
-        
-    // Moves points for a single sustained note tick from the max score history to the max score so far
-    public void PopMaxScoreSingleTick(int noteIndex) => MaxScoreSoFar += possibleNotePoints[noteIndex].PopSingleTickValue(Profile.MaxMultiplier);
-        
-    // Moves points for all ticks of a sustained note from the max score history to the max score so far
-    public void PopMaxScoreAllTicks(int noteIndex) => MaxScoreSoFar += possibleNotePoints[noteIndex].PopAllTickValue();
 
     // Adds a single miss to the miss counter
     public void AddMiss() => accuracyCounters[Accuracy.Miss]++;
@@ -304,18 +298,6 @@ public class ScoreContainer {
         return "D";
     }
 
-    // For debugging purposes. Gets all notes in the max score history that went unchecked by the end of a track
-    public IEnumerable<string> GetMaxScoreSoFarUnchecked() {
-        for (int i = 0; i < possibleNotePoints.Length; i++) {
-            var item = possibleNotePoints[i];
-            int value = item.PopNoteValue();
-            int ticks = item.PopAllTickValue();
-
-            if (value > 0 || ticks > 0)
-                yield return $"Note {i}: Type {GameplayState.GetNoteType(i)}, Value {value}, Ticks {ticks}";
-        }
-    }
-
     private void ClearSustainedNoteTick(int noteIndex, int[] possibleTicks) {
         int amount = Profile.MaxMultiplier;
         int remaining = possibleTicks[noteIndex];
@@ -354,11 +336,6 @@ public class ScoreContainer {
         int scaledAmount = Profile.MaxMultiplier * amount;
             
         MaxScore += scaledAmount;
-            
-        if (isSustainedNoteTick)
-            possibleNotePoints[noteIndex].PushTickValue(scaledAmount);
-        else
-            possibleNotePoints[noteIndex].PushNoteValue(scaledAmount);
     }
 
     // Adds points to this container given a timing offset and a set of timing windows

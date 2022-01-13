@@ -54,13 +54,13 @@ internal class CompleteScreenUI {
         var instructionsList = new List<CodeInstruction>(instructions);
         var operations = new DeferredListOperation<CodeInstruction>();
         var fullComboState = generator.DeclareLocal(typeof(FullComboState));
-        var Main_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod();
-        var IScoreSystem_get_FullComboState = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.FullComboState)).GetGetMethod();
+        var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);
+        var IReadOnlyScoreSystem_get_FullComboState = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.FullComboState)).GetGetMethod();
         var PlayState_get_fullComboState = typeof(PlayState).GetProperty(nameof(PlayState.fullComboState)).GetGetMethod();
         
         operations.Insert(0, new CodeInstruction[] {
-            new (OpCodes.Call, Main_get_CurrentScoreSystemInternal),
-            new (OpCodes.Callvirt, IScoreSystem_get_FullComboState),
+            new (OpCodes.Call, ScoreMod_get_CurrentScoreSystemInternal),
+            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_FullComboState),
             new (OpCodes.Stloc_S, fullComboState)
         });
 
@@ -70,8 +70,10 @@ internal class CompleteScreenUI {
         });
 
         foreach (var match in matches) {
-            operations.Replace(match[0].Start, 2, new CodeInstruction[] {
-                new (OpCodes.Ldloc_S, fullComboState)
+            int start = match[0].Start;
+            
+            operations.Replace(start, 2, new CodeInstruction[] {
+                new CodeInstruction(OpCodes.Ldloc_S, fullComboState).WithLabels(instructionsList[start].labels)
             });
         }
             
@@ -84,15 +86,15 @@ internal class CompleteScreenUI {
     private static IEnumerable<CodeInstruction> LevelCompleteCoreAnimationBehaviour_AnimateText_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
         var operations = new DeferredListOperation<CodeInstruction>();
-        var currentScoreSystem = generator.DeclareLocal(typeof(IScoreSystem));
-        var Main_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod();
-        var IScoreSystem_get_Score = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.Score)).GetGetMethod();
-        var IScoreSystem_get_Streak = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.Streak)).GetGetMethod();
+        var currentScoreSystem = generator.DeclareLocal(typeof(IReadOnlyScoreSystem));
+        var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);
+        var IReadOnlyScoreSystem_get_Score = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Score)).GetGetMethod();
+        var IReadOnlyScoreSystem_get_Streak = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Streak)).GetGetMethod();
         var PlayState_get_TotalScore = typeof(PlayState).GetProperty(nameof(PlayState.TotalScore)).GetGetMethod();
         var PlayState_get_maxCombo = typeof(PlayState).GetProperty(nameof(PlayState.maxCombo)).GetGetMethod();
         
         operations.Insert(0, new CodeInstruction[] {
-            new (OpCodes.Call, Main_get_CurrentScoreSystemInternal),
+            new (OpCodes.Call, ScoreMod_get_CurrentScoreSystemInternal),
             new (OpCodes.Stloc_S, currentScoreSystem)
         });
 
@@ -103,7 +105,7 @@ internal class CompleteScreenUI {
             
         operations.Replace(match.Start, 2, new CodeInstruction[] {
             new (OpCodes.Ldloc_S, currentScoreSystem),
-            new (OpCodes.Callvirt, IScoreSystem_get_Score)
+            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_Score)
         });
             
         match = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
@@ -113,7 +115,7 @@ internal class CompleteScreenUI {
             
         operations.Replace(match.Start, 2, new CodeInstruction[] {
             new (OpCodes.Ldloc_S, currentScoreSystem),
-            new (OpCodes.Callvirt, IScoreSystem_get_Streak)
+            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_Streak)
         });
             
         operations.Execute(instructionsList);

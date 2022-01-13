@@ -32,14 +32,7 @@ public class ScoreMod : BaseUnityPlugin {
 
     private void Awake() {
         Logger = base.Logger;
-
-        var harmony = new Harmony("ScoreMod");
-            
-        harmony.PatchAll(typeof(GameplayState));
-        harmony.PatchAll(typeof(GameplayUI));
-        harmony.PatchAll(typeof(CompleteScreenUI));
-        harmony.PatchAll(typeof(LevelSelectUI));
-
+        
         StartEnabled = Config.Bind("Settings", "StartEnabled", true, "Enable modded score on startup");
         DefaultProfile = Config.Bind("Settings", "DefaultProfile", "0", "The name or index of the default scoring profile");
         PaceType = Config.Bind("Settings", "PaceType", "Both", new ConfigDescription("Whether to show the max possible score, its delta relative to PB, both, or hide the Pace display", new AcceptableValueList<string>("Delta", "Score", "Both", "Hide")));
@@ -48,6 +41,15 @@ public class ScoreMod : BaseUnityPlugin {
 
         scoreSystems = new List<IScoreSystem>();
         scoreSystems.Add(new BaseScoreSystemWrapper());
+        CurrentScoreSystemInternal = scoreSystems[0];
+
+        var harmony = new Harmony("ScoreMod");
+            
+        harmony.PatchAll(typeof(GameplayState));
+        harmony.PatchAll(typeof(GameplayUI));
+        harmony.PatchAll(typeof(CompleteScreenUI));
+        harmony.PatchAll(typeof(LevelSelectUI));
+
         HighScoresContainer.LoadHighScores();
     }
 

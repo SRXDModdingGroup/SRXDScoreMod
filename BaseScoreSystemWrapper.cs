@@ -53,7 +53,7 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
     public string PostGameInfo3Name => "PFC";
 
     private PlayState playState;
-    private PlayState.ScoreState scoreState;
+    private PlayState.ScoreState scoreState = new();
 
     public void Init() {
         playState = Track.Instance.playStateFirst;

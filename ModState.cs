@@ -54,9 +54,7 @@ public static class ModState {
     // Toggles modded scoring visibility and updates UI
     public static void ToggleModdedScoring() {
         ShowModdedScore = !ShowModdedScore;
-        GameplayUI.UpdateUI();
         CompleteScreenUI.UpdateUI();
-        LevelSelectUI.UpdateModScore();
         LevelSelectUI.UpdateUI();
     }
 
@@ -68,7 +66,6 @@ public static class ModState {
         CurrentContainer = scoreContainers[index];
         ShowModdedScore = true;
         CompleteScreenUI.UpdateUI();
-        LevelSelectUI.UpdateModScore();
         LevelSelectUI.UpdateUI();
 
         return true;
@@ -106,7 +103,6 @@ public static class ModState {
         if (isSustainedNoteTick) {
             foreach (var container in scoreContainers) {
                 container.AddFlatScore(amount);
-                container.PopMaxScoreSingleTick(noteIndex);
             }
         }
         else {
@@ -126,9 +122,6 @@ public static class ModState {
                 case NoteType.DrumEnd:
                     foreach (var container in scoreContainers) {
                         var accuracyForContainer = container.AddScoreFromNoteType(noteType, offset);
-
-                        if (container == CurrentContainer)
-                            LastAccuracy = accuracyForContainer;
                     }
 
                     break;
@@ -139,19 +132,10 @@ public static class ModState {
 
                     break;
             }
-
-            foreach (var container in scoreContainers)
-                container.PopMaxScoreNote(noteIndex);
         }
 
         if (!ShowModdedScore)
             return;
-
-        if (CurrentContainer.Multiplier != oldMultiplier)
-            GameplayUI.UpdateMultiplierText();
-
-        if (CurrentContainer.GetIsPfc(false) != oldIsPfc || CurrentContainer.GetIsSPlus() != oldIsSPlus)
-            GameplayUI.UpdateFcStar();
     }
 
     // Adds points to the max possible score, recording the added points in the score containers' max score history
@@ -184,32 +168,18 @@ public static class ModState {
         }
     }
 
-    // Links start and end of holds and beat holds so that misses apply to both
-    public static void AddReleaseNotePairing(int startIndex, int endIndex) => releaseIndicesFromStart.Add(startIndex, endIndex);
-
     // Mark a note as missed
     public static void Miss(int noteIndex, bool countMiss, bool trackMiss) {
-        foreach (var container in scoreContainers)
-            container.PopMaxScoreNote(noteIndex);
-
         AddMiss(noteIndex, countMiss, trackMiss);
     }
 
     // Mark the remaining ticks of a sustained note as missed
     public static void MissRemainingNoteTicks(int noteIndex) {
-        foreach (var container in scoreContainers)
-            container.PopMaxScoreAllTicks(noteIndex);
     }
         
     // Miss the release note that is linked to the given start note
     public static void MissReleaseNoteFromStart(NoteType startNoteType, int startNoteIndex) {
-        if (!releaseIndicesFromStart.TryGetValue(startNoteIndex, out int endIndex))
-            return;
-            
-        if (startNoteType == NoteType.HoldStart)
-            Miss(endIndex, true, true);
-        else
-            Miss(endIndex, true, true);
+        
     }
 
     // Reset the multiplier of all score containers
@@ -325,27 +295,24 @@ public static class ModState {
         if (!logDiscrepancies)
             return;
 
-        bool first = true;
-
         if (CurrentContainer.MaxScoreSoFar != CurrentContainer.MaxScore) {
             ScoreMod.Logger.LogWarning("WARNING: Some discrepancies were found during score prediction");
             ScoreMod.Logger.LogMessage("");
-            first = false;
         }
 
         bool any = false;
 
-        foreach (string s in CurrentContainer.GetMaxScoreSoFarUnchecked()) {
-            any = true;
-                
-            if (first) {
-                ScoreMod.Logger.LogWarning("WARNING: Some discrepancies were found during score prediction");
-                ScoreMod.Logger.LogMessage("");
-                first = false;
-            }
-                
-            ScoreMod.Logger.LogWarning(s);
-        }
+        // foreach (string s in CurrentContainer.GetMaxScoreSoFarUnchecked()) {
+        //     any = true;
+        //         
+        //     if (first) {
+        //         ScoreMod.Logger.LogWarning("WARNING: Some discrepancies were found during score prediction");
+        //         ScoreMod.Logger.LogMessage("");
+        //         first = false;
+        //     }
+        //         
+        //     ScoreMod.Logger.LogWarning(s);
+        // }
             
         if (any)
             ScoreMod.Logger.LogMessage("");
@@ -366,12 +333,6 @@ public static class ModState {
 
     // Adds a single miss to all miss counters, making sure that a given note never gets counted twice
     private static void AddMiss(int noteIndex, bool countMiss, bool trackMiss) {
-        if (trackMiss) {
-            if (trackedMisses.Contains(noteIndex))
-                return;
-                
-            trackedMisses.Add(noteIndex);
-        }
             
         if (!countMiss)
             return;

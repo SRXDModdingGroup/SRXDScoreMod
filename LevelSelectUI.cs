@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 using HarmonyLib;
@@ -12,14 +13,14 @@ namespace SRXDScoreMod;
 
 // Contains patch functions to make the level select menu show modded scores
 internal class LevelSelectUI {
-    private static Action<XDLevelSelectMenuBase> XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty
-        = ReflectionUtils.MethodToAction<XDLevelSelectMenuBase>(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty");
+    // private static Action<XDLevelSelectMenuBase> XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty
+    //     = ReflectionUtils.MethodToAction<XDLevelSelectMenuBase>(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty");
 
     private static XDLevelSelectMenuBase currentLevelSelectMenu;
     
     public static void UpdateUI() {
-        if (currentLevelSelectMenu != null && currentLevelSelectMenu.isActiveAndEnabled)
-            XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty(currentLevelSelectMenu);
+        // if (currentLevelSelectMenu != null && currentLevelSelectMenu.isActiveAndEnabled)
+        //     XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty(currentLevelSelectMenu);
     }
         
     [HarmonyPatch(typeof(XDLevelSelectMenuBase), nameof(XDLevelSelectMenuBase.OpenMenu)), HarmonyPostfix]
@@ -45,30 +46,34 @@ internal class LevelSelectUI {
         var instructionsList = new List<CodeInstruction>(instructions);
         var operations = new DeferredListOperation<CodeInstruction>();
         var highScoreInfo = generator.DeclareLocal(typeof(HighScoreInfo));
-        var IScoreSystem_GetHighScoreInfoForTrack = typeof(IScoreSystem).GetMethod(nameof(IScoreSystem.GetHighScoreInfoForTrack));
+        var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);
+        var IScoreSystem_GetHighScoreInfoForTrack = typeof(IScoreSystem).GetMethod(nameof(IScoreSystem.GetHighScoreInfoForTrack), new [] { typeof(TrackInfoAssetReference), typeof(TrackDataMetadata) });
         var HighScoreInfo_GetScoreString = typeof(HighScoreInfo).GetMethod(nameof(HighScoreInfo.GetScoreString));
         var HighScoreInfo_GetStreakString = typeof(HighScoreInfo).GetMethod(nameof(HighScoreInfo.GetStreakString));
         var HighScoreInfo_get_Rank = typeof(HighScoreInfo).GetProperty(nameof(HighScoreInfo.Rank)).GetGetMethod();
 
-        var match0 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+        int match0 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
             instr => instr.opcode == OpCodes.Ldloc_0, // handle
             instr => instr.opcode == OpCodes.Callvirt, // trackInfoRef
             instr => instr.opcode == OpCodes.Callvirt,
-            instr => instr.Is(OpCodes.Stloc_S, (byte) 29) // stats
-        }).First()[0];
+            instr => instr.StoresLocalAtIndex(29) // stats
+        }).First()[0].Start;
         
-        operations.Replace(match0.Start + 2, 2, new CodeInstruction[] {
+        operations.Replace(match0, 4, new CodeInstruction[] {
+            new (OpCodes.Call, ScoreMod_get_CurrentScoreSystemInternal),
+            instructionsList[match0],
+            instructionsList[match0 + 1],
             new (OpCodes.Ldloc_S, (byte) 28), // metadata
             new (OpCodes.Callvirt, IScoreSystem_GetHighScoreInfoForTrack),
             new (OpCodes.Stloc_S, highScoreInfo)
         });
 
         var match1 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
-            instr => instr.Is(OpCodes.Ldloc_S, (byte) 29) // stats
+            instr => instr.LoadsLocalAtIndex(29) // stats
         }).Then(new Func<CodeInstruction, bool>[] {
-            instr => instr.Is(OpCodes.Stloc_S, (byte) 14) // score
+            instr => instr.StoresLocalAtIndex(14) // score
         }).Then(new Func<CodeInstruction, bool>[] {
-            instr => instr.Is(OpCodes.Stloc_S, (byte) 16) // rank
+            instr => instr.StoresLocalAtIndex(16) // rank
         }).First();
 
         int start = match1[0].Start;
@@ -86,6 +91,12 @@ internal class LevelSelectUI {
         });
         
         operations.Execute(instructionsList);
+
+        // for (int i = 0; i < instructionsList.Count; i++) {
+        //     var instruction = instructionsList[i];
+        //     
+        //     ScoreMod.Logger.LogMessage($"IL_{i.ToString().PadLeft(4, '0')}: {instruction.opcode} {instruction.operand}");
+        // }
 
         return instructionsList;
     }

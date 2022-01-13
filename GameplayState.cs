@@ -8,7 +8,6 @@ namespace SRXDScoreMod;
 internal class GameplayState {
     public static PlayState PlayState { get; private set; }
 
-    private static bool pickedNewScoreSystem;
     private static PlayableNoteData noteData;
         
     // Log play results, save high scores, and update UI after completing or failing a track
@@ -16,40 +15,6 @@ internal class GameplayState {
         ModState.LogPlayData(TrackLoadingSystem.Instance.BorrowHandle(PlayState.TrackInfoRef).TrackInfoMetadata.title, success);
         ModState.SavePlayData(HighScoresContainer.GetTrackId(PlayState.trackData));
         CompleteScreenUI.UpdateUI();
-    }
-        
-    // Used to handle inputs for toggling mod score and selecting different scoring profiles
-    [HarmonyPatch(typeof(Game), nameof(Game.Update)), HarmonyPostfix]
-    private static void Game_Update_Postfix() {
-        if (PlayState != null && PlayState.isInPracticeMode)
-            return;
-
-        if (Input.GetKeyDown(KeyCode.P))
-            pickedNewScoreSystem = false;
-
-        if (Input.GetKey(KeyCode.P)) {
-            if (Input.GetKeyDown(KeyCode.Alpha1))
-                pickedNewScoreSystem = ModState.PickScoringSystem(0);
-            else if (Input.GetKeyDown(KeyCode.Alpha2))
-                pickedNewScoreSystem = ModState.PickScoringSystem(1);
-            else if (Input.GetKeyDown(KeyCode.Alpha3))
-                pickedNewScoreSystem = ModState.PickScoringSystem(2);
-            else if (Input.GetKeyDown(KeyCode.Alpha4))
-                pickedNewScoreSystem = ModState.PickScoringSystem(3);
-            else if (Input.GetKeyDown(KeyCode.Alpha5))
-                pickedNewScoreSystem = ModState.PickScoringSystem(4);
-            else if (Input.GetKeyDown(KeyCode.Alpha6))
-                pickedNewScoreSystem = ModState.PickScoringSystem(5);
-            else if (Input.GetKeyDown(KeyCode.Alpha7))
-                pickedNewScoreSystem = ModState.PickScoringSystem(6);
-            else if (Input.GetKeyDown(KeyCode.Alpha8))
-                pickedNewScoreSystem = ModState.PickScoringSystem(7);
-            else if (Input.GetKeyDown(KeyCode.Alpha9))
-                pickedNewScoreSystem = ModState.PickScoringSystem(8);
-        }
-
-        if (Input.GetKeyUp(KeyCode.P) && !pickedNewScoreSystem)
-            ModState.ToggleModdedScoring();
     }
 
     // Initialize mod values when starting a track

@@ -22,7 +22,9 @@ internal class GameplayUI {
         
     private static bool showPace;
     private static PaceType paceType;
+#pragma warning disable CS0649
     private static Animation timingFeedbackAnimation;
+#pragma warning restore CS0649
     private static TMP_Text bestPossibleText;
 
     private static void PlayCustomTimingFeedback(PlayState playState, CustomTimingAccuracy timingAccuracy) {
@@ -96,27 +98,38 @@ internal class GameplayUI {
 
         return instructionsList;
     }
+    
+    [HarmonyPatch(typeof(Track), nameof(Track.UpdateUI)), HarmonyPrefix]
+    private static void Track_UpdateUI_Prefix(Track __instance) {
+        if (ScoreMod.CurrentScoreSystemInternal == null)
+            ScoreMod.Logger.LogMessage("CurrentScoreSystemInternal is NULL");
+        
+        if (__instance.trackRenderer.GetRenderForPlayState(__instance.playStateFirst)?.hudCanvases == null)
+            ScoreMod.Logger.LogMessage("hudCanvases is NULL");
+        else if (__instance.trackRenderer.GetRenderForPlayState(__instance.playStateFirst).hudCanvases.fcStar == null)
+            ScoreMod.Logger.LogMessage("fcStar is NULL");
+    }
 
     [HarmonyPatch(typeof(Track), nameof(Track.UpdateUI)), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> Track_UpdateUI_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
         var operations = new DeferredListOperation<CodeInstruction>();
-        var currentScoreSystem = generator.DeclareLocal(typeof(IScoreSystem));
+        var currentScoreSystem = generator.DeclareLocal(typeof(IReadOnlyScoreSystem));
         var PlayState_get_TotalNoteScore = typeof(PlayState).GetProperty(nameof(PlayState.TotalNoteScore)).GetGetMethod();
         var PlayState_get_combo = typeof(PlayState).GetProperty(nameof(PlayState.combo)).GetGetMethod();
         var PlayState_get_multiplier = typeof(PlayState).GetProperty(nameof(PlayState.multiplier)).GetGetMethod();
         var PlayState_get_fullComboState = typeof(PlayState).GetProperty(nameof(PlayState.fullComboState)).GetGetMethod();
         var XDHudCanvases_fcStar = typeof(XDHudCanvases).GetField(nameof(XDHudCanvases.fcStar));
-        var Image_color = typeof(Image).GetField(nameof(Image.color));
-        var Main_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod();
-        var IScoreSystem_get_Score = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.Score)).GetGetMethod();
-        var IScoreSystem_get_Streak = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.Streak)).GetGetMethod();
-        var IScoreSystem_get_Multiplier = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.Multiplier)).GetGetMethod();
-        var IScoreSystem_get_StarState = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.StarState)).GetGetMethod();
-        var IScoreSystem_get_StarColor = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.StarColor)).GetGetMethod();
-            
+        var Graphic_set_color = typeof(Graphic).GetProperty(nameof(Graphic.color)).GetSetMethod();
+        var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);
+        var IReadOnlyScoreSystem_get_Score = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Score)).GetGetMethod();
+        var IReadOnlyScoreSystem_get_Streak = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Streak)).GetGetMethod();
+        var IReadOnlyScoreSystem_get_Multiplier = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Multiplier)).GetGetMethod();
+        var IReadOnlyScoreSystem_get_StarState = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.StarState)).GetGetMethod();
+        var IReadOnlyScoreSystem_get_StarColor = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.StarColor)).GetGetMethod();
+        
         operations.Insert(0, new CodeInstruction[] {
-            new(OpCodes.Call, Main_get_CurrentScoreSystemInternal),
+            new(OpCodes.Call, ScoreMod_get_CurrentScoreSystemInternal),
             new(OpCodes.Stloc_S, currentScoreSystem)
         });
 
@@ -129,14 +142,15 @@ internal class GameplayUI {
         operations.Insert(match0.End, new CodeInstruction[] {
             new (OpCodes.Ldloc_S, (byte) 15), // hudCanvases
             new (OpCodes.Ldfld, XDHudCanvases_fcStar),
-            new (OpCodes.Callvirt, IScoreSystem_get_StarColor),
-            new (OpCodes.Stfld, Image_color)
+            new (OpCodes.Ldloc_S, currentScoreSystem),
+            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_StarColor),
+            new (OpCodes.Callvirt, Graphic_set_color)
         });
             
-        ReplaceGetter(PlayState_get_TotalNoteScore, IScoreSystem_get_Score);
-        ReplaceGetter(PlayState_get_combo, IScoreSystem_get_Streak);
-        ReplaceGetter(PlayState_get_multiplier, IScoreSystem_get_Multiplier);
-        ReplaceGetter(PlayState_get_fullComboState, IScoreSystem_get_StarState);
+        ReplaceGetter(PlayState_get_TotalNoteScore, IReadOnlyScoreSystem_get_Score);
+        ReplaceGetter(PlayState_get_combo, IReadOnlyScoreSystem_get_Streak);
+        ReplaceGetter(PlayState_get_multiplier, IReadOnlyScoreSystem_get_Multiplier);
+        ReplaceGetter(PlayState_get_fullComboState, IReadOnlyScoreSystem_get_StarState);
             
         operations.Execute(instructionsList);
 
