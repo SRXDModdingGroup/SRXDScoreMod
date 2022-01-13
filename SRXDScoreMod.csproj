@@ -88,6 +88,7 @@
         <Compile Include="GameplayState.cs" />
         <Compile Include="HighScoreInfo.cs" />
         <Compile Include="HighScoresContainer.cs" />
+        <Compile Include="IReadOnlyScoreSystem.cs" />
         <Compile Include="IScoreContainer.cs" />
         <Compile Include="IScoreSystem.cs" />
         <Compile Include="LevelSelectUI.cs" />

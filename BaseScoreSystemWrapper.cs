@@ -21,7 +21,7 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
     public string PostGameInfo2Name { get; }
     
     public string PostGameInfo3Name { get; }
-    
+
     private PlayState playState;
     private BaseScoreContainerWrapper scoreContainer = new ();
 
@@ -47,5 +47,33 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
         }
         
         scoreContainer.SetPostGameInfo(scoreContainer.Score > highScore, playState.trackData.GetRankCalculatedFromScore(scoreContainer.Score));
+    }
+    
+    public HighScoreInfo GetHighScoreInfoForTrack(MetadataHandle handle, TrackData.DifficultyType difficultyType) {
+        var metadataSet = handle.TrackDataMetadata;
+        
+        return GetHighScoreInfoForTrack(
+            handle.TrackInfoRef,
+            metadataSet.GetMetadataForActiveIndex(metadataSet.GetClosestActiveIndexForDifficulty(difficultyType)));
+    }
+
+    public HighScoreInfo GetHighScoreInfoForTrack(TrackInfoAssetReference trackInfoRef, TrackDataMetadata metadata) {
+        var stats = trackInfoRef.Stats;
+        var fullComboState = FullComboState.None;
+        int score = stats.GetBestScoreForDifficulty(metadata).GetValue();
+        int streak = stats.GetBestStreakForDifficulty(metadata).GetValue();
+
+        if (score > metadata.PfcScoreThreshold && score > 0)
+            fullComboState = FullComboState.PerfectFullCombo;
+        else if (streak >= metadata.MaxCombo && streak > 0)
+            fullComboState = FullComboState.FullCombo;
+
+        return new HighScoreInfo(
+            score,
+            streak,
+            metadata.MaxNoteScore,
+            0,
+            metadata.GetRankCalculatedFromScore(score),
+            fullComboState);
     }
 }

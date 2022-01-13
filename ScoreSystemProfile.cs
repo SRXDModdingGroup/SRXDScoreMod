@@ -7,7 +7,7 @@ public class ScoreSystemProfile {
     private const uint HASH_BIAS = 2166136261u;
     private const int HASH_COEFF = 486187739;
 
-    public static ReadOnlyCollection<ScoreSystemProfile> Profiles { get; } = new ReadOnlyCollection<ScoreSystemProfile>(new[] {
+    public static ReadOnlyCollection<ScoreSystemProfile> Profiles { get; } = new(new[] {
         // Default and recommended score profile. Low cost Greats, high cost Goods and Okays, and a very fast building multiplier
         new ScoreSystemProfile("Flat (PPM 16)", 4, 16, 4, 12, 0.0167f, new [] {
             new TimedNoteWindow(Accuracy.Perfect, 16, 0f),

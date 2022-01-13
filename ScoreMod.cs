@@ -19,8 +19,10 @@ public class ScoreMod : BaseUnityPlugin {
     internal static ConfigEntry<string> PaceType { get; private set; }
     internal static ConfigEntry<float> TapTimingOffset { get; private set; }
     internal static ConfigEntry<float> BeatTimingOffset { get; private set; }
-        
-    public static IScoreSystem CurrentScoreSystem { get; private set; }
+
+    public static IReadOnlyScoreSystem CurrentScoreSystem => CurrentScoreSystemInternal;
+
+    internal static IScoreSystem CurrentScoreSystemInternal { get; private set; }
 
     private static bool pickedNewScoreSystem;
     private static string fileDirectory;
@@ -111,7 +113,7 @@ public class ScoreMod : BaseUnityPlugin {
         if (index >= scoreSystems.Count)
             return false;
 
-        CurrentScoreSystem = scoreSystems[index];
+        CurrentScoreSystemInternal = scoreSystems[index];
         CompleteScreenUI.UpdateUI();
         LevelSelectUI.UpdateUI();
 

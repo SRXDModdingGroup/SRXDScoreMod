@@ -1,6 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 using HarmonyLib;
+using SMU.Utilities;
 using TMPro;
 using UnityEngine;
 
@@ -8,45 +12,24 @@ namespace SRXDScoreMod;
 
 // Contains patch functions to make the level select menu show modded scores
 internal class LevelSelectUI {
-    private static readonly Regex MATCH_BASE_ID = new Regex(@"(.+?)_Stats");
-    private static readonly Regex MATCH_CUSTOM_ID = new Regex(@"CUSTOM_(.+?)_(\-?\d+)_Stats");
-    private static readonly HashSet<string> FORBIDDEN_NAMES = new HashSet<string> {
+    private static Action XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty
+        = ReflectionUtils.MethodToAction(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty");
+    
+    private static readonly Regex MATCH_BASE_ID = new(@"(.+?)_Stats");
+    private static readonly Regex MATCH_CUSTOM_ID = new(@"CUSTOM_(.+?)_(\-?\d+)_Stats");
+    private static readonly HashSet<string> FORBIDDEN_NAMES = new() {
         "CreateCustomTrack_Stats",
         "Tutorial XD",
         "RandomizeTrack_Stats"
     };
-        
-    private static bool menuLoaded;
-    private static string realHighScore;
-    private static string modHighScore;
-    private static string realRank;
-    private static string modRank;
-    private static string selectedTrackStatString;
-    private static string selectedTrackId;
+    
     private static string lastTrackId;
     private static string lastStatString;
     private static TrackData.DifficultyType selectedTrackDifficulty;
     private static TrackData.DifficultyType lastDifficulty;
-    private static TMP_Text scoreText;
-    private static TMP_Text rankText;
 
     public static void UpdateUI() {
-        if (string.IsNullOrWhiteSpace(selectedTrackId) || scoreText == null || rankText == null)
-            return;
-
-        if (ModState.ShowModdedScore) {
-            scoreText.SetText(modHighScore);
-            rankText.SetText(modRank);
-        }
-        else {
-            scoreText.SetText(realHighScore);
-            rankText.SetText(realRank);
-        }
-    }
-
-    public static void UpdateModScore() {
-        if (!string.IsNullOrWhiteSpace(selectedTrackId))
-            modHighScore = $"<line-height=50%>{HighScoresContainer.GetHighScore(selectedTrackId, ModState.CurrentContainer.Profile.GetUniqueId(), out int superPerfectCount, out modRank)}\n<size=50%>+{superPerfectCount}";
+        XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty();
     }
 
     public static string GetTrackId(PlayableTrackData trackData) => GetTrackId(trackData.TrackInfoRef.StatsUniqueString, trackData.Difficulty);
@@ -84,69 +67,68 @@ internal class LevelSelectUI {
         
     [HarmonyPatch(typeof(XDLevelSelectMenuBase), nameof(XDLevelSelectMenuBase.ShowSongDetails)), HarmonyPostfix]
     private static void XDLevelSelectMenuBase_ShowSongDetails_Postfix(XDLevelSelectMenuBase __instance) {
-        scoreText = __instance.score[0];
-        rankText = __instance.rank[0];
-            
-        var parent = scoreText.transform.parent;
+        var parent = __instance.score[0].transform.parent;
 
-        if (parent.localScale.x > 0.95f) {
-            parent.localScale = 0.9f * Vector3.one;
-                
-            for (int i = 2; i < 7; i++) {
-                var child = parent.GetChild(i);
-
-                child.localPosition += 10f * Vector3.down;
-            }
-        }
-            
-        if (__instance.haveContentTracklistTracksLoaded)
-            menuLoaded = true;
-
-        if (!menuLoaded)
+        if (parent.localScale.x < 0.95f)
             return;
-
-        string statString = __instance.WillLandAtHandle.TrackInfoRef.StatsUniqueString;
-
-        if (statString == selectedTrackStatString)
-            return;
-
-        selectedTrackStatString = statString;
-        selectedTrackId = GetTrackId(statString, selectedTrackDifficulty);
-        UpdateModScore();
-    }
-
-    [HarmonyPatch(typeof(XDDifficultyIcon), nameof(XDDifficultyIcon.ShowCorrectIcon)), HarmonyPostfix]
-    private static void XDDifficultyIcon_ShowCorrectIcon_Postfix(TrackData.DifficultyType difficultyType) {
-        selectedTrackDifficulty = difficultyType;
-            
-        if (string.IsNullOrWhiteSpace(selectedTrackStatString))
-            return;
-            
-        selectedTrackId = GetTrackId(selectedTrackStatString, selectedTrackDifficulty);
-        UpdateModScore();
-    }
-
-    [HarmonyPatch(typeof(TrackInfoAssetReference.StatsForTrackInfo), nameof(TrackInfoAssetReference.StatsForTrackInfo.GetBestScoreForDifficulty)), HarmonyPostfix]
-    private static void StatsForTrackInfo_GetBestScoreForDifficulty_Postfix(TrackInfoAssetReference.VersionedIntValueForDifficulty __result) {
-        realHighScore = __result.valueForDifficulty.ToString();
-    }
-
-    [HarmonyPatch(typeof(TrackDataMetadata), nameof(TrackDataMetadata.GetRankCalculatedFromScore)), HarmonyPostfix]
-    private static void TrackDataMetadata_GetRankCalculatedFromScore_Postfix(string __result) {
-        realRank = __result;
-    }
         
-    [HarmonyPatch(typeof(TMP_Text), nameof(TMP_Text.text), MethodType.Setter), HarmonyPrefix]
-    private static bool TMP_Text_SetTextInternal_Prefix(TMP_Text __instance, ref string value) {
-        if (GameplayState.Playing || !ModState.ShowModdedScore)
-            return true;
+        parent.localScale = 0.9f * Vector3.one;
+                
+        for (int i = 2; i < 7; i++) {
+            var child = parent.GetChild(i);
 
-        if (__instance == scoreText)
-            value = modHighScore;
-        else if (__instance == rankText)
-            value = modRank;
-
-        return true;
-
+            child.localPosition += 10f * Vector3.down;
+        }
     }
+
+    [HarmonyPatch(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty"), HarmonyTranspiler]
+    private static IEnumerable<CodeInstruction> XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
+        var instructionsList = new List<CodeInstruction>(instructions);
+        var operations = new DeferredListOperation<CodeInstruction>();
+        var highScoreInfo = generator.DeclareLocal(typeof(HighScoreInfo));
+        var IScoreSystem_GetHighScoreInfoForTrack = typeof(IScoreSystem).GetMethod(nameof(IScoreSystem.GetHighScoreInfoForTrack));
+        var HighScoreInfo_GetScoreString = typeof(HighScoreInfo).GetMethod(nameof(HighScoreInfo.GetScoreString));
+        var HighScoreInfo_GetStreakString = typeof(HighScoreInfo).GetMethod(nameof(HighScoreInfo.GetStreakString));
+        var HighScoreInfo_get_Rank = typeof(HighScoreInfo).GetProperty(nameof(HighScoreInfo.Rank)).GetGetMethod();
+
+        var match0 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.opcode == OpCodes.Ldloc_0, // handle
+            instr => instr.opcode == OpCodes.Callvirt, // trackInfoRef
+            instr => instr.opcode == OpCodes.Callvirt,
+            instr => instr.Is(OpCodes.Stloc_S, (byte) 29) // stats
+        }).First()[0];
+        
+        operations.Replace(match0.Start + 2, 2, new CodeInstruction[] {
+            new (OpCodes.Ldloc_S, (byte) 28), // metadata
+            new (OpCodes.Callvirt, IScoreSystem_GetHighScoreInfoForTrack),
+            new (OpCodes.Stloc_S, highScoreInfo)
+        });
+
+        var match1 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.Is(OpCodes.Ldloc_S, (byte) 29) // stats
+        }).Then(new Func<CodeInstruction, bool>[] {
+            instr => instr.Is(OpCodes.Stloc_S, (byte) 14) // score
+        }).Then(new Func<CodeInstruction, bool>[] {
+            instr => instr.Is(OpCodes.Stloc_S, (byte) 16) // rank
+        }).First();
+
+        int start = match1[0].Start;
+        
+        operations.Replace(start, match1[2].End - start, new CodeInstruction[] {
+            new (OpCodes.Ldloc_S, highScoreInfo),
+            new (OpCodes.Call, HighScoreInfo_GetScoreString),
+            new (OpCodes.Stloc_S, (byte) 14), // score
+            new (OpCodes.Ldloc_S, highScoreInfo),
+            new (OpCodes.Call, HighScoreInfo_GetStreakString),
+            new (OpCodes.Stloc_S, (byte) 15), // streak
+            new (OpCodes.Ldloc_S, highScoreInfo),
+            new (OpCodes.Call, HighScoreInfo_get_Rank),
+            new (OpCodes.Stloc_S, (byte) 16), // rank
+        });
+        
+        operations.Execute(instructionsList);
+
+        return instructionsList;
+    }
+
 }

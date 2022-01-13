@@ -7,7 +7,7 @@ public class ScoreContainer {
     // The player must lose fewer than this amount of points to get an S+
     private static readonly int S_PLUS_THRESHOLD = 96;
     // The lower score threshold for each possible rank
-    private static readonly List<KeyValuePair<float, string>> RANKS = new List<KeyValuePair<float, string>> {
+    private static readonly List<KeyValuePair<float, string>> RANKS = new() {
         new KeyValuePair<float, string>(0.98f, "S"),
         new KeyValuePair<float, string>(0.965f, "A+"),
         new KeyValuePair<float, string>(0.95f, "A"),
