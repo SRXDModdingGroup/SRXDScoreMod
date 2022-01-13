@@ -14,7 +14,7 @@ internal class GameplayState {
     // Log play results, save high scores, and update UI after completing or failing a track
     private static void EndPlay(bool success) {
         ModState.LogPlayData(TrackLoadingSystem.Instance.BorrowHandle(PlayState.TrackInfoRef).TrackInfoMetadata.title, success);
-        ModState.SavePlayData(LevelSelectUI.GetTrackId(PlayState.trackData));
+        ModState.SavePlayData(HighScoresContainer.GetTrackId(PlayState.trackData));
         CompleteScreenUI.UpdateUI();
     }
         
@@ -62,7 +62,7 @@ internal class GameplayState {
             
         noteData = PlayState.trackData.NoteData;
         ModState.Initialize(
-            LevelSelectUI.GetTrackId(PlayState.trackData),
+            HighScoresContainer.GetTrackId(PlayState.trackData),
             noteData.noteCount,
             PlayState.freestyleSectionState.Length,
             PlayState.spinSectionStates.Length,
@@ -75,7 +75,7 @@ internal class GameplayState {
         PlayState = __instance.playStateFirst;
         noteData = PlayState.trackData.NoteData;
         ModState.Initialize(
-            LevelSelectUI.GetTrackId(PlayState.trackData),
+            HighScoresContainer.GetTrackId(PlayState.trackData),
             noteData.noteCount,
             PlayState.freestyleSectionState.Length,
             PlayState.spinSectionStates.Length,

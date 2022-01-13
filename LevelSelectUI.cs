@@ -14,59 +14,13 @@ namespace SRXDScoreMod;
 internal class LevelSelectUI {
     private static Action XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty
         = ReflectionUtils.MethodToAction(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty");
-    
-    private static readonly Regex MATCH_BASE_ID = new(@"(.+?)_Stats");
-    private static readonly Regex MATCH_CUSTOM_ID = new(@"CUSTOM_(.+?)_(\-?\d+)_Stats");
-    private static readonly HashSet<string> FORBIDDEN_NAMES = new() {
-        "CreateCustomTrack_Stats",
-        "Tutorial XD",
-        "RandomizeTrack_Stats"
-    };
-    
-    private static string lastTrackId;
-    private static string lastStatString;
-    private static TrackData.DifficultyType selectedTrackDifficulty;
-    private static TrackData.DifficultyType lastDifficulty;
 
     public static void UpdateUI() {
         XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty();
     }
-
-    public static string GetTrackId(PlayableTrackData trackData) => GetTrackId(trackData.TrackInfoRef.StatsUniqueString, trackData.Difficulty);
-
-    private static string GetTrackId(string statString, TrackData.DifficultyType difficulty) {
-        if (statString == lastStatString && difficulty == lastDifficulty)
-            return lastTrackId;
-
-        lastStatString = statString;
-        lastDifficulty = difficulty;
-            
-        if (FORBIDDEN_NAMES.Contains(statString))
-            return lastTrackId = string.Empty;
-            
-        var match = MATCH_CUSTOM_ID.Match(statString);
-            
-        if (match.Success) {
-            var groups = match.Groups;
-            uint fileHash;
-
-            unchecked {
-                fileHash = (uint) int.Parse(groups[2].Value);
-            }
-
-            return lastTrackId = $"{groups[1].Value.Replace(' ', '_')}_{fileHash:x8}_{difficulty}";
-        }
-
-        match = MATCH_BASE_ID.Match(statString);
-
-        if (match.Success)
-            return lastTrackId = $"{match.Groups[1].Value.Replace(' ', '_')}_{difficulty}";
-
-        return lastTrackId = string.Empty;
-    }
         
-    [HarmonyPatch(typeof(XDLevelSelectMenuBase), nameof(XDLevelSelectMenuBase.ShowSongDetails)), HarmonyPostfix]
-    private static void XDLevelSelectMenuBase_ShowSongDetails_Postfix(XDLevelSelectMenuBase __instance) {
+    [HarmonyPatch(typeof(XDLevelSelectMenuBase), nameof(XDLevelSelectMenuBase.OpenMenu)), HarmonyPostfix]
+    private static void XDLevelSelectMenuBase_OpenMenu_Postfix(XDLevelSelectMenuBase __instance) {
         var parent = __instance.score[0].transform.parent;
 
         if (parent.localScale.x < 0.95f)
@@ -130,5 +84,4 @@ internal class LevelSelectUI {
 
         return instructionsList;
     }
-
 }

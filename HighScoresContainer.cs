@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace SRXDScoreMod; 
 
@@ -9,8 +10,18 @@ internal class HighScoresContainer {
     private const int HASH_COEFF = 486187739;
 
     private static readonly bool SAVE_HIGH_SCORES = true;
+    private static readonly Regex MATCH_BASE_ID = new(@"(.+?)_Stats");
+    private static readonly Regex MATCH_CUSTOM_ID = new(@"CUSTOM_(.+?)_(\-?\d+)_Stats");
+    private static readonly HashSet<string> FORBIDDEN_NAMES = new() {
+        "CreateCustomTrack_Stats",
+        "Tutorial XD",
+        "RandomizeTrack_Stats"
+    };
 
     private static string filePath;
+    private static string lastTrackId;
+    private static string lastStatString;
+    private static TrackData.DifficultyType lastDifficulty;
     private static Dictionary<string, HighScoreItem> highScores;
 
     public static void LoadHighScores() {
@@ -98,6 +109,40 @@ internal class HighScoresContainer {
         rank = "-";
 
         return 0;
+    }
+
+    public static string GetTrackId(PlayableTrackData trackData) {
+        string statString = trackData.TrackInfoRef.StatsUniqueString;
+        var difficulty = trackData.Difficulty;
+        
+        if (statString == lastStatString && difficulty == lastDifficulty)
+            return lastTrackId;
+
+        lastStatString = statString;
+        lastDifficulty = difficulty;
+            
+        if (FORBIDDEN_NAMES.Contains(statString))
+            return lastTrackId = string.Empty;
+            
+        var match = MATCH_CUSTOM_ID.Match(statString);
+            
+        if (match.Success) {
+            var groups = match.Groups;
+            uint fileHash;
+
+            unchecked {
+                fileHash = (uint) int.Parse(groups[2].Value);
+            }
+
+            return lastTrackId = $"{groups[1].Value.Replace(' ', '_')}_{fileHash:x8}_{difficulty}";
+        }
+
+        match = MATCH_BASE_ID.Match(statString);
+
+        if (match.Success)
+            return lastTrackId = $"{match.Groups[1].Value.Replace(' ', '_')}_{difficulty}";
+
+        return lastTrackId = string.Empty;
     }
 
     private static bool TryGetFilePath() {
