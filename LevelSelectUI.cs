@@ -12,15 +12,20 @@ namespace SRXDScoreMod;
 
 // Contains patch functions to make the level select menu show modded scores
 internal class LevelSelectUI {
-    private static Action XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty
-        = ReflectionUtils.MethodToAction(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty");
+    private static Action<XDLevelSelectMenuBase> XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty
+        = ReflectionUtils.MethodToAction<XDLevelSelectMenuBase>(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty");
 
+    private static XDLevelSelectMenuBase currentLevelSelectMenu;
+    
     public static void UpdateUI() {
-        XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty();
+        if (currentLevelSelectMenu != null && currentLevelSelectMenu.isActiveAndEnabled)
+            XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty(currentLevelSelectMenu);
     }
         
     [HarmonyPatch(typeof(XDLevelSelectMenuBase), nameof(XDLevelSelectMenuBase.OpenMenu)), HarmonyPostfix]
     private static void XDLevelSelectMenuBase_OpenMenu_Postfix(XDLevelSelectMenuBase __instance) {
+        currentLevelSelectMenu = __instance;
+        
         var parent = __instance.score[0].transform.parent;
 
         if (parent.localScale.x < 0.95f)

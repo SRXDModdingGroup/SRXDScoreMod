@@ -45,9 +45,6 @@
         <Reference Include="SpinModdingUtilities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\SpinModdingUtilities.dll</HintPath>
         </Reference>
-        <Reference Include="SRXDHelperEvents, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>Libs\SRXDHelperEvents.dll</HintPath>
-        </Reference>
         <Reference Include="SSD.Game, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\SSD.Game.dll</HintPath>
         </Reference>
@@ -80,7 +77,6 @@
     <ItemGroup>
         <Compile Include="BaseScoreSystemWrapper.cs" />
         <Compile Include="CompleteScreenUI.cs" />
-        <Compile Include="CustomScoreContainer.cs" />
         <Compile Include="CustomTimingAccuracy.cs" />
         <Compile Include="Enums.cs" />
         <Compile Include="GameplayUI.cs" />

@@ -45,13 +45,10 @@ public class ScoreMod : BaseUnityPlugin {
         PaceType = Config.Bind("Settings", "PaceType", "Both", new ConfigDescription("Whether to show the max possible score, its delta relative to PB, both, or hide the Pace display", new AcceptableValueList<string>("Delta", "Score", "Both", "Hide")));
         TapTimingOffset = Config.Bind("Settings", "TapTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for taps and liftoffs");
         BeatTimingOffset = Config.Bind("Settings", "BeatTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for beats and hard beat releases");
-        
+
+        scoreSystems = new List<IScoreSystem>();
         scoreSystems.Add(new BaseScoreSystemWrapper());
         HighScoresContainer.LoadHighScores();
-        ModState.Initialize(string.Empty, 0, 0, 0, 0);
-            
-        if (StartEnabled.Value)
-            ModState.ToggleModdedScoring();
     }
 
     private void Update() {

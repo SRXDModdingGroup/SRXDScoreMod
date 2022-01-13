@@ -52,10 +52,10 @@ internal class GameplayUI {
 
         var timeLeftTextContainer = __instance.timeLeftText.transform.parent;
         var bestPossibleObject = Object.Instantiate(timeLeftTextContainer.gameObject, Vector3.zero, timeLeftTextContainer.rotation, timeLeftTextContainer.parent);
-            
+
         bestPossibleObject.transform.localPosition = new Vector3(235f, 67f, 0f);
         bestPossibleObject.transform.localScale = timeLeftTextContainer.localScale;
-        bestPossibleObject.SetActive(ModState.ShowModdedScore);
+        bestPossibleObject.SetActive(ScoreMod.CurrentScoreSystemInternal.ImplementsScorePrediction);
         bestPossibleText = bestPossibleObject.GetComponentInChildren<TMP_Text>();
         bestPossibleText.fontSize = 8f;
         bestPossibleText.overflowMode = TextOverflowModes.Overflow;
