@@ -99,12 +99,14 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
         else if (streak >= metadata.MaxCombo && streak > 0)
             fullComboState = FullComboState.FullCombo;
 
+        string rank = metadata.GetRankCalculatedFromScore(score);
+
         return new HighScoreInfo(
             score,
             streak,
             metadata.MaxNoteScore,
             0,
-            metadata.GetRankCalculatedFromScore(score),
+            rank,
             fullComboState);
     }
 }

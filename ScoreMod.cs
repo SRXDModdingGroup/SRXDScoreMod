@@ -82,6 +82,11 @@ public class ScoreMod : BaseUnityPlugin {
             PickScoreSystem(0);
     }
 
+    internal static void InitializeScoreSystems() {
+        foreach (var scoreSystem in scoreSystems)
+            scoreSystem.Init();
+    }
+
     internal static bool TryGetFileDirectory(out string directory) {
         if (!string.IsNullOrWhiteSpace(fileDirectory)) {
             directory = fileDirectory;

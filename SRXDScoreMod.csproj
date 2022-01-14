@@ -81,25 +81,25 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="BaseScoreSystemWrapper.cs" />
-        <Compile Include="CodeInstructionExtensions.cs" />
-        <Compile Include="CompleteScreenUI.cs" />
-        <Compile Include="CustomTimingAccuracy.cs" />
-        <Compile Include="Enums.cs" />
-        <Compile Include="GameplayUI.cs" />
-        <Compile Include="GameplayState.cs" />
-        <Compile Include="HighScoreInfo.cs" />
         <Compile Include="HighScoresContainer.cs" />
-        <Compile Include="IReadOnlyScoreSystem.cs" />
-        <Compile Include="IScoreSystem.cs" />
-        <Compile Include="LevelSelectUI.cs" />
+        <Compile Include="Interfaces\IReadOnlyScoreSystem.cs" />
+        <Compile Include="Interfaces\IScoreSystem.cs" />
+        <Compile Include="Old\ModState.cs" />
+        <Compile Include="Old\ScoreContainer.cs" />
+        <Compile Include="Old\ScoreSystemProfile.cs" />
+        <Compile Include="Patches\CompleteScreenUI.cs" />
+        <Compile Include="Patches\GameplayState.cs" />
+        <Compile Include="Patches\GameplayUI.cs" />
+        <Compile Include="Patches\LevelSelectUI.cs" />
         <Compile Include="ScoreMod.cs" />
-        <Compile Include="ModState.cs" />
-        <Compile Include="ScoreContainer.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
-        <Compile Include="ScoreSystemProfile.cs" />
-        <Compile Include="StringTable.cs" />
-        <Compile Include="ReflectionUtils.cs" />
+        <Compile Include="ScoreSystems\BaseScoreSystemWrapper.cs" />
+        <Compile Include="Types\CustomTimingAccuracy.cs" />
+        <Compile Include="Types\Enums.cs" />
+        <Compile Include="Types\HighScoreInfo.cs" />
+        <Compile Include="Utility\CodeInstructionExtensions.cs" />
+        <Compile Include="Utility\ReflectionUtils.cs" />
+        <Compile Include="Utility\StringTable.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
