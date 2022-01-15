@@ -40,7 +40,7 @@ internal class GameplayUI {
         var transform = timingFeedbackAnimation.transform.GetChild(target);
         var feedbackText = transform.GetComponent<TextCharacter>();
 
-        feedbackText.Text = timingAccuracy.Text;
+        feedbackText.Text = timingAccuracy.DisplayName;
     }
 
     [HarmonyPatch(typeof(XDHudCanvases), nameof(XDHudCanvases.Start)), HarmonyPostfix]
@@ -173,7 +173,7 @@ internal class GameplayUI {
             
         bestPossibleText.gameObject.SetActive(true);
 
-        int bestPossible = scoreSystem.MaxScore + scoreSystem.Score - scoreSystem.MaxScoreSoFar;
+        int bestPossible = scoreSystem.MaxPossibleScore + scoreSystem.Score - scoreSystem.MaxPossibleScoreSoFar;
         int delta = bestPossible - scoreSystem.HighScore;
             
         if (delta >= 0)

@@ -3,6 +3,8 @@
 namespace SRXDScoreMod; 
 
 public class HighScoreInfo {
+    public static HighScoreInfo Blank { get; } = new(0, 0, 0, 0, string.Empty, FullComboState.None);
+    
     public int Score { get; }
     public int Streak { get; }
     public int MaxScore { get; }

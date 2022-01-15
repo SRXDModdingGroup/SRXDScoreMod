@@ -23,12 +23,17 @@ public class ScoreMod : BaseUnityPlugin {
     public static IReadOnlyScoreSystem CurrentScoreSystem => CurrentScoreSystemInternal;
 
     internal static IScoreSystem CurrentScoreSystemInternal { get; private set; }
+    
+    internal static List<CustomScoreSystem> CustomScoreSystems { get; private set; }
 
     private static bool pickedNewScoreSystem;
     private static string fileDirectory;
     private static List<IScoreSystem> scoreSystems;
-
-    public static void AddScoreSystem(IScoreSystem scoreSystem) => scoreSystems.Add(scoreSystem);
+    
+    public static void AddCustomScoreSystem(CustomScoreSystem scoreSystem) {
+        scoreSystems.Add(scoreSystem);
+        CustomScoreSystems.Add(scoreSystem);
+    }
 
     private void Awake() {
         Logger = base.Logger;
@@ -42,6 +47,7 @@ public class ScoreMod : BaseUnityPlugin {
         scoreSystems = new List<IScoreSystem>();
         scoreSystems.Add(new BaseScoreSystemWrapper());
         CurrentScoreSystemInternal = scoreSystems[0];
+        CustomScoreSystems = new List<CustomScoreSystem>();
 
         var harmony = new Harmony("ScoreMod");
             
@@ -82,9 +88,9 @@ public class ScoreMod : BaseUnityPlugin {
             PickScoreSystem(0);
     }
 
-    internal static void InitializeScoreSystems() {
+    internal static void InitializeScoreSystems(PlayState playState) {
         foreach (var scoreSystem in scoreSystems)
-            scoreSystem.Init();
+            scoreSystem.Init(playState);
     }
 
     internal static bool TryGetFileDirectory(out string directory) {

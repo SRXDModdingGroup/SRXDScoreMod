@@ -1,12 +1,20 @@
-﻿namespace SRXDScoreMod; 
+﻿using UnityEngine;
+
+namespace SRXDScoreMod; 
 
 public class CustomTimingAccuracy {
-    public string Text { get; }
+    public string DisplayName { get; }
+    
+    public string StatsName { get; }
+    
+    public Color Color { get; }
     
     public NoteTimingAccuracy BaseAccuracy { get; }
 
-    public CustomTimingAccuracy(string text, NoteTimingAccuracy baseAccuracy) {
-        Text = text;
+    public CustomTimingAccuracy(string displayName, string statsName, Color color, NoteTimingAccuracy baseAccuracy) {
+        DisplayName = displayName;
+        StatsName = statsName;
         BaseAccuracy = baseAccuracy;
+        Color = color;
     }
 }

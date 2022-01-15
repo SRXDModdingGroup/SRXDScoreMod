@@ -11,11 +11,13 @@ public interface IReadOnlyScoreSystem {
         
     int HighSecondaryScore { get; }
         
-    int MaxScore { get; }
+    int MaxPossibleScore { get; }
         
-    int MaxScoreSoFar { get; }
+    int MaxPossibleScoreSoFar { get; }
 
     int Streak { get; }
+
+    int MaxStreak { get; }
         
     int BestStreak { get; }
         
@@ -46,6 +48,8 @@ public interface IReadOnlyScoreSystem {
     public string PostGameInfo2Name { get; }
     
     public string PostGameInfo3Name { get; }
+    
+    public TimingWindow[] TimingWindowsForDisplay { get; }
     
     public HighScoreInfo GetHighScoreInfoForTrack(MetadataHandle handle, TrackData.DifficultyType difficultyType);
 }

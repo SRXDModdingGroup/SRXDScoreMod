@@ -4,17 +4,17 @@ using UnityEngine;
 namespace SRXDScoreMod; 
 
 internal class BaseScoreSystemWrapper : IScoreSystem {
-    private static readonly CustomTimingAccuracy PERFECT = new("Perfect", NoteTimingAccuracy.Perfect);
-    private static readonly CustomTimingAccuracy EARLY = new("Early", NoteTimingAccuracy.Early);
-    private static readonly CustomTimingAccuracy LATE = new("Late", NoteTimingAccuracy.Late);
+    private static readonly CustomTimingAccuracy PERFECT = new("Perfect", "Perfect", Color.cyan, NoteTimingAccuracy.Perfect);
+    private static readonly CustomTimingAccuracy EARLY = new("Early", "Good", Color.yellow, NoteTimingAccuracy.Early);
+    private static readonly CustomTimingAccuracy LATE = new("Late", "Good", Color.yellow, NoteTimingAccuracy.Late);
 
     public int Score => scoreState.FinalisedScore > 0 ? scoreState.FinalisedScore : scoreState.totalNoteScore;
 
     public int HighSecondaryScore => 0;
         
-    public int MaxScore => 0;
+    public int MaxPossibleScore => 0;
         
-    public int MaxScoreSoFar => 0;
+    public int MaxPossibleScoreSoFar => 0;
 
     public int HighScore => 0;
 
@@ -23,6 +23,8 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
     public int Multiplier => scoreState.Multiplier;
         
     public int Streak => scoreState.combo;
+
+    public int MaxStreak => scoreState.maxCombo;
 
     public int BestStreak => 0;
 
@@ -51,16 +53,23 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
     public string PostGameInfo2Name => string.Empty;
 
     public string PostGameInfo3Name => "PFC";
+    
+    public TimingWindow[] TimingWindowsForDisplay { get; } = {
+        new (EARLY, -130f),
+        new (EARLY, -50f),
+        new (PERFECT, 50f),
+        new (LATE, 130f)
+    };
 
-    private PlayState playState;
+    private GameplayVariables gameplayVariables;
     private PlayState.ScoreState scoreState = new();
 
-    public void Init() {
-        playState = Track.Instance.playStateFirst;
+    public void Init(PlayState playState) {
+        gameplayVariables = GameplayVariables.Instance;
         scoreState = playState.scoreState;
     }
 
-    public void Complete() {
+    public void Complete(PlayState playState) {
         var trackInfoRef = playState.TrackInfoRef;
         TrackDataMetadata metadata = null;
         
@@ -79,7 +88,15 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
         IsHighScore = Score > highScore;
         Rank = playState.trackData.GetRankCalculatedFromScore(Score);
     }
-    
+
+    public CustomTimingAccuracy GetTimingAccuracyForTap(float timeOffset) => BaseToCustomTimingAccuracy(gameplayVariables.GetTimingAccuracy(timeOffset));
+
+    public CustomTimingAccuracy GetTimingAccuracyForBeat(float timeOffset) => BaseToCustomTimingAccuracy(gameplayVariables.GetTimingAccuracyForBeat(timeOffset));
+
+    public CustomTimingAccuracy GetTimingAccuracyForLiftoff(float timeOffset) => BaseToCustomTimingAccuracy(gameplayVariables.GetTimingAccuracy(timeOffset));
+
+    public CustomTimingAccuracy GetTimingAccuracyForBeatRelease(float timeOffset) => BaseToCustomTimingAccuracy(gameplayVariables.GetTimingAccuracyForBeat(timeOffset));
+
     public HighScoreInfo GetHighScoreInfoForTrack(MetadataHandle handle, TrackData.DifficultyType difficultyType) {
         var metadataSet = handle.TrackDataMetadata;
         
@@ -109,4 +126,11 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
             rank,
             fullComboState);
     }
+
+    private CustomTimingAccuracy BaseToCustomTimingAccuracy(NoteTimingAccuracy timingAccuracy) => timingAccuracy switch {
+        NoteTimingAccuracy.Perfect => PERFECT,
+        NoteTimingAccuracy.Early => EARLY,
+        NoteTimingAccuracy.Late => LATE,
+        _ => PERFECT
+    };
 }

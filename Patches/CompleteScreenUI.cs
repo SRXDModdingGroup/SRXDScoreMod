@@ -89,7 +89,7 @@ internal class CompleteScreenUI {
         var currentScoreSystem = generator.DeclareLocal(typeof(IReadOnlyScoreSystem));
         var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);
         var IReadOnlyScoreSystem_get_Score = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Score)).GetGetMethod();
-        var IReadOnlyScoreSystem_get_Streak = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Streak)).GetGetMethod();
+        var IReadOnlyScoreSystem_get_MaxStreak = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.MaxStreak)).GetGetMethod();
         var PlayState_get_TotalScore = typeof(PlayState).GetProperty(nameof(PlayState.TotalScore)).GetGetMethod();
         var PlayState_get_maxCombo = typeof(PlayState).GetProperty(nameof(PlayState.maxCombo)).GetGetMethod();
         
@@ -115,7 +115,7 @@ internal class CompleteScreenUI {
             
         operations.Replace(match.Start, 2, new CodeInstruction[] {
             new (OpCodes.Ldloc_S, currentScoreSystem),
-            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_Streak)
+            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_MaxStreak)
         });
             
         operations.Execute(instructionsList);
