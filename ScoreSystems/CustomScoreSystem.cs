@@ -234,6 +234,14 @@ public abstract class CustomScoreSystem : IScoreSystem {
     
     internal void BreakScratch(int noteIndex) => MissNote(noteIndex, MultiplierChangeForBrokenScratch);
 
+    internal void UpdateHold(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, HoldTickRate);
+
+    internal void UpdateBeatHold(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, BeatHoldTickRate);
+
+    internal void UpdateSpin(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, SpinTickRate);
+
+    internal void UpdateScratch(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, ScratchTickRate);
+
     #endregion
 
     #region ScoringLogic
@@ -285,6 +293,17 @@ public abstract class CustomScoreSystem : IScoreSystem {
         AddRemainingValueToMaxScoreSoFar(noteIndex);
         AddRemainingValueToMaxScoreSoFar(endNoteIndex);
         ChangeMultiplier(multiplierChange);
+    }
+
+    private void UpdateSustainedNoteValue(int noteIndex, float time, float tickRate) {
+        var scoreState = scoreStates[noteIndex];
+
+        if (scoreState.AvailableBaseSustainPoints == 0)
+            return;
+        
+        int newValue = Mathf.Clamp(Mathf.FloorToInt(tickRate * time), 1, scoreState.AvailableBaseSustainPoints);
+        
+        AddScore(noteIndex, newValue - scoreState.GainedBaseSustainPoints, 0, null, true);
     }
 
     private void AddRemainingValueToMaxScoreSoFar(int noteIndex) {
@@ -392,15 +411,6 @@ public abstract class CustomScoreSystem : IScoreSystem {
                 availableTotalPoints,
                 availableTotalSustainPoints);
         }
-    }
-
-    private int UpdateSustainedNoteValue(int noteIndex, float time, float tickRate) {
-        var scoreState = scoreStates[noteIndex];
-        int newValue = Mathf.Clamp(Mathf.FloorToInt(tickRate * time), 1, scoreState.AvailableBaseSustainPoints);
-        
-        AddScore(noteIndex, newValue - scoreState.GainedBaseSustainPoints, 0, null, true);
-
-        return newValue;
     }
 
     private CustomTimingAccuracy GetTimingAccuracy(float timeOffset, TimingWindow[] timingWindows) {

@@ -13,7 +13,7 @@ namespace SRXDScoreMod;
 internal class GameplayState {
     public static bool Playing { get; private set; }
 
-    private static PlayableTrackData trackData;
+    #region NoteEvents
 
     private static void NormalNoteHit(int noteIndex, Note note, float timeOffset) {
         if (!Playing)
@@ -169,18 +169,56 @@ internal class GameplayState {
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
             scoreSystem.BreakScratch(noteIndex);
     }
+
+    private static void UpdateBeatHoldTime(int noteIndex, float heldTime) {
+        if (!Playing)
+            return;
+        
+        foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
+            scoreSystem.UpdateBeatHold(noteIndex, heldTime);
+    }
     
+    private static void UpdateHoldTime(int noteIndex, float heldTime) {
+        if (!Playing)
+            return;
+        
+        foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
+            scoreSystem.UpdateHold(noteIndex, heldTime);
+    }
+    
+    private static void UpdateSpinTime(int noteIndex, float trackTime, float startTime) {
+        if (!Playing)
+            return;
+
+        float heldTime = Mathf.Max(0f, trackTime - startTime);
+        
+        foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
+            scoreSystem.UpdateSpin(noteIndex, heldTime);
+    }
+    
+    private static void UpdateScratchTime(int noteIndex, float trackTime, float startTime) {
+        if (!Playing)
+            return;
+        
+        float heldTime = Mathf.Max(0f, trackTime - startTime);
+        
+        foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
+            scoreSystem.UpdateScratch(noteIndex, heldTime);
+    }
+
+    #endregion
+
+    #region Patches
+
     [HarmonyPatch(typeof(Track), nameof(Track.PlayTrack)), HarmonyPostfix]
     private static void Track_PlayTrack_Postfix(Track __instance) {
         ScoreMod.InitializeScoreSystems(__instance.playStateFirst);
-        trackData = __instance.playStateFirst.trackData;
         Playing = true;
     }
         
     [HarmonyPatch(typeof(Track), nameof(Track.PracticeTrack)), HarmonyPostfix]
     private static void Track_PracticeTrack_Postfix(Track __instance) {
         ScoreMod.InitializeScoreSystems(__instance.playStateFirst);
-        trackData = __instance.playStateFirst.trackData;
         Playing = true;
     }
 
@@ -218,6 +256,7 @@ internal class GameplayState {
         var GameplayState_NormalNoteMiss = typeof(GameplayState).GetMethod(nameof(NormalNoteMiss), BindingFlags.NonPublic | BindingFlags.Static);
         var GameplayState_BeatReleaseMiss = typeof(GameplayState).GetMethod(nameof(BeatReleaseMiss), BindingFlags.NonPublic | BindingFlags.Static);
         var GameplayState_BeatHoldMiss = typeof(GameplayState).GetMethod(nameof(BeatHoldMiss), BindingFlags.NonPublic | BindingFlags.Static);
+        var GameplayState_UpdateBeatHoldTime = typeof(GameplayState).GetMethod(nameof(UpdateBeatHoldTime), BindingFlags.NonPublic | BindingFlags.Static);
         var ScoreState_AddScoreIfPossible = typeof(TrackGameplayLogic).GetMethod("AddScoreIfPossible", BindingFlags.NonPublic | BindingFlags.Static);
         var ScoreState_DropMultiplier = typeof(PlayState.ScoreState).GetMethod(nameof(PlayState.ScoreState.DropMultiplier));
         var TrackGameplayLogic_AllowErrorToOccur = typeof(TrackGameplayLogic).GetMethod(nameof(TrackGameplayLogic.AllowErrorToOccur));
@@ -229,11 +268,11 @@ internal class GameplayState {
             instr => instr.Calls(ScoreState_AddScoreIfPossible)
         });
 
-        foreach (var match in matches) {
-            var opcode = instructionsList[match[0].Start + 1].opcode;
+        foreach (var match0 in matches) {
+            var opcode = instructionsList[match0[0].Start + 1].opcode;
 
             if (opcode == OpCodes.Ldloc_S) { // pointsToAdd
-                operations.Insert(match[1].End, new CodeInstruction[] {
+                operations.Insert(match0[1].End, new CodeInstruction[] {
                     new (OpCodes.Ldarg_2), // noteIndex
                     new (OpCodes.Ldloc_1), // note
                     new (OpCodes.Ldloc_S, (byte) 7), // timeOffset
@@ -241,7 +280,7 @@ internal class GameplayState {
                 });
             }
             else if (opcode == OpCodes.Ldloc_3) { // gameplayVariables
-                operations.Insert(match[1].End, new CodeInstruction[] {
+                operations.Insert(match0[1].End, new CodeInstruction[] {
                     new (OpCodes.Ldloc_1), // note
                     new (OpCodes.Ldfld, Note_endNoteIndex),
                     new (OpCodes.Ldloc_S, (byte) 46), // beatTimeOffset
@@ -254,8 +293,8 @@ internal class GameplayState {
             instr => instr.Calls(ScoreState_DropMultiplier)
         });
 
-        foreach (var match in matches) {
-            var result = match[0];
+        foreach (var match0 in matches) {
+            var result = match0[0];
 
             if (instructionsList[result.Start - 4].Branches(out _)) {
                 operations.Insert(result.End, new CodeInstruction[] {
@@ -279,13 +318,23 @@ internal class GameplayState {
             instr => instr.opcode == OpCodes.Pop
         });
 
-        foreach (var match in matches) {
-            operations.Insert(match[0].End, new CodeInstruction[] {
+        foreach (var match0 in matches) {
+            operations.Insert(match0[0].End, new CodeInstruction[] {
                 new (OpCodes.Ldarg_2), // noteIndex
                 new (OpCodes.Ldloc_1), // note
                 new (OpCodes.Call, GameplayState_NormalNoteMiss)
             });
         }
+
+        var match1 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.LoadsLocalAtIndex(44) // heldTime
+        }).First()[0];
+        
+        operations.Insert(match1.Start, new CodeInstruction[] {
+            new (OpCodes.Ldarg_2), // noteIndex
+            new (OpCodes.Ldloc_S, 44), // heldTime
+            new (OpCodes.Call, GameplayState_UpdateBeatHoldTime)
+        });
         
         operations.Execute(instructionsList);
 
@@ -300,6 +349,7 @@ internal class GameplayState {
         var GameplayState_LiftoffHit = typeof(GameplayState).GetMethod(nameof(LiftoffHit), BindingFlags.NonPublic | BindingFlags.Static);
         var GameplayState_HoldMiss = typeof(GameplayState).GetMethod(nameof(HoldMiss), BindingFlags.NonPublic | BindingFlags.Static);
         var GameplayState_LiftoffMiss = typeof(GameplayState).GetMethod(nameof(LiftoffMiss), BindingFlags.NonPublic | BindingFlags.Static);
+        var GameplayState_UpdateHoldTime = typeof(GameplayState).GetMethod(nameof(UpdateHoldTime), BindingFlags.NonPublic | BindingFlags.Static);
         var ScoreState_AddScoreIfPossible = typeof(TrackGameplayLogic).GetMethod("AddScoreIfPossible", BindingFlags.NonPublic | BindingFlags.Static);
         var TrackGameplayLogic_AllowErrorToOccur = typeof(TrackGameplayLogic).GetMethod(nameof(TrackGameplayLogic.AllowErrorToOccur));
         var FreestyleSection_firstNoteIndex = typeof(FreestyleSection).GetField(nameof(FreestyleSection.firstNoteIndex));
@@ -366,6 +416,17 @@ internal class GameplayState {
             new (OpCodes.Call, GameplayState_LiftoffMiss)
         });
         
+        match1 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.LoadsLocalAtIndex(15) // heldTime
+        }).First()[0];
+        
+        operations.Insert(match1.Start, new CodeInstruction[] {
+            new (OpCodes.Ldloc_S, (byte) 6), // section
+            new (OpCodes.Ldfld, FreestyleSection_firstNoteIndex),
+            new (OpCodes.Ldloc_S, (byte) 15), // heldTime
+            new (OpCodes.Call, GameplayState_UpdateHoldTime)
+        });
+        
         operations.Execute(instructionsList);
 
         return instructionsList;
@@ -377,9 +438,11 @@ internal class GameplayState {
         var operations = new DeferredListOperation<CodeInstruction>();
         var GameplayState_SpinHit = typeof(GameplayState).GetMethod(nameof(SpinHit), BindingFlags.NonPublic | BindingFlags.Static);
         var GameplayState_SpinMiss = typeof(GameplayState).GetMethod(nameof(SpinMiss), BindingFlags.NonPublic | BindingFlags.Static);
+        var GameplayState_UpdateSpinTime = typeof(GameplayState).GetMethod(nameof(UpdateSpinTime), BindingFlags.NonPublic | BindingFlags.Static);
         var ScoreState_AddScoreIfPossible = typeof(TrackGameplayLogic).GetMethod("AddScoreIfPossible", BindingFlags.NonPublic | BindingFlags.Static);
         var TrackGameplayLogic_AllowErrorToOccur = typeof(TrackGameplayLogic).GetMethod(nameof(TrackGameplayLogic.AllowErrorToOccur));
         var SpinnerSection_noteIndex = typeof(ScratchSection).GetField(nameof(SpinnerSection.noteIndex));
+        var SpinnerSection_startsAtTime = typeof(ScratchSection).GetField(nameof(SpinnerSection.startsAtTime));
         var SpinSectionState_failedInitialSpin = typeof(SpinSectionState).GetField(nameof(SpinSectionState.failedInitialSpin));
         
         var match0 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
@@ -408,6 +471,19 @@ internal class GameplayState {
             new (OpCodes.Call, GameplayState_SpinMiss)
         });
         
+        match1 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.StoresLocalAtIndex(27) // length
+        }).First()[0];
+        
+        operations.Insert(match1.Start, new CodeInstruction[] {
+            new (OpCodes.Ldloc_3), // section
+            new (OpCodes.Ldfld, SpinnerSection_noteIndex),
+            new (OpCodes.Ldloc_S, (byte) 5), // trackTime
+            new (OpCodes.Ldloc_3), // section
+            new (OpCodes.Ldfld, SpinnerSection_startsAtTime),
+            new (OpCodes.Call, GameplayState_UpdateSpinTime)
+        });
+        
         operations.Execute(instructionsList);
 
         return instructionsList;
@@ -418,8 +494,12 @@ internal class GameplayState {
         var instructionsList = new List<CodeInstruction>(instructions);
         var operations = new DeferredListOperation<CodeInstruction>();
         var GameplayState_ScratchMiss = typeof(GameplayState).GetMethod(nameof(ScratchMiss), BindingFlags.NonPublic | BindingFlags.Static);
+        var GameplayState_UpdateScratchTime = typeof(GameplayState).GetMethod(nameof(UpdateScratchTime), BindingFlags.NonPublic | BindingFlags.Static);
         var ScoreState_DropMultiplier = typeof(PlayState.ScoreState).GetMethod(nameof(PlayState.ScoreState.DropMultiplier));
         var ScratchSection_noteIndex = typeof(ScratchSection).GetField(nameof(ScratchSection.noteIndex));
+        var ScratchSection_startsAtTime = typeof(ScratchSection).GetField(nameof(ScratchSection.startsAtTime));
+        var ScratchSectionState_totalScore = typeof(ScratchSectionState).GetField(nameof(ScratchSectionState.totalScore));
+        var PlayState_currentTrackTime = typeof(PlayState).GetField(nameof(PlayState.currentTrackTime));
 
         var match = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
             instr => instr.Calls(ScoreState_DropMultiplier)
@@ -431,8 +511,24 @@ internal class GameplayState {
             new (OpCodes.Call, GameplayState_ScratchMiss)
         });
         
+        match = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.StoresField(ScratchSectionState_totalScore)
+        }).First()[0];
+        
+        operations.Insert(match.Start, new CodeInstruction[] {
+            new (OpCodes.Ldloc_2), // section
+            new (OpCodes.Ldfld, ScratchSection_noteIndex),
+            new (OpCodes.Ldarg_0), // playState
+            new (OpCodes.Ldfld, PlayState_currentTrackTime),
+            new (OpCodes.Ldloc_2), // section
+            new (OpCodes.Ldfld, ScratchSection_startsAtTime),
+            new (OpCodes.Call, GameplayState_UpdateScratchTime)
+        });
+        
         operations.Execute(instructionsList);
 
         return instructionsList;
     }
+
+    #endregion
 }
