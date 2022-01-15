@@ -3,6 +3,8 @@
 namespace SRXDScoreMod; 
 
 public abstract class CustomScoreSystem : IScoreSystem {
+    #region IReadOnlyScoreSystemProperties
+
     public int Score { get; private set; }
     
     public int SecondaryScore { get; private set; }
@@ -52,7 +54,11 @@ public abstract class CustomScoreSystem : IScoreSystem {
 
     public TimingWindow[] TimingWindowsForDisplay => TapTimingWindows;
 
+    #endregion
+
     protected virtual int MaxMultiplier => 4;
+
+    #region MultiplierChangesForMisses
 
     protected virtual int MultiplierChangeForOverbeat => -3;
     
@@ -76,6 +82,10 @@ public abstract class CustomScoreSystem : IScoreSystem {
     
     protected virtual int MultiplierChangeForBrokenScratch => -3;
 
+    #endregion
+
+    #region PointValuesAndTickRates
+
     protected abstract int MatchPointValue { get; }
 
     protected abstract int SpinStartPointValue { get; }
@@ -87,7 +97,11 @@ public abstract class CustomScoreSystem : IScoreSystem {
     protected abstract float SpinTickRate { get; }
     
     protected abstract float ScratchTickRate { get; }
-    
+
+    #endregion
+
+    #region TimingWindows
+
     protected abstract TimingWindow[] TapTimingWindows { get; }
     
     protected abstract TimingWindow[] BeatTimingWindows { get; }
@@ -95,6 +109,8 @@ public abstract class CustomScoreSystem : IScoreSystem {
     protected abstract TimingWindow[] LiftoffTimingWindows { get; }
     
     protected abstract TimingWindow[] BeatReleaseTimingWindows { get; }
+
+    #endregion
     
     protected abstract RankThreshold[] RankThresholds { get; }
     
@@ -142,6 +158,8 @@ public abstract class CustomScoreSystem : IScoreSystem {
         }
     }
 
+    #region TimingAccuracyFunctions
+
     public CustomTimingAccuracy GetTimingAccuracyForTap(float timeOffset) => GetTimingAccuracy(timeOffset, TapTimingWindows);
 
     public CustomTimingAccuracy GetTimingAccuracyForBeat(float timeOffset) => GetTimingAccuracy(timeOffset, BeatTimingWindows);
@@ -149,6 +167,8 @@ public abstract class CustomScoreSystem : IScoreSystem {
     public CustomTimingAccuracy GetTimingAccuracyForLiftoff(float timeOffset) => GetTimingAccuracy(timeOffset, LiftoffTimingWindows);
 
     public CustomTimingAccuracy GetTimingAccuracyForBeatRelease(float timeOffset) => GetTimingAccuracy(timeOffset, BeatReleaseTimingWindows);
+
+    #endregion
     
     public HighScoreInfo GetHighScoreInfoForTrack(MetadataHandle handle, TrackData.DifficultyType difficultyType)
         => GetHighScoreInfoForTrack(handle.TrackInfoRef, difficultyType);
@@ -158,6 +178,8 @@ public abstract class CustomScoreSystem : IScoreSystem {
 
     protected abstract int GetPointsToNextMultiplier(int currentMultiplier);
 
+    #region TimedNoteValueFunctions
+
     protected abstract int GetPointValueForTap(float timeOffset);
 
     protected abstract int GetPointValueForBeat(float timeOffset);
@@ -165,7 +187,11 @@ public abstract class CustomScoreSystem : IScoreSystem {
     protected abstract int GetPointValueForLiftoff(float timeOffset);
 
     protected abstract int GetPointValueForBeatRelease(float timeOffset);
-    
+
+    #endregion
+
+    #region NoteEvents
+
     internal void HitMatch(int noteIndex) => AddScore(noteIndex, MatchPointValue, 1, null, false);
 
     internal void HitTap(int noteIndex, float timeOffset)
@@ -207,6 +233,10 @@ public abstract class CustomScoreSystem : IScoreSystem {
     internal void BreakSpin(int noteIndex) => MissNote(noteIndex, MultiplierChangeForBrokenSpin);
     
     internal void BreakScratch(int noteIndex) => MissNote(noteIndex, MultiplierChangeForBrokenScratch);
+
+    #endregion
+
+    #region ScoringLogic
 
     private void AddScore(int noteIndex, int amount, int addStreak, CustomTimingAccuracy timingAccuracy, bool fromSustain) {
         int acc = amount;
@@ -304,7 +334,7 @@ public abstract class CustomScoreSystem : IScoreSystem {
                     maxPossibleStreak++;
 
                     if (note.length > 0f)
-                        availableBaseSustainPoints = Mathf.CeilToInt(BeatHoldTickRate * note.length);
+                        availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(BeatHoldTickRate * note.length));
                     
                     break;
                 case NoteType.SpinRightStart:
@@ -312,7 +342,7 @@ public abstract class CustomScoreSystem : IScoreSystem {
                     var spinnerSection = trackData.SpinnerSections[trackData.SpinnerSectionIndexForNoteIndex[i]];
                     
                     availableBasePoints = SpinStartPointValue;
-                    availableBaseSustainPoints = Mathf.FloorToInt(SpinTickRate * (spinnerSection.endsAtTime - spinnerSection.startsAtTime));
+                    availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(SpinTickRate * (spinnerSection.endsAtTime - spinnerSection.startsAtTime)));
                     maxPossibleStreak++;
                     
                     break;
@@ -346,7 +376,7 @@ public abstract class CustomScoreSystem : IScoreSystem {
                 case NoteType.ScratchStart:
                     var scratchSection = trackData.ScratchSections[trackData.ScratchSectionIndexForNoteIndex[i]];
 
-                    availableBaseSustainPoints = Mathf.FloorToInt(ScratchTickRate * (scratchSection.endsAtTime - scratchSection.startsAtTime));
+                    availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(ScratchTickRate * (scratchSection.endsAtTime - scratchSection.startsAtTime)));
                     maxPossibleStreak++;
                     
                     break;
@@ -364,6 +394,15 @@ public abstract class CustomScoreSystem : IScoreSystem {
         }
     }
 
+    private int UpdateSustainedNoteValue(int noteIndex, float time, float tickRate) {
+        var scoreState = scoreStates[noteIndex];
+        int newValue = Mathf.Clamp(Mathf.FloorToInt(tickRate * time), 1, scoreState.AvailableBaseSustainPoints);
+        
+        AddScore(noteIndex, newValue - scoreState.GainedBaseSustainPoints, 0, null, true);
+
+        return newValue;
+    }
+
     private CustomTimingAccuracy GetTimingAccuracy(float timeOffset, TimingWindow[] timingWindows) {
         foreach (var window in timingWindows) {
             if (timeOffset < window.UpperBound)
@@ -372,6 +411,8 @@ public abstract class CustomScoreSystem : IScoreSystem {
 
         return timingWindows[timingWindows.Length - 1].TimingAccuracy;
     }
+
+    #endregion
 
     private HighScoreInfo GetHighScoreInfoForTrack(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType) => HighScoreInfo.Blank;
     
