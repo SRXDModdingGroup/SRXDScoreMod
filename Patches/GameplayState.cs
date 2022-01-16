@@ -70,12 +70,12 @@ internal class GameplayState {
             scoreSystem.HitSpin(noteIndex);
     }
 
-    private static void Overbeat() {
+    private static void Overbeat(float time) {
         if (!Playing)
             return;
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
-            scoreSystem.Overbeat();
+            scoreSystem.Overbeat(time);
     }
 
     private static void NormalNoteMiss(int noteIndex, Note note) {
@@ -232,17 +232,31 @@ internal class GameplayState {
         Playing = false;
     }
 
+    [HarmonyPatch(typeof(TrackGameplayLogic), nameof(TrackGameplayLogic.UpdateNoteState)), HarmonyPostfix]
+    private static void TrackGameplayLogic_UpdateNoteState_Postfix(int noteIndex, bool __result) {
+        if (!Playing || !__result)
+            return;
+
+        foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
+            scoreSystem.CompleteNote(noteIndex);
+    }
+
     [HarmonyPatch(typeof(Track), nameof(Track.Update)), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> Track_Update_Transpiler(IEnumerable<CodeInstruction> instructions) {
         var instructionsList = new List<CodeInstruction>(instructions);
         var GameplayState_Overbeat = typeof(GameplayState).GetMethod(nameof(Overbeat), BindingFlags.NonPublic | BindingFlags.Static);
         var ScoreState_DropMultiplier = typeof(PlayState.ScoreState).GetMethod(nameof(PlayState.ScoreState.DropMultiplier));
+        var Track_currentAudioTrackTime = typeof(Track).GetField(nameof(Track.currentAudioTrackTime));
 
         var match = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
             instr => instr.Calls(ScoreState_DropMultiplier)
         }).First()[0];
         
-        instructionsList.Insert(match.End, new CodeInstruction(OpCodes.Call, GameplayState_Overbeat));
+        instructionsList.InsertRange(match.End, new CodeInstruction[] {
+            new (OpCodes.Ldarg_0), // track
+            new (OpCodes.Ldfld, Track_currentAudioTrackTime),
+            new (OpCodes.Call, GameplayState_Overbeat)
+        });
 
         return instructionsList;
     }

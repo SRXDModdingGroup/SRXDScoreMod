@@ -5,52 +5,47 @@ using System.Text.RegularExpressions;
 namespace SRXDScoreMod; 
 
 // Contains a set of modded high scores and manages the high score file
-internal class HighScoresContainer {
-    private const uint HASH_BIAS = 2166136261u;
-    private const int HASH_COEFF = 486187739;
-
+internal static class HighScoresContainer {
     private static readonly bool SAVE_HIGH_SCORES = true;
-    private static readonly Regex MATCH_BASE_ID = new(@"(.+?)_Stats");
-    private static readonly Regex MATCH_CUSTOM_ID = new(@"CUSTOM_(.+?)_(\-?\d+)_Stats");
+    private static readonly Regex MATCH_CUSTOM_ID = new(@"CUSTOM_(.+?)_(\-?\d+)");
     private static readonly HashSet<string> FORBIDDEN_NAMES = new() {
-        "CreateCustomTrack_Stats",
+        "CreateCustomTrack",
         "Tutorial XD",
-        "RandomizeTrack_Stats"
+        "RandomizeTrack"
     };
 
     private static string filePath;
-    private static string lastTrackId;
-    private static string lastStatString;
-    private static TrackData.DifficultyType lastDifficulty;
-    private static Dictionary<string, HighScoreItem> highScores;
+    private static Dictionary<string, SavedHighScoreInfo> highScores;
 
     public static void LoadHighScores() {
-        highScores = new Dictionary<string, HighScoreItem>();
+        highScores = new Dictionary<string, SavedHighScoreInfo>();
             
         if (!TryGetFilePath() || !File.Exists(filePath))
             return;
 
-        using (var reader = new StreamReader(filePath)) {
-            while (!reader.EndOfStream) {
-                string line = reader.ReadLine();
+        using var reader = new StreamReader(filePath);
+        
+        while (!reader.EndOfStream) {
+            string line = reader.ReadLine();
                     
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
                     
-                var split = line.Split(' ');
+            string[] split = line.Split(' ');
                     
-                if (split.Length < 5
-                    || !int.TryParse(split[1], out int score)
-                    || !int.TryParse(split[2], out int maxScore)
-                    || !int.TryParse(split[3], out int superPerfectCount))
-                    continue;
+            if (split.Length < 7
+                || !int.TryParse(split[1], out int score)
+                || !int.TryParse(split[2], out int streak)
+                || !int.TryParse(split[3], out int maxScore)
+                || !int.TryParse(split[4], out int maxStreak)
+                || !int.TryParse(split[5], out int secondaryScore))
+                continue;
 
-                string id = split[0];
-                var newItem = new HighScoreItem(id, score, maxScore, superPerfectCount);
+            string id = split[0];
+            var newItem = new SavedHighScoreInfo(id, score, streak, maxScore, maxStreak, secondaryScore);
                     
-                if (newItem.Hash == split[4])
-                    highScores.Add(id, newItem);
-            }
+            if (newItem.Hash == split[6])
+                highScores.Add(id, newItem);
         }
     }
 
@@ -58,91 +53,76 @@ internal class HighScoresContainer {
         if (!SAVE_HIGH_SCORES || !TryGetFilePath())
             return;
 
-        using (var writer = new StreamWriter(filePath)) {
-            foreach (var pair in highScores) {
-                var item = pair.Value;
-                    
-                writer.WriteLine($"{pair.Key} {item.Score} {item.MaxScore} {item.SuperPerfectCount} {item.Hash}");
-            }
-        }
-    }
-
-    public static bool TrySetHighScore(string trackId, ScoreContainer container) {
-        var profile = container.Profile;
-        string id = $"{trackId}_{profile.GetUniqueId()}";
-        int score = container.Score;
-        int maxScore = container.MaxScore;
-        int superPerfects = container.SuperPerfects;
-
-        if (highScores.TryGetValue(id, out var item)) {
-            if (maxScore != item.MaxScore) {
-                ScoreMod.Logger.LogWarning($"WARNING: Max Score for profile \"{profile.Name}\" does not match saved Max Score. Score will not be saved");
-
-                return false;
-            }
-                
-            if (score > maxScore) {
-                ScoreMod.Logger.LogWarning($"WARNING: Score for profile \"{profile.Name}\" is greater than saved Max Score. Score will not be saved");
-
-                return false;
-            }
-
-            if (score < item.Score || score == item.Score && superPerfects <= item.SuperPerfectCount)
-                return false;
-        }
-
-        highScores[id] = new HighScoreItem(id, score, maxScore, superPerfects);
-
-        return true;
-
-    }
-
-    public static int GetHighScore(string trackId, string scoreProfileId, out int superPerfectCount, out string rank) {
-        if (highScores.TryGetValue($"{trackId}_{scoreProfileId}", out var item)) {
-            superPerfectCount = item.SuperPerfectCount;
-            rank = ScoreContainer.GetRank(item.Score, item.MaxScore);
-                
-            return item.Score;
-        }
-
-        superPerfectCount = 0;
-        rank = "-";
-
-        return 0;
-    }
-
-    public static string GetTrackId(PlayableTrackData trackData) {
-        string statString = trackData.TrackInfoRef.StatsUniqueString;
-        var difficulty = trackData.Difficulty;
+        using var writer = new StreamWriter(filePath);
         
-        if (statString == lastStatString && difficulty == lastDifficulty)
-            return lastTrackId;
+        foreach (var pair in highScores) {
+            var item = pair.Value;
+                    
+            writer.WriteLine($"{pair.Key} {item.Score} {item.Streak} {item.MaxScore} {item.MaxStreak} {item.SecondaryScore} {item.Hash}");
+        }
+    }
 
-        lastStatString = statString;
-        lastDifficulty = difficulty;
-            
-        if (FORBIDDEN_NAMES.Contains(statString))
-            return lastTrackId = string.Empty;
-            
-        var match = MATCH_CUSTOM_ID.Match(statString);
-            
-        if (match.Success) {
-            var groups = match.Groups;
-            uint fileHash;
+    public static bool TrySetHighScore(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType,
+        string scoreSystemId, string modifierSetId, SavedHighScoreInfo info) {
+        string id = $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystemId}";
 
-            unchecked {
-                fileHash = (uint) int.Parse(groups[2].Value);
-            }
+        if (!string.IsNullOrWhiteSpace(modifierSetId))
+            id = $"{id}_{modifierSetId}";
 
-            return lastTrackId = $"{groups[1].Value.Replace(' ', '_')}_{fileHash:x8}_{difficulty}";
+        if (!highScores.TryGetValue(id, out var oldInfo)) {
+            highScores[id] = info;
+
+            return true;
         }
 
-        match = MATCH_BASE_ID.Match(statString);
+        if (info.MaxScore != oldInfo.MaxScore || info.MaxStreak != oldInfo.MaxStreak) {
+            ScoreMod.Logger.LogWarning($"WARNING: Max Score for \"{id}\" does not match saved Max Score. Score will not be saved");
 
-        if (match.Success)
-            return lastTrackId = $"{match.Groups[1].Value.Replace(' ', '_')}_{difficulty}";
+            return false;
+        }
+            
+        int score = oldInfo.Score;
+        int streak = oldInfo.Streak;
+                
+        if (score > oldInfo.MaxScore || streak > oldInfo.MaxStreak) {
+            ScoreMod.Logger.LogWarning($"WARNING: Score for for \"{id}\" is greater than saved Max Score. Score will not be saved");
 
-        return lastTrackId = string.Empty;
+            return false;
+        }
+            
+        int secondaryScore = oldInfo.SecondaryScore;
+        bool isNewBest = false;
+        bool anyChanged = false;
+
+        if (info.Score > score || info.Score == oldInfo.Score && info.SecondaryScore > secondaryScore) {
+            score = info.Score;
+            secondaryScore = info.SecondaryScore;
+            isNewBest = true;
+            anyChanged = true;
+        }
+
+        if (info.Streak > streak) {
+            streak = info.Streak;
+            anyChanged = true;
+        }
+
+        if (anyChanged)
+            highScores[id] = new SavedHighScoreInfo(id, score, streak, info.MaxScore, info.MaxStreak, secondaryScore);
+
+        return isNewBest;
+    }
+
+    public static SavedHighScoreInfo GetHighScore(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType,
+        string scoreSystemId, string modifierSetId) {
+        string id = $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystemId}";
+
+        if (!string.IsNullOrWhiteSpace(modifierSetId))
+            id = $"{id}_{modifierSetId}";
+
+        if (highScores.TryGetValue(id, out var item))
+            return item;
+
+        return new SavedHighScoreInfo(string.Empty, 0, 0, 0, 0, 0);
     }
 
     private static bool TryGetFilePath() {
@@ -157,25 +137,24 @@ internal class HighScoresContainer {
         return true;
     }
 
-    private readonly struct HighScoreItem {
-        public int Score { get; }
-        public int MaxScore { get; }
-        public int SuperPerfectCount { get; }
-        public string Hash { get; }
-            
-        public HighScoreItem(string id, int score, int maxScore, int superPerfectCount) {
-            Score = score;
-            MaxScore = maxScore;
-            SuperPerfectCount = superPerfectCount;
-                
-            unchecked {
-                int hash = (int) HASH_BIAS * HASH_COEFF ^ score.GetHashCode();
+    private static string GetTrackId(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType) {
+        string uniqueName = trackInfoRef.UniqueName;
 
-                hash = hash * HASH_COEFF ^ maxScore.GetHashCode();
-                hash = hash * HASH_COEFF ^ superPerfectCount.GetHashCode();
-                    
-                Hash = ((uint) (hash * HASH_COEFF ^ id.GetHashCode())).ToString("x8");
-            }
+        if (FORBIDDEN_NAMES.Contains(uniqueName))
+            return string.Empty;
+        
+        var match = MATCH_CUSTOM_ID.Match(uniqueName);
+
+        if (!match.Success)
+            return $"{uniqueName.Replace(' ', '_')}_{difficultyType}";
+        
+        var groups = match.Groups;
+        uint fileHash;
+
+        unchecked {
+            fileHash = (uint) int.Parse(groups[2].Value);
         }
+
+        return $"{groups[1].Value.Replace(' ', '_')}_{fileHash:x8}_{difficultyType}";
     }
 }

@@ -8,6 +8,10 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
     private static readonly CustomTimingAccuracy EARLY = new("Early", "Good", Color.yellow, NoteTimingAccuracy.Early);
     private static readonly CustomTimingAccuracy LATE = new("Late", "Good", Color.yellow, NoteTimingAccuracy.Late);
 
+    public string Name => "Base";
+
+    public string Id => "base_0.15";
+
     public int Score => scoreState.FinalisedScore > 0 ? scoreState.FinalisedScore : scoreState.totalNoteScore;
 
     public int HighSecondaryScore => 0;
@@ -71,6 +75,7 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
 
     public void Complete(PlayState playState) {
         var trackInfoRef = playState.TrackInfoRef;
+        
         TrackDataMetadata metadata = null;
         
         if (playState.TrackDataSetup.IsSetupForSingleTrackSegment)
@@ -121,7 +126,6 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
         return new HighScoreInfo(
             score,
             streak,
-            metadata.MaxNoteScore,
             0,
             rank,
             fullComboState);

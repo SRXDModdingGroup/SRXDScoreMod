@@ -1,6 +1,8 @@
 ﻿namespace SRXDScoreMod; 
 
 internal interface IScoreSystem : IReadOnlyScoreSystem {
+    public string Id { get; }
+    
     public void Init(PlayState playState);
 
     public void Complete(PlayState playState);

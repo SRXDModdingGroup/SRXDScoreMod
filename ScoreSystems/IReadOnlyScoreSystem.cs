@@ -3,6 +3,8 @@
 namespace SRXDScoreMod; 
 
 public interface IReadOnlyScoreSystem {
+    string Name { get; }
+    
     int Score { get; }
         
     int SecondaryScore { get; }
