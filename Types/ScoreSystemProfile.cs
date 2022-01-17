@@ -113,7 +113,6 @@ public class ScoreSystemProfile {
 
     public ScoreSystemProfile(
         string name,
-        string id,
         int matchPointValue,
         int spinStartPointValue,
         float holdTickRate,
@@ -139,7 +138,6 @@ public class ScoreSystemProfile {
         int sPlusThreshold,
         RankThreshold[] rankThresholds) {
         Name = name;
-        Id = id;
         MatchPointValue = matchPointValue;
         SpinStartPointValue = spinStartPointValue;
         HoldTickRate = holdTickRate;
@@ -190,6 +188,10 @@ public class ScoreSystemProfile {
             beatReleaseTimingWindows,
             sPlusThreshold,
             rankThresholds);
+        
+        unchecked {
+            Id = $"{name.Replace(' ', '_')}_{(uint) hash:x8}";
+        }
     }
 
     /// <summary>

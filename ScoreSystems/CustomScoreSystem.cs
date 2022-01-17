@@ -96,6 +96,8 @@ public abstract class CustomScoreSystem : IScoreSystem {
     private List<float> overbeatTimes;
 
     protected CustomScoreSystem(ScoreSystemProfile profile) {
+        Name = profile.Name;
+        Id = profile.Id;
         matchPointValue = profile.MatchPointValue;
         spinStartPointValue = profile.SpinStartPointValue;
         maxMultiplier = profile.MaxMultiplier;
@@ -120,6 +122,7 @@ public abstract class CustomScoreSystem : IScoreSystem {
         beatTimingWindows = profile.BeatTimingWindows;
         liftoffTimingWindows = profile.LiftoffTimingWindows;
         beatReleaseTimingWindows = profile.BeatReleaseTimingWindows;
+        overbeatTimes = new List<float>();
     }
 
     public virtual void Init(PlayState playState) {
@@ -135,14 +138,10 @@ public abstract class CustomScoreSystem : IScoreSystem {
         StarColor = Color.cyan;
         maxPossibleStreak = 0;
         pointsToNextMultiplier = GetPointsToNextMultiplier(maxMultiplier);
+        overbeatTimes.Clear();
         
         InitScoreStates(playState.trackData);
-
-        if (overbeatTimes == null)
-            overbeatTimes = new List<float>();
-        else
-            overbeatTimes.Clear();
-
+        
         var highScoreInfo = HighScoresContainer.GetHighScore(playState.TrackInfoRef, playState.trackData.Difficulty, Id, string.Empty);
 
         HighScore = highScoreInfo.Score;
