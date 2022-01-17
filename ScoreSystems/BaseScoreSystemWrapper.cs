@@ -58,10 +58,10 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
     public string PostGameInfo3Name => "PFC";
     
     public TimingWindow[] TimingWindowsForDisplay { get; } = {
-        new (EARLY, -130f),
-        new (EARLY, -50f),
-        new (PERFECT, 50f),
-        new (LATE, 130f)
+        new (0, EARLY, -130f),
+        new (0, EARLY, -50f),
+        new (0, PERFECT, 50f),
+        new (0, LATE, 130f)
     };
 
     private GameplayVariables gameplayVariables;

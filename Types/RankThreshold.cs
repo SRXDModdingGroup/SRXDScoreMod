@@ -1,6 +1,6 @@
 ﻿namespace SRXDScoreMod; 
 
-public readonly struct RankThreshold : IHashable {
+public class RankThreshold : IHashable {
     public string Rank { get; }
     
     public float Threshold { get; }

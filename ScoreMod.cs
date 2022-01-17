@@ -23,14 +23,17 @@ public class ScoreMod : BaseUnityPlugin {
 
     internal static IScoreSystem CurrentScoreSystemInternal { get; private set; }
     
+    internal static List<IScoreSystem> ScoreSystems { get; private set; }
+    
     internal static List<CustomScoreSystem> CustomScoreSystems { get; private set; }
 
     private static bool pickedNewScoreSystem;
     private static string fileDirectory;
-    private static List<IScoreSystem> scoreSystems;
     
-    public static void AddCustomScoreSystem(CustomScoreSystem scoreSystem) {
-        scoreSystems.Add(scoreSystem);
+    public static void AddCustomScoreSystem(ScoreSystemProfile profile) {
+        var scoreSystem = new CustomScoreSystem(profile);
+        
+        ScoreSystems.Add(scoreSystem);
         CustomScoreSystems.Add(scoreSystem);
     }
 
@@ -43,9 +46,9 @@ public class ScoreMod : BaseUnityPlugin {
         TapTimingOffset = Config.Bind("Settings", "TapTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for taps and liftoffs");
         BeatTimingOffset = Config.Bind("Settings", "BeatTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for beats and hard beat releases");
 
-        scoreSystems = new List<IScoreSystem>();
-        scoreSystems.Add(new BaseScoreSystemWrapper());
-        CurrentScoreSystemInternal = scoreSystems[0];
+        ScoreSystems = new List<IScoreSystem>();
+        ScoreSystems.Add(new BaseScoreSystemWrapper());
+        CurrentScoreSystemInternal = ScoreSystems[0];
         CustomScoreSystems = new List<CustomScoreSystem>();
 
         var harmony = new Harmony("ScoreMod");
@@ -87,11 +90,6 @@ public class ScoreMod : BaseUnityPlugin {
             PickScoreSystem(0);
     }
 
-    internal static void InitializeScoreSystems(PlayState playState) {
-        foreach (var scoreSystem in scoreSystems)
-            scoreSystem.Init(playState);
-    }
-
     internal static bool TryGetFileDirectory(out string directory) {
         if (!string.IsNullOrWhiteSpace(fileDirectory)) {
             directory = fileDirectory;
@@ -119,10 +117,10 @@ public class ScoreMod : BaseUnityPlugin {
     }
 
     private static bool PickScoreSystem(int index) {
-        if (index >= scoreSystems.Count)
+        if (index >= ScoreSystems.Count)
             return false;
 
-        CurrentScoreSystemInternal = scoreSystems[index];
+        CurrentScoreSystemInternal = ScoreSystems[index];
         CompleteScreenUI.UpdateUI();
         LevelSelectUI.UpdateUI();
 

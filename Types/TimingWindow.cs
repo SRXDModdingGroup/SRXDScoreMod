@@ -1,11 +1,14 @@
 ﻿namespace SRXDScoreMod; 
 
-public readonly struct TimingWindow : IHashable {
+public class TimingWindow : IHashable {
+    public int PointValue { get; }
+    
     public CustomTimingAccuracy TimingAccuracy { get; }
     
     public float UpperBound { get; }
 
-    public TimingWindow(CustomTimingAccuracy timingAccuracy, float upperBound) {
+    public TimingWindow(int pointValue, CustomTimingAccuracy timingAccuracy, float upperBound) {
+        PointValue = pointValue;
         TimingAccuracy = timingAccuracy;
         UpperBound = upperBound;
     }

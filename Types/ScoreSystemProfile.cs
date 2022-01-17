@@ -39,6 +39,10 @@ public class ScoreSystemProfile {
     /// </summary>
     public int MaxMultiplier { get; }
     /// <summary>
+    /// The number of points that must be gained to advance to the next multiplier. Multipliers beyond the length of the array will use the last value
+    /// </summary>
+    public int[] PointsPerMultiplier { get; }
+    /// <summary>
     /// The change in multiplier after an overbeat. Should be negative or 0
     /// </summary>
     public int MultiplierChangeForOverbeat { get; }
@@ -107,8 +111,6 @@ public class ScoreSystemProfile {
     /// </summary>
     public RankThreshold[] RankThresholds { get; }
 
-    private int hash;
-
     public ScoreSystemProfile(
         string name,
         int matchPointValue,
@@ -118,6 +120,7 @@ public class ScoreSystemProfile {
         float spinTickRate,
         float scratchTickRate,
         int maxMultiplier,
+        int[] pointsPerMultiplier,
         int multiplierChangeForOverbeat,
         int multiplierChangeForMissedMatch,
         int multiplierChangeForMissedTapOrHold,
@@ -143,6 +146,7 @@ public class ScoreSystemProfile {
         SpinTickRate = spinTickRate;
         ScratchTickRate = scratchTickRate;
         MaxMultiplier = maxMultiplier;
+        PointsPerMultiplier = pointsPerMultiplier;
         MultiplierChangeForOverbeat = multiplierChangeForOverbeat;
         MultiplierChangeForMissedMatch = multiplierChangeForMissedMatch;
         MultiplierChangeForMissedTapOrHold = multiplierChangeForMissedTapOrHold;
@@ -160,8 +164,8 @@ public class ScoreSystemProfile {
         BeatReleaseTimingWindows = beatReleaseTimingWindows;
         SPlusThreshold = sPlusThreshold;
         RankThresholds = rankThresholds;
-        
-        hash = HashUtility.Combine(
+
+        int hash = HashUtility.Combine(
             matchPointValue,
             spinStartPointValue,
             holdTickRate,
@@ -169,6 +173,7 @@ public class ScoreSystemProfile {
             spinTickRate,
             scratchTickRate,
             maxMultiplier,
+            pointsPerMultiplier,
             multiplierChangeForOverbeat,
             multiplierChangeForMissedMatch,
             multiplierChangeForMissedTapOrHold,
@@ -191,10 +196,4 @@ public class ScoreSystemProfile {
             Id = $"{name.Replace(' ', '_')}_{(uint) hash:x8}";
         }
     }
-
-    /// <summary>
-    /// Applies a set of values to this profile's hash. Any tweakable parameter for a custom score profile should be applied to the hash in the profile's constructor
-    /// </summary>
-    /// <param name="values">The values to apply to the hash</param>
-    protected void ApplyValuesToHash(params object[] values) => hash = HashUtility.Combine(hash, HashUtility.Combine(values));
 }

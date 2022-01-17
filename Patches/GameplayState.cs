@@ -212,14 +212,18 @@ internal class GameplayState {
 
     [HarmonyPatch(typeof(Track), nameof(Track.PlayTrack)), HarmonyPostfix]
     private static void Track_PlayTrack_Postfix(Track __instance) {
-        ScoreMod.InitializeScoreSystems(__instance.playStateFirst);
         Playing = true;
+        
+        foreach (var scoreSystem in ScoreMod.ScoreSystems)
+            scoreSystem.Init(__instance.playStateFirst);
     }
         
     [HarmonyPatch(typeof(Track), nameof(Track.PracticeTrack)), HarmonyPostfix]
     private static void Track_PracticeTrack_Postfix(Track __instance) {
-        ScoreMod.InitializeScoreSystems(__instance.playStateFirst);
         Playing = true;
+        
+        foreach (var scoreSystem in ScoreMod.ScoreSystems)
+            scoreSystem.Init(__instance.playStateFirst);
     }
 
     [HarmonyPatch(typeof(Track), nameof(Track.ReturnToPickTrack)), HarmonyPostfix]
@@ -228,8 +232,11 @@ internal class GameplayState {
     }
 
     [HarmonyPatch(typeof(PlayState), nameof(PlayState.Complete))]
-    private static void PlayState_Complete_Postfix() {
+    private static void PlayState_Complete_Postfix(Track __instance) {
         Playing = false;
+        
+        foreach (var scoreSystem in ScoreMod.ScoreSystems)
+            scoreSystem.Complete(__instance.playStateFirst);
     }
 
     [HarmonyPatch(typeof(TrackGameplayLogic), nameof(TrackGameplayLogic.UpdateNoteState)), HarmonyPostfix]
