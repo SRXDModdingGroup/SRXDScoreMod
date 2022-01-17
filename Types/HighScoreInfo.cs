@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace SRXDScoreMod; 
+﻿namespace SRXDScoreMod; 
 
 public class HighScoreInfo {
     public static HighScoreInfo Blank { get; } = new(0, 0, 0, string.Empty, FullComboState.None);

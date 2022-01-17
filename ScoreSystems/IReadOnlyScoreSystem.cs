@@ -1,11 +1,7 @@
-﻿using UnityEngine;
-
-namespace SRXDScoreMod; 
+﻿namespace SRXDScoreMod; 
 
 public interface IReadOnlyScoreSystem {
     string Name { get; }
-    
-    string Id { get; }
     
     int Score { get; }
         
@@ -16,8 +12,6 @@ public interface IReadOnlyScoreSystem {
     int HighSecondaryScore { get; }
         
     int MaxPossibleScore { get; }
-        
-    int MaxPossibleScoreSoFar { get; }
 
     int Streak { get; }
 
@@ -30,10 +24,6 @@ public interface IReadOnlyScoreSystem {
     int Multiplier { get; }
         
     FullComboState FullComboState { get; }
-
-    FullComboState StarState { get; }
-
-    Color StarColor { get; }
         
     string Rank { get; }
         
@@ -46,12 +36,6 @@ public interface IReadOnlyScoreSystem {
     public bool ImplementsSecondaryScore { get; }
     
     public bool ImplementsScorePrediction { get; }
-    
-    public string PostGameInfo1Name { get; }
-    
-    public string PostGameInfo2Name { get; }
-    
-    public string PostGameInfo3Name { get; }
     
     public TimingWindow[] TimingWindowsForDisplay { get; }
     

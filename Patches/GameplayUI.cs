@@ -112,8 +112,8 @@ internal class GameplayUI {
         var IReadOnlyScoreSystem_get_Score = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Score)).GetGetMethod();
         var IReadOnlyScoreSystem_get_Streak = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Streak)).GetGetMethod();
         var IReadOnlyScoreSystem_get_Multiplier = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Multiplier)).GetGetMethod();
-        var IReadOnlyScoreSystem_get_StarState = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.StarState)).GetGetMethod();
-        var IReadOnlyScoreSystem_get_StarColor = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.StarColor)).GetGetMethod();
+        var IScoreSystem_get_StarState = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.StarState)).GetGetMethod();
+        var IScoreSystem_get_StarColor = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.StarColor)).GetGetMethod();
         
         operations.Insert(0, new CodeInstruction[] {
             new(OpCodes.Call, ScoreMod_get_CurrentScoreSystemInternal),
@@ -130,14 +130,14 @@ internal class GameplayUI {
             new (OpCodes.Ldloc_S, (byte) 15), // hudCanvases
             new (OpCodes.Ldfld, XDHudCanvases_fcStar),
             new (OpCodes.Ldloc_S, currentScoreSystem),
-            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_StarColor),
+            new (OpCodes.Callvirt, IScoreSystem_get_StarColor),
             new (OpCodes.Callvirt, Graphic_set_color)
         });
             
         ReplaceGetter(PlayState_get_TotalNoteScore, IReadOnlyScoreSystem_get_Score);
         ReplaceGetter(PlayState_get_combo, IReadOnlyScoreSystem_get_Streak);
         ReplaceGetter(PlayState_get_multiplier, IReadOnlyScoreSystem_get_Multiplier);
-        ReplaceGetter(PlayState_get_fullComboState, IReadOnlyScoreSystem_get_StarState);
+        ReplaceGetter(PlayState_get_fullComboState, IScoreSystem_get_StarState);
             
         operations.Execute(instructionsList);
 

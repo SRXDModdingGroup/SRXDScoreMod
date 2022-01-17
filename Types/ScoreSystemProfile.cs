@@ -1,6 +1,4 @@
-﻿using System.Collections.ObjectModel;
-
-namespace SRXDScoreMod; 
+﻿namespace SRXDScoreMod; 
 
 // Contains information about note point values, timing windows, and points per multiplier for each score container
 public class ScoreSystemProfile {
