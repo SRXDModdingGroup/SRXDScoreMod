@@ -6,7 +6,9 @@ namespace SRXDScoreMod;
 public abstract class CustomScoreSystem : IScoreSystem {
     #region IReadOnlyScoreSystemProperties
 
-    public abstract string Name { get; }
+    public string Name { get; private set; }
+    
+    public string Id { get; private set; }
     
     public int Score { get; private set; }
     
@@ -54,77 +56,71 @@ public abstract class CustomScoreSystem : IScoreSystem {
     
     public virtual string PostGameInfo3Name => string.Empty;
 
-    public TimingWindow[] TimingWindowsForDisplay => TapTimingWindows;
-
-    #endregion
-    
-    public abstract string Id { get; }
-
-    protected virtual int MaxMultiplier => 4;
-
-    #region MultiplierChangesForMisses
-
-    protected virtual int MultiplierChangeForOverbeat => -3;
-    
-    protected virtual int MultiplierChangeForMissedMatch => -3;
-    
-    protected virtual int MultiplierChangeForMissedTapOrHold => -3;
-    
-    protected virtual int MultiplierChangeForMissedBeat => -3;
-    
-    protected virtual int MultiplierChangeForMissedLiftoff => 0;
-    
-    protected virtual int MultiplierChangeForMissedBeatRelease => 0;
-    
-    protected virtual int MultiplierChangeForMissedSpin => -3;
-    
-    protected virtual int MultiplierChangeForBrokenHold => 0;
-    
-    protected virtual int MultiplierChangeForBrokenBeatHold => 0;
-    
-    protected virtual int MultiplierChangeForBrokenSpin => 0;
-    
-    protected virtual int MultiplierChangeForBrokenScratch => -3;
+    public TimingWindow[] TimingWindowsForDisplay => tapTimingWindows;
 
     #endregion
 
-    #region PointValuesAndTickRates
+    #region ScoreProfileValues
 
-    protected abstract int MatchPointValue { get; }
-
-    protected abstract int SpinStartPointValue { get; }
-    
-    protected abstract float HoldTickRate { get; }
-    
-    protected abstract float BeatHoldTickRate { get; }
-    
-    protected abstract float SpinTickRate { get; }
-    
-    protected abstract float ScratchTickRate { get; }
+    private int matchPointValue;
+    private int spinStartPointValue;
+    private int maxMultiplier;
+    private int multiplierChangeForOverbeat;
+    private int multiplierChangeForMissedMatch;
+    private int multiplierChangeForMissedTapOrHold;
+    private int multiplierChangeForMissedBeat;
+    private int multiplierChangeForMissedLiftoff;
+    private int multiplierChangeForMissedBeatRelease;
+    private int multiplierChangeForMissedSpin;
+    private int multiplierChangeForBrokenHold;
+    private int multiplierChangeForBrokenBeatHold;
+    private int multiplierChangeForBrokenSpin;
+    private int multiplierChangeForBrokenScratch;
+    private int sPlusThreshold;
+    private float holdTickRate;
+    private float beatHoldTickRate;
+    private float spinTickRate;
+    private float scratchTickRate;
+    private RankThreshold[] rankThresholds;
+    private TimingWindow[] tapTimingWindows;
+    private TimingWindow[] beatTimingWindows;
+    private TimingWindow[] liftoffTimingWindows;
+    private TimingWindow[] beatReleaseTimingWindows;
 
     #endregion
-
-    #region TimingWindows
-
-    protected abstract TimingWindow[] TapTimingWindows { get; }
-    
-    protected abstract TimingWindow[] BeatTimingWindows { get; }
-    
-    protected abstract TimingWindow[] LiftoffTimingWindows { get; }
-    
-    protected abstract TimingWindow[] BeatReleaseTimingWindows { get; }
-
-    #endregion
-    
-    protected abstract RankThreshold[] RankThresholds { get; }
-    
-    protected abstract int SPlusThreshold { get; }
     
     private int maxPossibleStreak;
     private int maxPossibleStreakSoFar;
     private int pointsToNextMultiplier;
     private NoteScoreState[] scoreStates;
     private List<float> overbeatTimes;
+
+    protected CustomScoreSystem(ScoreSystemProfile profile) {
+        matchPointValue = profile.MatchPointValue;
+        spinStartPointValue = profile.SpinStartPointValue;
+        maxMultiplier = profile.MaxMultiplier;
+        multiplierChangeForOverbeat = profile.MultiplierChangeForOverbeat;
+        multiplierChangeForMissedMatch = profile.MultiplierChangeForMissedMatch;
+        multiplierChangeForMissedTapOrHold = profile.MultiplierChangeForMissedTapOrHold;
+        multiplierChangeForMissedBeat = profile.MultiplierChangeForMissedBeat;
+        multiplierChangeForMissedLiftoff = profile.MultiplierChangeForMissedLiftoff;
+        multiplierChangeForMissedBeatRelease = profile.MultiplierChangeForMissedBeatRelease;
+        multiplierChangeForMissedSpin = profile.MultiplierChangeForMissedSpin;
+        multiplierChangeForBrokenHold = profile.MultiplierChangeForBrokenHold;
+        multiplierChangeForBrokenBeatHold = profile.MultiplierChangeForBrokenBeatHold;
+        multiplierChangeForBrokenSpin = profile.MultiplierChangeForBrokenSpin;
+        multiplierChangeForBrokenScratch = profile.MultiplierChangeForBrokenScratch;
+        sPlusThreshold = profile.SPlusThreshold;
+        holdTickRate = profile.HoldTickRate;
+        beatHoldTickRate = profile.BeatHoldTickRate;
+        spinTickRate = profile.SpinTickRate;
+        scratchTickRate = profile.ScratchTickRate;
+        rankThresholds = profile.RankThresholds;
+        tapTimingWindows = profile.TapTimingWindows;
+        beatTimingWindows = profile.BeatTimingWindows;
+        liftoffTimingWindows = profile.LiftoffTimingWindows;
+        beatReleaseTimingWindows = profile.BeatReleaseTimingWindows;
+    }
 
     public virtual void Init(PlayState playState) {
         Score = 0;
@@ -133,12 +129,12 @@ public abstract class CustomScoreSystem : IScoreSystem {
         MaxPossibleScoreSoFar = 0;
         Streak = 0;
         MaxStreak = 0;
-        Multiplier = MaxMultiplier;
+        Multiplier = maxMultiplier;
         FullComboState = FullComboState.PerfectFullCombo;
         StarState = FullComboState.PerfectFullCombo;
         StarColor = Color.cyan;
         maxPossibleStreak = 0;
-        pointsToNextMultiplier = GetPointsToNextMultiplier(MaxMultiplier);
+        pointsToNextMultiplier = GetPointsToNextMultiplier(maxMultiplier);
         
         InitScoreStates(playState.trackData);
 
@@ -161,13 +157,13 @@ public abstract class CustomScoreSystem : IScoreSystem {
 
     #region TimingAccuracyFunctions
 
-    public CustomTimingAccuracy GetTimingAccuracyForTap(float timeOffset) => GetTimingAccuracy(timeOffset, TapTimingWindows);
+    public CustomTimingAccuracy GetTimingAccuracyForTap(float timeOffset) => GetTimingAccuracy(timeOffset, tapTimingWindows);
 
-    public CustomTimingAccuracy GetTimingAccuracyForBeat(float timeOffset) => GetTimingAccuracy(timeOffset, BeatTimingWindows);
+    public CustomTimingAccuracy GetTimingAccuracyForBeat(float timeOffset) => GetTimingAccuracy(timeOffset, beatTimingWindows);
 
-    public CustomTimingAccuracy GetTimingAccuracyForLiftoff(float timeOffset) => GetTimingAccuracy(timeOffset, LiftoffTimingWindows);
+    public CustomTimingAccuracy GetTimingAccuracyForLiftoff(float timeOffset) => GetTimingAccuracy(timeOffset, liftoffTimingWindows);
 
-    public CustomTimingAccuracy GetTimingAccuracyForBeatRelease(float timeOffset) => GetTimingAccuracy(timeOffset, BeatReleaseTimingWindows);
+    public CustomTimingAccuracy GetTimingAccuracyForBeatRelease(float timeOffset) => GetTimingAccuracy(timeOffset, beatReleaseTimingWindows);
 
     #endregion
     
@@ -193,7 +189,7 @@ public abstract class CustomScoreSystem : IScoreSystem {
 
     #region NoteEvents
 
-    internal void HitMatch(int noteIndex) => AddScore(noteIndex, MatchPointValue, 1, null, false);
+    internal void HitMatch(int noteIndex) => AddScore(noteIndex, matchPointValue, 1, null, false);
 
     internal void HitTap(int noteIndex, float timeOffset)
         => AddScore(noteIndex, GetPointValueForTap(timeOffset), 1, GetTimingAccuracyForTap(timeOffset), false);
@@ -207,46 +203,46 @@ public abstract class CustomScoreSystem : IScoreSystem {
     internal void HitBeatRelease(int noteIndex, float timeOffset)
         => AddScore(noteIndex, GetPointValueForBeatRelease(timeOffset), 1, GetTimingAccuracyForBeatRelease(timeOffset), false);
 
-    internal void HitSpin(int noteIndex) => AddScore(noteIndex, SpinStartPointValue, 1, null, false);
+    internal void HitSpin(int noteIndex) => AddScore(noteIndex, spinStartPointValue, 1, null, false);
 
     internal void Overbeat(float time) {
-        ChangeMultiplier(-1, MultiplierChangeForOverbeat);
+        ChangeMultiplier(-1, multiplierChangeForOverbeat);
         
-        if (MultiplierChangeForOverbeat < 0)
+        if (multiplierChangeForOverbeat < 0)
             overbeatTimes.Add(time);
     }
 
-    internal void MissMatch(int noteIndex) => MissNote(noteIndex, MultiplierChangeForMissedMatch);
+    internal void MissMatch(int noteIndex) => MissNote(noteIndex, multiplierChangeForMissedMatch);
 
-    internal void MissTap(int noteIndex) => MissNote(noteIndex, MultiplierChangeForMissedTapOrHold);
+    internal void MissTap(int noteIndex) => MissNote(noteIndex, multiplierChangeForMissedTapOrHold);
     
-    internal void MissBeat(int noteIndex) => MissNote(noteIndex, MultiplierChangeForMissedBeat);
+    internal void MissBeat(int noteIndex) => MissNote(noteIndex, multiplierChangeForMissedBeat);
     
-    internal void MissHold(int noteIndex, int endNoteIndex) => MissPairedNote(noteIndex, endNoteIndex, MultiplierChangeForMissedTapOrHold);
+    internal void MissHold(int noteIndex, int endNoteIndex) => MissPairedNote(noteIndex, endNoteIndex, multiplierChangeForMissedTapOrHold);
 
-    internal void MissBeatHold(int noteIndex, int endNoteIndex) => MissPairedNote(noteIndex, endNoteIndex, MultiplierChangeForMissedBeat);
+    internal void MissBeatHold(int noteIndex, int endNoteIndex) => MissPairedNote(noteIndex, endNoteIndex, multiplierChangeForMissedBeat);
 
-    internal void MissLiftoff(int noteIndex) => MissNote(noteIndex, MultiplierChangeForMissedLiftoff);
+    internal void MissLiftoff(int noteIndex) => MissNote(noteIndex, multiplierChangeForMissedLiftoff);
     
-    internal void MissBeatRelease(int noteIndex) => MissNote(noteIndex, MultiplierChangeForMissedBeatRelease);
+    internal void MissBeatRelease(int noteIndex) => MissNote(noteIndex, multiplierChangeForMissedBeatRelease);
 
-    internal void MissSpin(int noteIndex) => MissNote(noteIndex, MultiplierChangeForMissedSpin);
+    internal void MissSpin(int noteIndex) => MissNote(noteIndex, multiplierChangeForMissedSpin);
     
-    internal void BreakHold(int noteIndex, int endNoteIndex) => MissPairedNote(noteIndex, endNoteIndex, MultiplierChangeForBrokenHold);
+    internal void BreakHold(int noteIndex, int endNoteIndex) => MissPairedNote(noteIndex, endNoteIndex, multiplierChangeForBrokenHold);
     
-    internal void BreakBeatHold(int noteIndex, int endNoteIndex) => MissPairedNote(noteIndex, endNoteIndex, MultiplierChangeForBrokenBeatHold);
+    internal void BreakBeatHold(int noteIndex, int endNoteIndex) => MissPairedNote(noteIndex, endNoteIndex, multiplierChangeForBrokenBeatHold);
     
-    internal void BreakSpin(int noteIndex) => MissNote(noteIndex, MultiplierChangeForBrokenSpin);
+    internal void BreakSpin(int noteIndex) => MissNote(noteIndex, multiplierChangeForBrokenSpin);
     
-    internal void BreakScratch(int noteIndex) => MissNote(noteIndex, MultiplierChangeForBrokenScratch);
+    internal void BreakScratch(int noteIndex) => MissNote(noteIndex, multiplierChangeForBrokenScratch);
 
-    internal void UpdateHold(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, HoldTickRate);
+    internal void UpdateHold(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, holdTickRate);
 
-    internal void UpdateBeatHold(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, BeatHoldTickRate);
+    internal void UpdateBeatHold(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, beatHoldTickRate);
 
-    internal void UpdateSpin(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, SpinTickRate);
+    internal void UpdateSpin(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, spinTickRate);
 
-    internal void UpdateScratch(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, ScratchTickRate);
+    internal void UpdateScratch(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, scratchTickRate);
 
     internal void CompleteNote(int noteIndex) {
         if (AddRemainingValueToMaxScoreSoFar(noteIndex))
@@ -261,13 +257,13 @@ public abstract class CustomScoreSystem : IScoreSystem {
         int acc = amount;
         int scoreAdded = 0;
             
-        while (Multiplier < MaxMultiplier && acc >= pointsToNextMultiplier) {
+        while (Multiplier < maxMultiplier && acc >= pointsToNextMultiplier) {
             scoreAdded += Multiplier * pointsToNextMultiplier;
             acc -= pointsToNextMultiplier;
             ChangeMultiplier(noteIndex, 1);
         }
 
-        if (Multiplier < MaxMultiplier)
+        if (Multiplier < maxMultiplier)
             pointsToNextMultiplier -= acc;
         
         scoreAdded += Multiplier * acc;
@@ -279,7 +275,7 @@ public abstract class CustomScoreSystem : IScoreSystem {
             scoreState.GainedBaseSustainPoints += amount;
             scoreState.GainedTotalSustainPoints += scoreAdded;
 
-            int maxAmount = MaxMultiplier * amount;
+            int maxAmount = maxMultiplier * amount;
             
             MaxPossibleScoreSoFar += maxAmount;
             scoreState.RemainingTotalSustainPoints -= maxAmount;
@@ -337,7 +333,7 @@ public abstract class CustomScoreSystem : IScoreSystem {
         if (amount == 0)
             return;
         
-        Multiplier = Mathf.Clamp(Multiplier + amount, 1, MaxMultiplier);
+        Multiplier = Mathf.Clamp(Multiplier + amount, 1, maxMultiplier);
         pointsToNextMultiplier = GetPointsToNextMultiplier(Multiplier);
 
         if (amount > 0)
@@ -357,7 +353,7 @@ public abstract class CustomScoreSystem : IScoreSystem {
             return;
         }
 
-        if (Score < MaxPossibleScoreSoFar - SPlusThreshold) {
+        if (Score < MaxPossibleScoreSoFar - sPlusThreshold) {
             FullComboState = FullComboState.FullCombo;
             StarState = FullComboState.FullCombo;
             StarColor = Color.green;
@@ -394,7 +390,7 @@ public abstract class CustomScoreSystem : IScoreSystem {
 
             switch (note.NoteType) {
                 case NoteType.Match:
-                    availableBasePoints = MatchPointValue;
+                    availableBasePoints = matchPointValue;
                     availableStreak = 1;
                     
                     break;
@@ -403,15 +399,15 @@ public abstract class CustomScoreSystem : IScoreSystem {
                     availableStreak = 1;
 
                     if (note.length > 0f)
-                        availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(BeatHoldTickRate * note.length));
+                        availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(beatHoldTickRate * note.length));
                     
                     break;
                 case NoteType.SpinRightStart:
                 case NoteType.SpinLeftStart:
                     var spinnerSection = trackData.SpinnerSections[trackData.SpinnerSectionIndexForNoteIndex[i]];
                     
-                    availableBasePoints = SpinStartPointValue;
-                    availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(SpinTickRate * (spinnerSection.endsAtTime - spinnerSection.startsAtTime)));
+                    availableBasePoints = spinStartPointValue;
+                    availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(spinTickRate * (spinnerSection.endsAtTime - spinnerSection.startsAtTime)));
                     availableStreak = 1;
                     
                     break;
@@ -419,7 +415,7 @@ public abstract class CustomScoreSystem : IScoreSystem {
                     var freestyleSection = trackData.FreestyleSections[trackData.FreestyleSectionIndexForNoteIndex[i]];
 
                     availableBasePoints = maxTapValue;
-                    availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(HoldTickRate * (freestyleSection.EndTime - freestyleSection.Time)));
+                    availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(holdTickRate * (freestyleSection.EndTime - freestyleSection.Time)));
                     availableStreak = 1;
                     
                     break;
@@ -445,14 +441,14 @@ public abstract class CustomScoreSystem : IScoreSystem {
                 case NoteType.ScratchStart:
                     var scratchSection = trackData.ScratchSections[trackData.ScratchSectionIndexForNoteIndex[i]];
 
-                    availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(ScratchTickRate * (scratchSection.endsAtTime - scratchSection.startsAtTime)));
+                    availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(scratchTickRate * (scratchSection.endsAtTime - scratchSection.startsAtTime)));
                     availableStreak = 1;
                     
                     break;
             }
 
-            int availableTotalPoints = MaxMultiplier * availableBasePoints;
-            int availableTotalSustainPoints = MaxMultiplier * availableBaseSustainPoints;
+            int availableTotalPoints = maxMultiplier * availableBasePoints;
+            int availableTotalSustainPoints = maxMultiplier * availableBaseSustainPoints;
 
             MaxPossibleScore += availableTotalPoints + availableTotalSustainPoints;
             maxPossibleStreak += availableStreak;
@@ -488,19 +484,19 @@ public abstract class CustomScoreSystem : IScoreSystem {
     }
 
     private string GetRank(int score, int maxScore) {
-        if (score > maxScore - SPlusThreshold)
+        if (score > maxScore - sPlusThreshold)
             return "S+";
         
         float scoreRatio = (float) score / maxScore;
 
-        foreach (var pair in RankThresholds) {
+        foreach (var pair in rankThresholds) {
             if (scoreRatio < pair.Threshold)
                 continue;
 
             return pair.Rank;
         }
 
-        return RankThresholds[RankThresholds.Length - 1].Rank;
+        return rankThresholds[rankThresholds.Length - 1].Rank;
     }
 
     private CustomTimingAccuracy GetTimingAccuracy(float timeOffset, TimingWindow[] timingWindows) {

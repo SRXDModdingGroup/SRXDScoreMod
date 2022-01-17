@@ -41,11 +41,11 @@ internal static class HighScoresContainer {
                 || !int.TryParse(split[5], out int secondaryScore))
                 continue;
 
-            string id = split[0];
-            var newItem = new SavedHighScoreInfo(id, score, streak, maxScore, maxStreak, secondaryScore);
+            string key = split[0];
+            var newInfo = new SavedHighScoreInfo(key, score, streak, maxScore, maxStreak, secondaryScore);
                     
-            if (newItem.Hash == split[6])
-                highScores.Add(id, newItem);
+            if (newInfo.Hash == split[6])
+                highScores.Add(key, newInfo);
         }
     }
 
@@ -64,19 +64,19 @@ internal static class HighScoresContainer {
 
     public static bool TrySetHighScore(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType,
         string scoreSystemId, string modifierSetId, SavedHighScoreInfo info) {
-        string id = $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystemId}";
+        string key = $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystemId}";
 
         if (!string.IsNullOrWhiteSpace(modifierSetId))
-            id = $"{id}_{modifierSetId}";
+            key = $"{key}_{modifierSetId}";
 
-        if (!highScores.TryGetValue(id, out var oldInfo)) {
-            highScores[id] = info;
+        if (!highScores.TryGetValue(key, out var oldInfo)) {
+            highScores[key] = info;
 
             return true;
         }
 
         if (info.MaxScore != oldInfo.MaxScore || info.MaxStreak != oldInfo.MaxStreak) {
-            ScoreMod.Logger.LogWarning($"WARNING: Max Score for \"{id}\" does not match saved Max Score. Score will not be saved");
+            ScoreMod.Logger.LogWarning($"WARNING: Max Score for \"{key}\" does not match saved Max Score. Score will not be saved");
 
             return false;
         }
@@ -85,7 +85,7 @@ internal static class HighScoresContainer {
         int streak = oldInfo.Streak;
                 
         if (score > oldInfo.MaxScore || streak > oldInfo.MaxStreak) {
-            ScoreMod.Logger.LogWarning($"WARNING: Score for for \"{id}\" is greater than saved Max Score. Score will not be saved");
+            ScoreMod.Logger.LogWarning($"WARNING: Score for for \"{key}\" is greater than saved Max Score. Score will not be saved");
 
             return false;
         }
@@ -107,19 +107,19 @@ internal static class HighScoresContainer {
         }
 
         if (anyChanged)
-            highScores[id] = new SavedHighScoreInfo(id, score, streak, info.MaxScore, info.MaxStreak, secondaryScore);
+            highScores[key] = new SavedHighScoreInfo(key, score, streak, info.MaxScore, info.MaxStreak, secondaryScore);
 
         return isNewBest;
     }
 
     public static SavedHighScoreInfo GetHighScore(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType,
         string scoreSystemId, string modifierSetId) {
-        string id = $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystemId}";
+        string key = $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystemId}";
 
         if (!string.IsNullOrWhiteSpace(modifierSetId))
-            id = $"{id}_{modifierSetId}";
+            key = $"{key}_{modifierSetId}";
 
-        if (highScores.TryGetValue(id, out var item))
+        if (highScores.TryGetValue(key, out var item))
             return item;
 
         return new SavedHighScoreInfo(string.Empty, 0, 0, 0, 0, 0);

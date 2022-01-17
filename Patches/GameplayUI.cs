@@ -36,7 +36,7 @@ internal class GameplayUI {
             NoteTimingAccuracy.Late => 2,
             _ => 3
         };
-            
+        
         var transform = timingFeedbackAnimation.transform.GetChild(target);
         var feedbackText = transform.GetComponent<TextCharacter>();
 
