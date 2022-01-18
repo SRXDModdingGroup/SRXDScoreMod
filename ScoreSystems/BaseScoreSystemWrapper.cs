@@ -3,8 +3,8 @@
 namespace SRXDScoreMod; 
 
 internal class BaseScoreSystemWrapper : IScoreSystem {
-    private static readonly CustomTimingAccuracy PERFECT = new("Perfect", "Perfect", Color.cyan, NoteTimingAccuracy.Perfect);
     private static readonly CustomTimingAccuracy EARLY = new("Early", "Good", Color.yellow, NoteTimingAccuracy.Early);
+    private static readonly CustomTimingAccuracy PERFECT = new("Perfect", "Perfect", Color.cyan, NoteTimingAccuracy.Perfect);
     private static readonly CustomTimingAccuracy LATE = new("Late", "Good", Color.yellow, NoteTimingAccuracy.Late);
 
     public string Name => "Base";
@@ -58,10 +58,10 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
     public string PostGameInfo3Name => "PFC";
     
     public TimingWindow[] TimingWindowsForDisplay { get; } = {
-        new (0, EARLY, -130f),
-        new (0, EARLY, -50f),
-        new (0, PERFECT, 50f),
-        new (0, LATE, 130f)
+        new (EARLY, 0, 0, -130f),
+        new (EARLY, 0, 0, -50f),
+        new (PERFECT, 0, 0, 50f),
+        new (LATE, 0, 0, 130f)
     };
 
     private GameplayVariables gameplayVariables;
@@ -130,7 +130,7 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
             fullComboState);
     }
 
-    private CustomTimingAccuracy BaseToCustomTimingAccuracy(NoteTimingAccuracy timingAccuracy) => timingAccuracy switch {
+    private static CustomTimingAccuracy BaseToCustomTimingAccuracy(NoteTimingAccuracy timingAccuracy) => timingAccuracy switch {
         NoteTimingAccuracy.Perfect => PERFECT,
         NoteTimingAccuracy.Early => EARLY,
         NoteTimingAccuracy.Late => LATE,

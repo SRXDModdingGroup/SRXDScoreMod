@@ -50,6 +50,8 @@ public class ScoreMod : BaseUnityPlugin {
         ScoreSystems.Add(new BaseScoreSystemWrapper());
         CurrentScoreSystemInternal = ScoreSystems[0];
         CustomScoreSystems = new List<CustomScoreSystem>();
+        AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM16);
+        AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM32);
 
         var harmony = new Harmony("ScoreMod");
             

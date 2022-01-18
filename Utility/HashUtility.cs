@@ -18,6 +18,7 @@ public static class HashUtility {
         }
     }
 
+    public static int GetStableHash(bool b) => b ? 1 : 0;
     public static int GetStableHash(char c) => c | c << 16;
     public static unsafe int GetStableHash(float f) {
         if (f == 0.0)
@@ -58,6 +59,7 @@ public static class HashUtility {
         }
     }
     public static int GetStableHash(object o) => o switch {
+        bool b => GetStableHash(b),
         char c => GetStableHash(c),
         int i => i,
         float f => GetStableHash(f),
@@ -65,6 +67,6 @@ public static class HashUtility {
         Color c => GetStableHash(c),
         IHashable h => h.GetStableHash(),
         Array a => GetStableHash(a),
-        _ => throw new ArgumentException("GetStableHash can only be called on objects of type char, int, float, string, Color, IHashable, or Array")
+        _ => throw new ArgumentException("GetStableHash can only be called on objects of type bool, char, int, float, string, Color, IHashable, or Array")
     };
 }

@@ -1,6 +1,6 @@
 ﻿namespace SRXDScoreMod;
 
-public readonly struct SavedHighScoreInfo {
+internal readonly struct SavedHighScoreInfo {
     public int Score { get; }
     public int Streak { get; }
     public int MaxScore { get; }

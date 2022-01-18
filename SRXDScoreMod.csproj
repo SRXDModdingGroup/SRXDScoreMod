@@ -82,6 +82,7 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="DefaultScoreSystemProfiles.cs" />
         <Compile Include="HighScoresContainer.cs" />
         <Compile Include="Patches\CompleteScreenUI.cs" />
         <Compile Include="Patches\GameplayState.cs" />

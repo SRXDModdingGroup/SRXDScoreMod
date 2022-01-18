@@ -11,6 +11,22 @@ public class ScoreSystemProfile {
     /// </summary>
     public string Id { get; }
     /// <summary>
+    /// The timing windows and corresponding point values and timing accuracies for taps
+    /// </summary>
+    public TimingWindow[] TapTimingWindows { get; }
+    /// <summary>
+    /// The timing windows and corresponding point values and timing accuracies for beats
+    /// </summary>
+    public TimingWindow[] BeatTimingWindows { get; }
+    /// <summary>
+    /// The timing windows and corresponding point values and timing accuracies for liftoffs
+    /// </summary>
+    public TimingWindow[] LiftoffTimingWindows { get; }
+    /// <summary>
+    /// The timing windows and corresponding point values and timing accuracies for hard beat releases
+    /// </summary>
+    public TimingWindow[] BeatReleaseTimingWindows { get; }
+    /// <summary>
     /// The point value of a match note
     /// </summary>
     public int MatchPointValue { get; }
@@ -87,22 +103,6 @@ public class ScoreSystemProfile {
     /// </summary>
     public int MultiplierChangeForBrokenScratch { get; }
     /// <summary>
-    /// The timing windows and corresponding timing accuracies for taps
-    /// </summary>
-    public TimingWindow[] TapTimingWindows { get; }
-    /// <summary>
-    /// The timing windows and corresponding timing accuracies for beats
-    /// </summary>
-    public TimingWindow[] BeatTimingWindows { get; }
-    /// <summary>
-    /// The timing windows and corresponding timing accuracies for liftoffs
-    /// </summary>
-    public TimingWindow[] LiftoffTimingWindows { get; }
-    /// <summary>
-    /// The timing windows and corresponding timing accuracies for hard beat releases
-    /// </summary>
-    public TimingWindow[] BeatReleaseTimingWindows { get; }
-    /// <summary>
     /// The point threshold for an S+ rank
     /// </summary>
     public int SPlusThreshold { get; }
@@ -113,6 +113,10 @@ public class ScoreSystemProfile {
 
     public ScoreSystemProfile(
         string name,
+        TimingWindow[] tapTimingWindows,
+        TimingWindow[] beatTimingWindows,
+        TimingWindow[] liftoffTimingWindows,
+        TimingWindow[] beatReleaseTimingWindows,
         int matchPointValue,
         int spinStartPointValue,
         float holdTickRate,
@@ -132,13 +136,13 @@ public class ScoreSystemProfile {
         int multiplierChangeForBrokenBeatHold,
         int multiplierChangeForBrokenSpin,
         int multiplierChangeForBrokenScratch,
-        TimingWindow[] tapTimingWindows,
-        TimingWindow[] beatTimingWindows,
-        TimingWindow[] liftoffTimingWindows,
-        TimingWindow[] beatReleaseTimingWindows,
         int sPlusThreshold,
         RankThreshold[] rankThresholds) {
         Name = name;
+        TapTimingWindows = tapTimingWindows;
+        BeatTimingWindows = beatTimingWindows;
+        LiftoffTimingWindows = liftoffTimingWindows;
+        BeatReleaseTimingWindows = beatReleaseTimingWindows;
         MatchPointValue = matchPointValue;
         SpinStartPointValue = spinStartPointValue;
         HoldTickRate = holdTickRate;
@@ -158,14 +162,14 @@ public class ScoreSystemProfile {
         MultiplierChangeForBrokenBeatHold = multiplierChangeForBrokenBeatHold;
         MultiplierChangeForBrokenSpin = multiplierChangeForBrokenSpin;
         MultiplierChangeForBrokenScratch = multiplierChangeForBrokenScratch;
-        TapTimingWindows = tapTimingWindows;
-        BeatTimingWindows = beatTimingWindows;
-        LiftoffTimingWindows = liftoffTimingWindows;
-        BeatReleaseTimingWindows = beatReleaseTimingWindows;
         SPlusThreshold = sPlusThreshold;
         RankThresholds = rankThresholds;
 
         int hash = HashUtility.Combine(
+            tapTimingWindows,
+            beatTimingWindows,
+            liftoffTimingWindows,
+            beatReleaseTimingWindows,
             matchPointValue,
             spinStartPointValue,
             holdTickRate,
@@ -185,10 +189,6 @@ public class ScoreSystemProfile {
             multiplierChangeForBrokenBeatHold,
             multiplierChangeForBrokenSpin,
             multiplierChangeForBrokenScratch,
-            tapTimingWindows,
-            beatTimingWindows,
-            liftoffTimingWindows,
-            beatReleaseTimingWindows,
             sPlusThreshold,
             rankThresholds);
         
