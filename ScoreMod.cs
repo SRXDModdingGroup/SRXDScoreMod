@@ -10,6 +10,7 @@ using UnityEngine;
 namespace SRXDScoreMod; 
 
 // Contains code to initialize the mod
+[BepInDependency("com.pink.spinrhythm.moddingutils", "1.0.1")]
 [BepInPlugin("SRXD.ScoreMod", "ScoreMod", "1.1.1.0")]
 public class ScoreMod : BaseUnityPlugin {
     internal new static ManualLogSource Logger { get; private set; }
@@ -46,13 +47,6 @@ public class ScoreMod : BaseUnityPlugin {
         TapTimingOffset = Config.Bind("Settings", "TapTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for taps and liftoffs");
         BeatTimingOffset = Config.Bind("Settings", "BeatTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for beats and hard beat releases");
 
-        ScoreSystems = new List<IScoreSystem>();
-        ScoreSystems.Add(new BaseScoreSystemWrapper());
-        CurrentScoreSystemInternal = ScoreSystems[0];
-        CustomScoreSystems = new List<CustomScoreSystem>();
-        AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM16);
-        AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM32);
-
         var harmony = new Harmony("ScoreMod");
             
         harmony.PatchAll(typeof(GameplayState));
@@ -60,7 +54,15 @@ public class ScoreMod : BaseUnityPlugin {
         harmony.PatchAll(typeof(CompleteScreenUI));
         harmony.PatchAll(typeof(LevelSelectUI));
 
+        ScoreSystems = new List<IScoreSystem>();
+        ScoreSystems.Add(new BaseScoreSystemWrapper());
+        CurrentScoreSystemInternal = ScoreSystems[0];
+        CustomScoreSystems = new List<CustomScoreSystem>();
+        
+        AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM16);
+        AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM32);
         HighScoresContainer.LoadHighScores();
+        Logger.LogMessage("Finished Awake");
     }
 
     private void Update() {
