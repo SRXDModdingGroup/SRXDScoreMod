@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SRXDScoreMod; 
@@ -46,17 +47,17 @@ internal class CustomScoreSystem : IScoreSystem {
 
     public bool ImplementsSecondaryScore => true;
 
-    public string PostGameInfo1Value => string.Empty;
+    public string PostGameInfo1Name => "Performance";
+
+    public string PostGameInfo2Name => "Accuracy";
+
+    public string PostGameInfo3Name => "Early / Late";
+
+    public string PostGameInfo1Value { get; private set; }
     
-    public string PostGameInfo2Value => string.Empty;
+    public string PostGameInfo2Value { get; private set; }
     
-    public string PostGameInfo3Value => string.Empty;
-    
-    public string PostGameInfo1Name => string.Empty;
-    
-    public string PostGameInfo2Name => string.Empty;
-    
-    public string PostGameInfo3Name => string.Empty;
+    public string PostGameInfo3Value { get; private set; }
 
     #endregion
 
@@ -167,6 +168,14 @@ internal class CustomScoreSystem : IScoreSystem {
             MaxPossibleScore,
             maxPossibleStreak,
             SecondaryScore));
+
+        if (MaxPossibleScore <= 0)
+            PostGameInfo1Value = "100%";
+        else
+            PostGameInfo1Value = ((float) Score / MaxPossibleScore).ToString("P");
+
+        PostGameInfo2Value = GetAccuracy().ToString("P");
+        PostGameInfo3Value = GetEarlyLateRatio();
     }
 
     public CustomTimingAccuracy GetTimingAccuracyForTap(float timeOffset) => GetTimingWindow(timeOffset, tapTimingWindows).TimingAccuracy;
@@ -520,15 +529,24 @@ internal class CustomScoreSystem : IScoreSystem {
 
     private int GetPointsToNextMultiplier(int currentMultiplier) => pointsPerMultiplier[Mathf.Min(currentMultiplier, pointsPerMultiplier.Length) - 1];
 
-    private HighScoreInfo GetHighScoreInfoForTrack(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType) {
-        var savedInfo = HighScoresContainer.GetHighScore(trackInfoRef, difficultyType, Id, string.Empty);
+    private float GetAccuracy() {
+        int totalGained = 0;
+        int totalPossible = 0;
 
-        return new HighScoreInfo(
-            savedInfo.Score,
-            savedInfo.Streak,
-            savedInfo.SecondaryScore,
-            GetRank(savedInfo.Score, savedInfo.MaxScore),
-            GetFullComboState(savedInfo.Score, savedInfo.MaxStreak, savedInfo.Streak, savedInfo.MaxStreak));
+        foreach (var scoreState in scoreStates) {
+            int gained = scoreState.GainedBasePoints;
+            
+            if (gained == 0)
+                continue;
+
+            totalGained += gained;
+            totalPossible += scoreState.AvailableBasePoints;
+        }
+
+        if (totalPossible == 0f)
+            return 1f;
+
+        return (float) totalGained / totalPossible;
     }
 
     private string GetRank(int score, int maxScore) {
@@ -548,6 +566,58 @@ internal class CustomScoreSystem : IScoreSystem {
         }
 
         return rankThresholds[rankThresholds.Length - 1].Rank;
+    }
+
+    private string GetEarlyLateRatio() {
+        int earlies = 0;
+        int lates = 0;
+
+        foreach (var scoreState in scoreStates) {
+            var timingAccuracy = scoreState.TimingAccuracy;
+            
+            if (timingAccuracy == null)
+                continue;
+
+            var baseTimingAccuracy = timingAccuracy.BaseAccuracy;
+            
+            if (baseTimingAccuracy == NoteTimingAccuracy.Early)
+                earlies++;
+            else if (baseTimingAccuracy == NoteTimingAccuracy.Late)
+                lates++;
+        }
+        
+        if (earlies == 0 && lates == 0)
+            return "0 : 0";
+
+        int sum = earlies + lates;
+        int early = (int) Math.Round((float) earlies / sum * 100f);
+        int late = (int) Math.Round((float) lates / sum * 100f);
+
+        if (early + late > 100)
+            late = 100 - early;
+
+        if (early == 0 && earlies > 0) {
+            early++;
+            late--;
+        }
+            
+        if (late == 0 && lates > 0) {
+            late++;
+            early--;
+        }
+
+        return $"{early} : {late}";
+    }
+
+    private HighScoreInfo GetHighScoreInfoForTrack(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType) {
+        var savedInfo = HighScoresContainer.GetHighScore(trackInfoRef, difficultyType, Id, string.Empty);
+
+        return new HighScoreInfo(
+            savedInfo.Score,
+            savedInfo.Streak,
+            savedInfo.SecondaryScore,
+            GetRank(savedInfo.Score, savedInfo.MaxScore),
+            GetFullComboState(savedInfo.Score, savedInfo.MaxStreak, savedInfo.Streak, savedInfo.MaxStreak));
     }
 
     private static int GetMaxPointValue(TimingWindow[] timingWindows) {

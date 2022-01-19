@@ -7,7 +7,7 @@ using HarmonyLib;
 using SMU.Utilities;
 using UnityEngine;
 
-namespace SRXDScoreMod; 
+namespace SRXDScoreMod;
 
 // Contains patch functions for receiving data from gameplay
 internal static class GameplayState {

@@ -27,7 +27,7 @@ internal static class LevelSelectUI {
         var metadata = metadataSet.GetMetadataForActiveIndex(index);
         var highScoreInfo = ScoreMod.CurrentScoreSystemInternal.GetHighScoreInfoForTrack(handle.TrackInfoRef, metadata);
 
-        string score = highScoreInfo.Score.ToString();
+        string score = highScoreInfo.GetScoreString();
         string rank = highScoreInfo.Rank;
         string streak = highScoreInfo.GetStreakString();
 

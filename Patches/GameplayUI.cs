@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
-namespace SRXDScoreMod; 
+namespace SRXDScoreMod;
 
 // Contains patch functions to show modded scores and pace prediction on the in-game HUD
 internal class GameplayUI {
@@ -19,11 +19,17 @@ internal class GameplayUI {
         Delta,
         Both
     }
-        
+    
     private static bool showPace;
     private static PaceType paceType;
     private static Animation timingFeedbackAnimation;
+    private static TMP_Text systemNameText;
     private static TMP_Text bestPossibleText;
+
+    public static void UpdateUI() {
+        if (systemNameText != null)
+            systemNameText.text = ScoreMod.CurrentScoreSystemInternal.Name;
+    }
 
     private static void PlayCustomTimingFeedback(PlayState playState, CustomTimingAccuracy timingAccuracy) {
         var baseAccuracy = timingAccuracy.BaseAccuracy;
@@ -43,27 +49,42 @@ internal class GameplayUI {
         feedbackText.Text = timingAccuracy.DisplayName;
     }
 
+    private static TMP_Text GenerateText(GameObject baseObject, Vector3 position, float fontSize, Color color, string text = "") {
+        var newObject = Object.Instantiate(baseObject, Vector3.zero, baseObject.transform.rotation, baseObject.transform.parent);
+
+        newObject.transform.localPosition = position;
+        newObject.transform.localScale = baseObject.transform.localScale;
+
+        var textComponent = newObject.GetComponentInChildren<TMP_Text>();
+
+        textComponent.color = color;
+        textComponent.text = text;
+        textComponent.fontSize = fontSize;
+        textComponent.overflowMode = TextOverflowModes.Overflow;
+        textComponent.horizontalAlignment = HorizontalAlignmentOptions.Right;
+        textComponent.verticalAlignment = VerticalAlignmentOptions.Top;
+
+        return textComponent;
+    }
+
     [HarmonyPatch(typeof(XDHudCanvases), nameof(XDHudCanvases.Start)), HarmonyPostfix]
     private static void XDHudCanvases_Start_Postfix(XDHudCanvases __instance) {
         showPace = ScoreMod.PaceType.Value != "Hide";
         
+        if (systemNameText != null)
+            Object.Destroy(systemNameText);
+        
         if (bestPossibleText != null)
-            GameObject.Destroy(bestPossibleText);
+            Object.Destroy(bestPossibleText);
 
         if (!showPace)
             return;
 
-        var timeLeftTextContainer = __instance.timeLeftText.transform.parent;
-        var bestPossibleObject = Object.Instantiate(timeLeftTextContainer.gameObject, Vector3.zero, timeLeftTextContainer.rotation, timeLeftTextContainer.parent);
+        var baseText = __instance.timeLeftText.transform.parent.gameObject;
 
-        bestPossibleObject.transform.localPosition = new Vector3(235f, 67f, 0f);
-        bestPossibleObject.transform.localScale = timeLeftTextContainer.localScale;
-        bestPossibleObject.SetActive(ScoreMod.CurrentScoreSystemInternal.ImplementsScorePrediction);
-        bestPossibleText = bestPossibleObject.GetComponentInChildren<TMP_Text>();
-        bestPossibleText.fontSize = 8f;
-        bestPossibleText.overflowMode = TextOverflowModes.Overflow;
-        bestPossibleText.horizontalAlignment = HorizontalAlignmentOptions.Right;
-        bestPossibleText.verticalAlignment = VerticalAlignmentOptions.Top;
+        systemNameText = GenerateText(baseText, new Vector3(235f, 102f, 0f), 4f, Color.white);
+        bestPossibleText = GenerateText(baseText, new Vector3(235f, 67f, 0f), 8f, Color.cyan);
+        bestPossibleText.gameObject.SetActive(ScoreMod.CurrentScoreSystemInternal.ImplementsScorePrediction);;
 
         switch (ScoreMod.PaceType.Value) {
             case "Score":
@@ -79,6 +100,8 @@ internal class GameplayUI {
 
                 break;
         }
+        
+        UpdateUI();
     }
 
     [HarmonyPatch(typeof(TrackGameplayFeedbackObjects), nameof(TrackGameplayFeedbackObjects.PlayTimingFeedback)), HarmonyTranspiler]

@@ -118,6 +118,7 @@ public class ScoreMod : BaseUnityPlugin {
             return;
 
         CurrentScoreSystemInternal = ScoreSystems[index];
+        GameplayUI.UpdateUI();
         CompleteScreenUI.UpdateUI();
         LevelSelectUI.UpdateUI();
     }

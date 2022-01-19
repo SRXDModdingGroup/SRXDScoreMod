@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
 using SMU.Utilities;
+using TMPro;
 
 namespace SRXDScoreMod; 
 
@@ -20,21 +21,34 @@ internal static class CompleteScreenUI {
             return;
 
         var scoreSystem = ScoreMod.CurrentScoreSystemInternal;
+
+        levelCompleteMenu.scoreValueText.verticalAlignment = VerticalAlignmentOptions.Middle;
             
-        levelCompleteMenu.scoreValueText.SetText(scoreSystem.Score.ToString());
+        if (scoreSystem.SecondaryScore == 0)
+            levelCompleteMenu.scoreValueText.SetText(scoreSystem.Score.ToString());
+        else
+            levelCompleteMenu.scoreValueText.SetText($"<line-height=50%>{scoreSystem.Score:0}\n<size=50%>+{scoreSystem.SecondaryScore}:0");
+        
         levelCompleteMenu.streakValueText.SetText(scoreSystem.Streak.ToString());
         levelCompleteMenu.rankAnimator.Setup(scoreSystem.Rank, null);
         levelCompleteMenu.pfcStatusText.SetText(scoreSystem.FullComboState == FullComboState.PerfectFullCombo ? "PFC" : "FC");
         levelCompleteMenu.newBestGameObject.SetActive(scoreSystem.IsHighScore);
-        levelCompleteMenu.accuracyGameObject.SetActive(!string.IsNullOrWhiteSpace(scoreSystem.PostGameInfo1Value));
-        accLabel.textToAppend = scoreSystem.PostGameInfo1Name;
-        levelCompleteMenu.accuracyBonusText.SetText(scoreSystem.PostGameInfo1Value);
-        levelCompleteMenu.FcBonusGameObject.SetActive(!string.IsNullOrWhiteSpace(scoreSystem.PostGameInfo2Value));
-        fcLabel.textToAppend = scoreSystem.PostGameInfo2Name;
-        levelCompleteMenu.fcBonusText.SetText(scoreSystem.PostGameInfo2Value);
-        levelCompleteMenu.PfcBonusGameObject.SetActive(!string.IsNullOrWhiteSpace(scoreSystem.PostGameInfo3Value));
-        pfcLabel.textToAppend = scoreSystem.PostGameInfo3Name;
-        levelCompleteMenu.pfcBonusText.SetText(scoreSystem.PostGameInfo3Value);
+        levelCompleteMenu.FcBonusGameObject.SetActive(!string.IsNullOrWhiteSpace(scoreSystem.PostGameInfo1Value));
+        fcLabel.textToAppend = scoreSystem.PostGameInfo1Name;
+        levelCompleteMenu.fcBonusText.SetText(scoreSystem.PostGameInfo1Value);
+        levelCompleteMenu.PfcBonusGameObject.SetActive(!string.IsNullOrWhiteSpace(scoreSystem.PostGameInfo2Value));
+        pfcLabel.textToAppend = scoreSystem.PostGameInfo2Name;
+        levelCompleteMenu.pfcBonusText.SetText(scoreSystem.PostGameInfo2Value);
+        levelCompleteMenu.accuracyGameObject.SetActive(!string.IsNullOrWhiteSpace(scoreSystem.PostGameInfo3Value));
+        accLabel.textToAppend = scoreSystem.PostGameInfo3Name;
+        levelCompleteMenu.accuracyBonusText.SetText(scoreSystem.PostGameInfo3Value);
+    }
+
+    private static string GetInterpolatedScoreString(int score, int secondaryScore, float time) {
+        if (secondaryScore == 0)
+            return (time * score).ToString("0");
+
+        return $"<line-height=50%>{time * score:0}\n<size=50%>+{time * secondaryScore:0}";
     }
 
     [HarmonyPatch(typeof(XDLevelCompleteMenu), nameof(XDLevelCompleteMenu.Setup)), HarmonyPostfix]
@@ -88,11 +102,14 @@ internal static class CompleteScreenUI {
         var instructionsList = new List<CodeInstruction>(instructions);
         var operations = new DeferredListOperation<CodeInstruction>();
         var currentScoreSystem = generator.DeclareLocal(typeof(IReadOnlyScoreSystem));
+        var CompleteScreenUI_GetInterpolatedScoreString = typeof(CompleteScreenUI).GetMethod(nameof(GetInterpolatedScoreString), BindingFlags.NonPublic | BindingFlags.Static);
         var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);
         var IReadOnlyScoreSystem_get_Score = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Score)).GetGetMethod();
+        var IReadOnlyScoreSystem_get_SecondaryScore = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.SecondaryScore)).GetGetMethod();
         var IReadOnlyScoreSystem_get_MaxStreak = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.MaxStreak)).GetGetMethod();
         var PlayState_get_TotalScore = typeof(PlayState).GetProperty(nameof(PlayState.TotalScore)).GetGetMethod();
         var PlayState_get_maxCombo = typeof(PlayState).GetProperty(nameof(PlayState.maxCombo)).GetGetMethod();
+        var Single_ToString = typeof(Single).GetMethod(nameof(Single.ToString), new [] { typeof(string) });
         
         operations.Insert(0, new CodeInstruction[] {
             new (OpCodes.Call, ScoreMod_get_CurrentScoreSystemInternal),
@@ -100,14 +117,17 @@ internal static class CompleteScreenUI {
         });
 
         var match = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.opcode == OpCodes.Ldloc_1, // interpolatedTime
             instr => instr.opcode == OpCodes.Ldloc_0, // playState
-            instr => instr.Calls(PlayState_get_TotalScore)
+            instr => instr.Calls(PlayState_get_TotalScore),
+            instr => instr.opcode == OpCodes.Conv_R4,
+            instr => instr.opcode == OpCodes.Mul,
+            instr => instr.opcode == OpCodes.Stloc_2 // interpolatedScore
         }).First()[0];
+        
+        instructionsList[match.End].labels.AddRange(instructionsList[match.Start].labels);
             
-        operations.Replace(match.Start, 2, new CodeInstruction[] {
-            new (OpCodes.Ldloc_S, currentScoreSystem),
-            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_Score)
-        });
+        operations.Remove(match.Start, 6);
             
         match = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
             instr => instr.opcode == OpCodes.Ldloc_0, // playState
@@ -117,6 +137,21 @@ internal static class CompleteScreenUI {
         operations.Replace(match.Start, 2, new CodeInstruction[] {
             new (OpCodes.Ldloc_S, currentScoreSystem),
             new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_MaxStreak)
+        });
+
+        match = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.LoadsLocalAddressAtIndex(2), // interpolatedScore
+            instr => instr.opcode == OpCodes.Ldstr, // "0"
+            instr => instr.Calls(Single_ToString)
+        }).First()[0];
+        
+        operations.Replace(match.Start, 3, new CodeInstruction[] {
+            new (OpCodes.Ldloc_S, currentScoreSystem),
+            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_Score),
+            new (OpCodes.Ldloc_S, currentScoreSystem),
+            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_SecondaryScore),
+            new (OpCodes.Ldloc_1), // interpolatedTime
+            new (OpCodes.Call, CompleteScreenUI_GetInterpolatedScoreString)
         });
             
         operations.Execute(instructionsList);
