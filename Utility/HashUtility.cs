@@ -53,7 +53,7 @@ public static class HashUtility {
             int hash = (int) HASH_BIAS;
 
             foreach (object o in a)
-                hash = hash * HASH_COEFF ^ GetStableHash(a);
+                hash = hash * HASH_COEFF ^ GetStableHash(o);
 
             return hash;
         }

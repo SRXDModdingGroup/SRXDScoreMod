@@ -10,15 +10,35 @@ using UnityEngine;
 namespace SRXDScoreMod; 
 
 // Contains patch functions to make the level select menu show modded scores
-internal class LevelSelectUI {
-    // private static Action<XDLevelSelectMenuBase> XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty
-    //     = ReflectionUtils.MethodToAction<XDLevelSelectMenuBase>(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty");
-
+internal static class LevelSelectUI {
     private static XDLevelSelectMenuBase currentLevelSelectMenu;
     
     public static void UpdateUI() {
-        // if (currentLevelSelectMenu != null && currentLevelSelectMenu.isActiveAndEnabled)
-        //     XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty(currentLevelSelectMenu);
+        if (currentLevelSelectMenu == null || !currentLevelSelectMenu.isActiveAndEnabled)
+            return;
+
+        var handle = currentLevelSelectMenu.CurrentMetaDataHandle;
+        
+        if (handle == null)
+            return;
+
+        var metadataSet = handle.TrackDataMetadata;
+        int index = metadataSet.GetClosestActiveIndexForDifficulty(PlayerSettingsData.Instance.SelectedDifficulty);
+        var metadata = metadataSet.GetMetadataForActiveIndex(index);
+        var highScoreInfo = ScoreMod.CurrentScoreSystemInternal.GetHighScoreInfoForTrack(handle.TrackInfoRef, metadata);
+
+        string score = highScoreInfo.Score.ToString();
+        string rank = highScoreInfo.Rank;
+        string streak = highScoreInfo.GetStreakString();
+
+        foreach (var text in currentLevelSelectMenu.score)
+            text.text = score;
+        
+        foreach (var text in currentLevelSelectMenu.rank)
+            text.text = rank;
+        
+        foreach (var text in currentLevelSelectMenu.streak)
+            text.text = streak;
     }
         
     [HarmonyPatch(typeof(XDLevelSelectMenuBase), nameof(XDLevelSelectMenuBase.OpenMenu)), HarmonyPostfix]
@@ -51,14 +71,14 @@ internal class LevelSelectUI {
         var HighScoreInfo_GetStreakString = typeof(HighScoreInfo).GetMethod(nameof(HighScoreInfo.GetStreakString));
         var HighScoreInfo_get_Rank = typeof(HighScoreInfo).GetProperty(nameof(HighScoreInfo.Rank)).GetGetMethod();
         var MetadataHandle_get_TrackInfoRef = typeof(MetadataHandle).GetProperty(nameof(MetadataHandle.TrackInfoRef)).GetGetMethod();
-
+        
         var match0 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
             instr => instr.opcode == OpCodes.Ldloc_0, // handle
             instr => instr.opcode == OpCodes.Callvirt, // trackInfoRef
             instr => instr.opcode == OpCodes.Callvirt,
             instr => instr.StoresLocalAtIndex(29) // stats
         }).First()[0];
-        
+
         operations.Insert(match0.End, new CodeInstruction[] {
             new (OpCodes.Call, ScoreMod_get_CurrentScoreSystemInternal),
             new (OpCodes.Ldloc_0), // handle

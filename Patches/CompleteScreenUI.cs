@@ -9,7 +9,7 @@ using SMU.Utilities;
 namespace SRXDScoreMod; 
 
 // Contains patch functions to display modded scores on the track complete screen
-internal class CompleteScreenUI {
+internal static class CompleteScreenUI {
     private static XDLevelCompleteMenu levelCompleteMenu;
     private static TranslatedTextMeshPro accLabel;
     private static TranslatedTextMeshPro fcLabel;
@@ -71,9 +71,10 @@ internal class CompleteScreenUI {
 
         foreach (var match in matches) {
             int start = match[0].Start;
+            var labels = instructionsList[start].labels;
             
             operations.Replace(start, 2, new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldloc_S, fullComboState).WithLabels(instructionsList[start].labels)
+                new CodeInstruction(OpCodes.Ldloc_S, fullComboState).WithLabels(labels)
             });
         }
             

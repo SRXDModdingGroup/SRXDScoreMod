@@ -10,7 +10,7 @@ using UnityEngine;
 namespace SRXDScoreMod; 
 
 // Contains patch functions for receiving data from gameplay
-internal class GameplayState {
+internal static class GameplayState {
     public static bool Playing { get; private set; }
 
     #region NoteEvents
@@ -186,21 +186,17 @@ internal class GameplayState {
             scoreSystem.UpdateHold(noteIndex, heldTime);
     }
     
-    private static void UpdateSpinTime(int noteIndex, float trackTime, float startTime) {
+    private static void UpdateSpinTime(int noteIndex, float heldTime) {
         if (!Playing)
             return;
 
-        float heldTime = Mathf.Max(0f, trackTime - startTime);
-        
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
             scoreSystem.UpdateSpin(noteIndex, heldTime);
     }
     
-    private static void UpdateScratchTime(int noteIndex, float trackTime, float startTime) {
+    private static void UpdateScratchTime(int noteIndex, float heldTime) {
         if (!Playing)
             return;
-        
-        float heldTime = Mathf.Max(0f, trackTime - startTime);
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
             scoreSystem.UpdateScratch(noteIndex, heldTime);
@@ -209,6 +205,11 @@ internal class GameplayState {
     #endregion
 
     #region Patches
+
+    [HarmonyPatch(typeof(Game), nameof(Game.Update)), HarmonyPostfix]
+    private static void Game_Update_Postfix() {
+        ScoreMod.GameUpdate();
+    }
 
     [HarmonyPatch(typeof(Track), nameof(Track.PlayTrack)), HarmonyPostfix]
     private static void Track_PlayTrack_Postfix(Track __instance) {
@@ -231,12 +232,12 @@ internal class GameplayState {
         Playing = false;
     }
 
-    [HarmonyPatch(typeof(PlayState), nameof(PlayState.Complete))]
-    private static void PlayState_Complete_Postfix(Track __instance) {
+    [HarmonyPatch(typeof(PlayState), nameof(PlayState.Complete)), HarmonyPostfix]
+    private static void PlayState_Complete_Postfix(PlayState __instance) {
         Playing = false;
         
         foreach (var scoreSystem in ScoreMod.ScoreSystems)
-            scoreSystem.Complete(__instance.playStateFirst);
+            scoreSystem.Complete(__instance);
     }
 
     [HarmonyPatch(typeof(TrackGameplayLogic), nameof(TrackGameplayLogic.UpdateNoteState)), HarmonyPostfix]
@@ -347,14 +348,17 @@ internal class GameplayState {
             });
         }
 
-        var match1 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
-            instr => instr.LoadsLocalAtIndex(44) // heldTime
-        }).First()[0];
+        int match1 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.LoadsLocalAtIndex(44) && instr.labels.Count > 0 // heldTime
+        }).First()[0].Start;
+
+        var labels = instructionsList[match1].labels;
         
-        operations.Insert(match1.Start, new CodeInstruction[] {
-            new (OpCodes.Ldarg_2), // noteIndex
-            new (OpCodes.Ldloc_S, 44), // heldTime
-            new (OpCodes.Call, GameplayState_UpdateBeatHoldTime)
+        operations.Replace(match1, 1, new CodeInstruction[] {
+            new CodeInstruction(OpCodes.Ldarg_2).WithLabels(labels), // noteIndex
+            new (OpCodes.Ldloc_S, (byte) 44), // heldTime
+            new (OpCodes.Call, GameplayState_UpdateBeatHoldTime),
+            new (OpCodes.Ldloc_S, (byte) 44) // heldTime
         });
         
         operations.Execute(instructionsList);
@@ -454,17 +458,20 @@ internal class GameplayState {
     }
 
     [HarmonyPatch(typeof(TrackGameplayLogic), nameof(TrackGameplayLogic.UpdateSpinSectionState)), HarmonyTranspiler]
-    private static IEnumerable<CodeInstruction> TrackGameplayLogic_UpdateSpinSectionState_Transpiler(IEnumerable<CodeInstruction> instructions) {
+    private static IEnumerable<CodeInstruction> TrackGameplayLogic_UpdateSpinSectionState_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
         var operations = new DeferredListOperation<CodeInstruction>();
+        var heldTime = generator.DeclareLocal(typeof(float));
+        var callLabel = generator.DefineLabel();
         var GameplayState_SpinHit = typeof(GameplayState).GetMethod(nameof(SpinHit), BindingFlags.NonPublic | BindingFlags.Static);
         var GameplayState_SpinMiss = typeof(GameplayState).GetMethod(nameof(SpinMiss), BindingFlags.NonPublic | BindingFlags.Static);
         var GameplayState_UpdateSpinTime = typeof(GameplayState).GetMethod(nameof(UpdateSpinTime), BindingFlags.NonPublic | BindingFlags.Static);
         var ScoreState_AddScoreIfPossible = typeof(TrackGameplayLogic).GetMethod("AddScoreIfPossible", BindingFlags.NonPublic | BindingFlags.Static);
         var TrackGameplayLogic_AllowErrorToOccur = typeof(TrackGameplayLogic).GetMethod(nameof(TrackGameplayLogic.AllowErrorToOccur));
-        var SpinnerSection_noteIndex = typeof(ScratchSection).GetField(nameof(SpinnerSection.noteIndex));
-        var SpinnerSection_startsAtTime = typeof(ScratchSection).GetField(nameof(SpinnerSection.startsAtTime));
+        var SpinnerSection_noteIndex = typeof(SpinnerSection).GetField(nameof(SpinnerSection.noteIndex));
+        var SpinnerSection_startsAtTime = typeof(SpinnerSection).GetField(nameof(SpinnerSection.startsAtTime));
         var SpinSectionState_failedInitialSpin = typeof(SpinSectionState).GetField(nameof(SpinSectionState.failedInitialSpin));
+        var SpinSectionState_state = typeof(SpinSectionState).GetField(nameof(SpinSectionState.state));
         
         var match0 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
             instr => instr.opcode == OpCodes.Ldarg_0,
@@ -491,17 +498,36 @@ internal class GameplayState {
             new (OpCodes.Ldfld, SpinSectionState_failedInitialSpin),
             new (OpCodes.Call, GameplayState_SpinMiss)
         });
-        
+
         match1 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
-            instr => instr.StoresLocalAtIndex(27) // length
+            instr => instr.Is(OpCodes.Ldarg_S, (byte) 4), // state
+            instr => instr.LoadsField(SpinSectionState_state),
+            instr => instr.opcode == OpCodes.Ldc_I4_4, // SpinSectionState.State.Passed
+            instr => instr.Branches(out _),
+            instr => instr.LoadsLocalAtIndex(28), // max
+            instr => instr.StoresLocalAtIndex(30) // value
         }).First()[0];
+
+        int start = match1.Start;
+        var startLabels = new List<Label>(instructionsList[start].labels);
+
+        instructionsList[start].labels.Clear();
+        instructionsList[start + 3].operand = callLabel;
         
-        operations.Insert(match1.Start, new CodeInstruction[] {
-            new (OpCodes.Ldloc_3), // section
-            new (OpCodes.Ldfld, SpinnerSection_noteIndex),
-            new (OpCodes.Ldloc_S, (byte) 5), // trackTime
+        operations.Insert(start, new CodeInstruction[] {
+            new CodeInstruction(OpCodes.Ldloc_S, (byte) 5).WithLabels(startLabels), // trackTime
             new (OpCodes.Ldloc_3), // section
             new (OpCodes.Ldfld, SpinnerSection_startsAtTime),
+            new (OpCodes.Sub),
+            new (OpCodes.Stloc_S, heldTime)
+        });
+        
+        operations.Insert(match1.End, new CodeInstruction[] {
+            new (OpCodes.Ldloc_S, (byte) 27), // length
+            new (OpCodes.Stloc_S, heldTime),
+            new CodeInstruction(OpCodes.Ldloc_3).WithLabels(callLabel), // section
+            new (OpCodes.Ldfld, SpinnerSection_noteIndex),
+            new (OpCodes.Ldloc_S, heldTime),
             new (OpCodes.Call, GameplayState_UpdateSpinTime)
         });
         
@@ -543,6 +569,7 @@ internal class GameplayState {
             new (OpCodes.Ldfld, PlayState_currentTrackTime),
             new (OpCodes.Ldloc_2), // section
             new (OpCodes.Ldfld, ScratchSection_startsAtTime),
+            new (OpCodes.Sub),
             new (OpCodes.Call, GameplayState_UpdateScratchTime)
         });
         

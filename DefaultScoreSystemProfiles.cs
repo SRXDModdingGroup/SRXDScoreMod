@@ -3,6 +3,8 @@
 namespace SRXDScoreMod; 
 
 internal static class DefaultScoreSystemProfiles {
+    public static readonly string Test = "Test";
+    
     private static readonly CustomTimingAccuracy E_OKAY = new("Okay", "Okay", Color.gray, NoteTimingAccuracy.Early);
     private static readonly CustomTimingAccuracy E_GOOD = new("Good", "Good", Color.yellow, NoteTimingAccuracy.Early);
     private static readonly CustomTimingAccuracy E_GREAT = new("Great", "Great", Color.green, NoteTimingAccuracy.Early);

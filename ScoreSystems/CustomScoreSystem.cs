@@ -28,7 +28,7 @@ internal class CustomScoreSystem : IScoreSystem {
 
     public int BestStreak { get; private set; }
 
-    public bool IsHighScore => Score > HighScore;
+    public bool IsHighScore { get; private set; }
     
     public int Multiplier { get; private set; }
 
@@ -44,7 +44,7 @@ internal class CustomScoreSystem : IScoreSystem {
 
     public TimingWindow[] TimingWindowsForDisplay => tapTimingWindows;
 
-    public bool ImplementsSecondaryScore => false;
+    public bool ImplementsSecondaryScore => true;
 
     public string PostGameInfo1Value => string.Empty;
     
@@ -95,6 +95,7 @@ internal class CustomScoreSystem : IScoreSystem {
     private int pointsToNextMultiplier;
     private NoteScoreState[] scoreStates;
     private List<float> overbeatTimes;
+    private PlayableTrackData trackData;
 
     internal CustomScoreSystem(ScoreSystemProfile profile) {
         Name = profile.Name;
@@ -141,8 +142,10 @@ internal class CustomScoreSystem : IScoreSystem {
         StarState = FullComboState.PerfectFullCombo;
         StarColor = Color.cyan;
         maxPossibleStreak = 0;
+        maxPossibleStreakSoFar = 0;
         pointsToNextMultiplier = GetPointsToNextMultiplier(maxMultiplier);
         overbeatTimes.Clear();
+        trackData = playState.trackData;
         
         InitScoreStates(playState.trackData);
         
@@ -156,6 +159,14 @@ internal class CustomScoreSystem : IScoreSystem {
     public void Complete(PlayState playState) {
         Rank = GetRank(Score, MaxPossibleScore);
         UpdateFullComboState();
+
+        IsHighScore = HighScoresContainer.TrySetHighScore(playState.TrackInfoRef, playState.CurrentDifficulty, Id, string.Empty, new SavedHighScoreInfo(
+            string.Empty,
+            Score,
+            Streak,
+            MaxPossibleScore,
+            maxPossibleStreak,
+            SecondaryScore));
     }
 
     public CustomTimingAccuracy GetTimingAccuracyForTap(float timeOffset) => GetTimingWindow(timeOffset, tapTimingWindows).TimingAccuracy;
@@ -176,10 +187,11 @@ internal class CustomScoreSystem : IScoreSystem {
 
     #region NoteEvents
 
-    internal void HitMatch(int noteIndex) => AddScore(noteIndex, matchPointValue, 1, null, false);
+    internal void HitMatch(int noteIndex) => AddScore(noteIndex, matchPointValue, 0, null, false);
 
     internal void HitTap(int noteIndex, float timeOffset)
         => AddTimedNoteScore(noteIndex, timeOffset, tapTimingWindows);
+    
     internal void HitBeat(int noteIndex, float timeOffset)
         => AddTimedNoteScore(noteIndex, timeOffset, beatTimingWindows);
 
@@ -189,7 +201,7 @@ internal class CustomScoreSystem : IScoreSystem {
     internal void HitBeatRelease(int noteIndex, float timeOffset)
         => AddTimedNoteScore(noteIndex, timeOffset, beatReleaseTimingWindows);
 
-    internal void HitSpin(int noteIndex) => AddScore(noteIndex, spinStartPointValue, 1, null, false);
+    internal void HitSpin(int noteIndex) => AddScore(noteIndex, spinStartPointValue, 0, null, false);
 
     internal void Overbeat(float time) {
         ChangeMultiplier(-1, multiplierChangeForOverbeat);
@@ -239,7 +251,7 @@ internal class CustomScoreSystem : IScoreSystem {
 
     #region InternalLogic
 
-    private void AddScore(int noteIndex, int amount, int addStreak, CustomTimingAccuracy timingAccuracy, bool fromSustain) {
+    private void AddScore(int noteIndex, int amount, int secondaryAmount, CustomTimingAccuracy timingAccuracy, bool fromSustain) {
         int acc = amount;
         int scoreAdded = 0;
             
@@ -254,6 +266,7 @@ internal class CustomScoreSystem : IScoreSystem {
         
         scoreAdded += Multiplier * acc;
         Score += scoreAdded;
+        SecondaryScore += secondaryAmount;
 
         var scoreState = scoreStates[noteIndex];
 
@@ -267,21 +280,25 @@ internal class CustomScoreSystem : IScoreSystem {
             scoreState.RemainingTotalSustainPoints -= maxAmount;
         }
         else {
-            Streak += addStreak;
-
-            if (Streak > MaxStreak)
-                MaxStreak = Streak;
-            
             scoreState.GainedBasePoints = amount;
             scoreState.GainedTotalPoints = scoreAdded;
             scoreState.TimingAccuracy = timingAccuracy;
             
             MaxPossibleScoreSoFar += scoreState.RemainingTotalPoints;
             scoreState.RemainingTotalPoints = 0;
-            
-            maxPossibleStreak += scoreState.RemainingStreak;
-            scoreState.RemainingStreak = 0;
         }
+
+        Streak += scoreState.RemainingStreak;
+        maxPossibleStreakSoFar += scoreState.RemainingStreak;
+        scoreState.RemainingStreak = 0;
+        
+        if (Streak > MaxStreak)
+            MaxStreak = Streak;
+
+        if (scoreState.RemainingTotalPoints == 0
+            && scoreState.RemainingTotalSustainPoints == 0
+            && scoreState.RemainingStreak == 0)
+            scoreState.Completed = true;
 
         UpdateFullComboState();
     }
@@ -289,7 +306,7 @@ internal class CustomScoreSystem : IScoreSystem {
     private void AddTimedNoteScore(int noteIndex, float timeOffset, TimingWindow[] timingWindows) {
         var timingWindow = GetTimingWindow(timeOffset, timingWindows);
         
-        AddScore(noteIndex, timingWindow.PointValue, 1, timingWindow.TimingAccuracy, false);
+        AddScore(noteIndex, timingWindow.PointValue, timingWindow.SecondaryPointValue, timingWindow.TimingAccuracy, false);
     }
 
     private void MissNote(int noteIndex, int multiplierChange) {
@@ -314,7 +331,7 @@ internal class CustomScoreSystem : IScoreSystem {
         if (scoreState.AvailableBaseSustainPoints == 0)
             return;
         
-        int valueChange = Mathf.Clamp(Mathf.FloorToInt(tickRate * heldTime), 1, scoreState.AvailableBaseSustainPoints)
+        int valueChange = Mathf.Clamp(Mathf.FloorToInt(tickRate * heldTime), 0, scoreState.AvailableBaseSustainPoints)
             - scoreState.GainedBaseSustainPoints;
         
         if (valueChange > 0)
@@ -338,6 +355,14 @@ internal class CustomScoreSystem : IScoreSystem {
     }
 
     private void UpdateFullComboState() {
+        if (Streak > maxPossibleStreakSoFar || Score > MaxPossibleScoreSoFar) {
+            FullComboState = FullComboState.PerfectFullCombo;
+            StarState = FullComboState.PerfectFullCombo;
+            StarColor = Color.red;
+            
+            return;
+        }
+        
         if (Streak < maxPossibleStreakSoFar && MaxStreak < maxPossibleStreak) {
             FullComboState = FullComboState.None;
             StarState = FullComboState.None;
@@ -373,11 +398,16 @@ internal class CustomScoreSystem : IScoreSystem {
         int maxBeatValue = GetMaxPointValue(beatTimingWindows);
         int maxLiftoffValue = GetMaxPointValue(liftoffTimingWindows);
         int maxBeatReleaseValue = GetMaxPointValue(beatReleaseTimingWindows);
+        int maxSecondaryTapValue = GetMaxSecondaryPointValue(tapTimingWindows);
+        int maxSecondaryBeatValue = GetMaxSecondaryPointValue(beatTimingWindows);
+        int maxSecondaryLiftoffValue = GetMaxSecondaryPointValue(liftoffTimingWindows);
+        int maxSecondaryBeatReleaseValue = GetMaxSecondaryPointValue(beatReleaseTimingWindows);
 
         for (int i = 0; i < scoreStates.Length; i++) {
             var note = trackData.GetNote(i);
             int availableBasePoints = 0;
             int availableBaseSustainPoints = 0;
+            int availableSecondaryScore = 0;
             int availableStreak = 0;
 
             switch (note.NoteType) {
@@ -388,10 +418,11 @@ internal class CustomScoreSystem : IScoreSystem {
                     break;
                 case NoteType.DrumStart:
                     availableBasePoints = maxBeatValue;
+                    availableSecondaryScore = maxSecondaryBeatValue;
                     availableStreak = 1;
 
                     if (note.length > 0f)
-                        availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(beatHoldTickRate * note.length));
+                        availableBaseSustainPoints = Mathf.FloorToInt(beatHoldTickRate * note.length);
                     
                     break;
                 case NoteType.SpinRightStart:
@@ -399,23 +430,31 @@ internal class CustomScoreSystem : IScoreSystem {
                     var spinnerSection = trackData.SpinnerSections[trackData.SpinnerSectionIndexForNoteIndex[i]];
                     
                     availableBasePoints = spinStartPointValue;
-                    availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(spinTickRate * (spinnerSection.endsAtTime - spinnerSection.startsAtTime)));
+                    availableBaseSustainPoints = Mathf.FloorToInt(spinTickRate * (spinnerSection.endsAtTime - spinnerSection.startsAtTime));
                     availableStreak = 1;
                     
                     break;
                 case NoteType.HoldStart:
-                    var freestyleSection = trackData.FreestyleSections[trackData.FreestyleSectionIndexForNoteIndex[i]];
+                    var freestyleSection0 = trackData.FreestyleSections[trackData.FreestyleSectionIndexForNoteIndex[i]];
 
                     availableBasePoints = maxTapValue;
-                    availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(holdTickRate * (freestyleSection.EndTime - freestyleSection.Time)));
+                    availableBaseSustainPoints = Mathf.FloorToInt(holdTickRate * (freestyleSection0.EndTime - freestyleSection0.Time));
+                    availableSecondaryScore = maxSecondaryTapValue;
                     availableStreak = 1;
                     
                     break;
                 case NoteType.SectionContinuationOrEnd:
-                    if (note.FreestyleEndType == FreestyleSection.EndType.Release) {
-                        availableBasePoints = maxLiftoffValue;
-                        availableStreak = 1;
-                    }
+                    if (note.FreestyleEndType != FreestyleSection.EndType.Release)
+                        break;
+                    
+                    var freestyleSection1 = trackData.FreestyleSections[trackData.FreestyleSectionIndexForNoteIndex[i]];
+
+                    if (freestyleSection1.endNoteIndex != i)
+                        break;
+
+                    availableBasePoints = maxLiftoffValue;
+                    availableSecondaryScore = maxSecondaryLiftoffValue;
+                    availableStreak = 1;
 
                     break;
                 case NoteType.Tap:
@@ -424,18 +463,28 @@ internal class CustomScoreSystem : IScoreSystem {
                     
                     break;
                 case NoteType.DrumEnd:
-                    if (note.DrumEndType == DrumSection.EndType.Release) {
-                        availableBasePoints = maxBeatReleaseValue;
-                        availableStreak = 1;
-                    }
+                    if (note.DrumEndType != DrumSection.EndType.Release)
+                        break;
+
+                    var startNote = trackData.GetNote(trackData.DrumIndexForNoteIndex[i]);
+                    
+                    if (startNote.endNoteIndex != i)
+                        break;
+                    
+                    availableBasePoints = maxBeatReleaseValue;
+                    availableSecondaryScore = maxSecondaryBeatReleaseValue;
+                    availableStreak = 1;
 
                     break;
                 case NoteType.ScratchStart:
                     var scratchSection = trackData.ScratchSections[trackData.ScratchSectionIndexForNoteIndex[i]];
 
-                    availableBaseSustainPoints = Mathf.Max(1, Mathf.FloorToInt(scratchTickRate * (scratchSection.endsAtTime - scratchSection.startsAtTime)));
-                    availableStreak = 1;
+                    if (scratchSection.IsEmpty)
+                        break;
                     
+                    availableBaseSustainPoints = Mathf.FloorToInt(scratchTickRate * (scratchSection.endsAtTime - scratchSection.startsAtTime));
+                    availableStreak = 1;
+
                     break;
             }
 
@@ -455,22 +504,16 @@ internal class CustomScoreSystem : IScoreSystem {
 
     private bool AddRemainingValueToMaxScoreSoFar(int noteIndex) {
         var scoreState = scoreStates[noteIndex];
-        int remainingPoints = scoreState.RemainingTotalPoints + scoreState.RemainingTotalSustainPoints;
-        bool anyRemainingPoints = remainingPoints > 0;
-
-        if (anyRemainingPoints) {
-            MaxPossibleScoreSoFar += remainingPoints;
-            scoreState.RemainingTotalPoints = 0;
-            scoreState.RemainingTotalSustainPoints = 0;
-        }
-
-        int remainingStreak = scoreState.RemainingStreak;
-
-        if (remainingStreak == 0)
-            return anyRemainingPoints;
         
-        maxPossibleStreakSoFar += remainingStreak;
+        if (scoreState.Completed)
+            return false;
+
+        MaxPossibleScoreSoFar += scoreState.RemainingTotalPoints + scoreState.RemainingTotalSustainPoints;
+        maxPossibleStreakSoFar += scoreState.RemainingStreak;
+        scoreState.RemainingTotalPoints = 0;
+        scoreState.RemainingTotalSustainPoints = 0;
         scoreState.RemainingStreak = 0;
+        scoreState.Completed = true;
 
         return true;
     }
@@ -485,10 +528,13 @@ internal class CustomScoreSystem : IScoreSystem {
             savedInfo.Streak,
             savedInfo.SecondaryScore,
             GetRank(savedInfo.Score, savedInfo.MaxScore),
-            savedInfo.Score == savedInfo.MaxScore ? FullComboState.PerfectFullCombo : savedInfo.Streak == savedInfo.MaxStreak ? FullComboState.FullCombo : FullComboState.None);
+            GetFullComboState(savedInfo.Score, savedInfo.MaxStreak, savedInfo.Streak, savedInfo.MaxStreak));
     }
 
     private string GetRank(int score, int maxScore) {
+        if (score == 0)
+            return "-";
+        
         if (score > maxScore - sPlusThreshold)
             return "S+";
         
@@ -516,6 +562,32 @@ internal class CustomScoreSystem : IScoreSystem {
 
         return max;
     }
+    
+    private static int GetMaxSecondaryPointValue(TimingWindow[] timingWindows) {
+        int max = 0;
+
+        foreach (var window in timingWindows) {
+            int pointValue = window.SecondaryPointValue;
+
+            if (pointValue > max)
+                max = pointValue;
+        }
+
+        return max;
+    }
+
+    private static FullComboState GetFullComboState(int score, int maxScore, int streak, int maxStreak) {
+        if (maxScore == 0 || maxStreak == 0)
+            return FullComboState.None;
+
+        if (score == maxScore)
+            return FullComboState.PerfectFullCombo;
+
+        if (streak == maxStreak)
+            return FullComboState.FullCombo;
+
+        return FullComboState.None;
+    }
 
     private static TimingWindow GetTimingWindow(float timeOffset, TimingWindow[] timingWindows) {
         foreach (var window in timingWindows) {
@@ -541,10 +613,12 @@ internal class CustomScoreSystem : IScoreSystem {
         public int RemainingTotalPoints { get; set; }
         public int RemainingTotalSustainPoints { get; set; }
         public int RemainingStreak { get; set; }
+        public bool Completed { get; set; }
         public bool LostMultiplier { get; set; }
         public CustomTimingAccuracy TimingAccuracy { get; set; }
 
         public NoteScoreState(int availableBasePoints, int availableBaseSustainPoints, int availableTotalPoints, int availableTotalSustainPoints, int availableStreak) {
+            Completed = false;
             AvailableBasePoints = availableBasePoints;
             AvailableBaseSustainPoints = availableBaseSustainPoints;
             AvailableTotalPoints = availableTotalPoints;

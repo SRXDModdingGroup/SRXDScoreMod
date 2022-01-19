@@ -106,8 +106,11 @@ internal static class HighScoresContainer {
             anyChanged = true;
         }
 
-        if (anyChanged)
-            highScores[key] = new SavedHighScoreInfo(key, score, streak, info.MaxScore, info.MaxStreak, secondaryScore);
+        if (!anyChanged)
+            return false;
+        
+        highScores[key] = new SavedHighScoreInfo(key, score, streak, info.MaxScore, info.MaxStreak, secondaryScore);
+        SaveHighScores();
 
         return isNewBest;
     }

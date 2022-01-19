@@ -46,8 +46,11 @@ internal class GameplayUI {
     [HarmonyPatch(typeof(XDHudCanvases), nameof(XDHudCanvases.Start)), HarmonyPostfix]
     private static void XDHudCanvases_Start_Postfix(XDHudCanvases __instance) {
         showPace = ScoreMod.PaceType.Value != "Hide";
+        
+        if (bestPossibleText != null)
+            GameObject.Destroy(bestPossibleText);
 
-        if (!showPace || bestPossibleText != null)
+        if (!showPace)
             return;
 
         var timeLeftTextContainer = __instance.timeLeftText.transform.parent;

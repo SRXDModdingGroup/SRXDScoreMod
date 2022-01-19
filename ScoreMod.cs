@@ -28,7 +28,6 @@ public class ScoreMod : BaseUnityPlugin {
     
     internal static List<CustomScoreSystem> CustomScoreSystems { get; private set; }
 
-    private static bool pickedNewScoreSystem;
     private static string fileDirectory;
     
     public static void AddCustomScoreSystem(ScoreSystemProfile profile) {
@@ -53,45 +52,39 @@ public class ScoreMod : BaseUnityPlugin {
         harmony.PatchAll(typeof(GameplayUI));
         harmony.PatchAll(typeof(CompleteScreenUI));
         harmony.PatchAll(typeof(LevelSelectUI));
-
         ScoreSystems = new List<IScoreSystem>();
         ScoreSystems.Add(new BaseScoreSystemWrapper());
         CurrentScoreSystemInternal = ScoreSystems[0];
         CustomScoreSystems = new List<CustomScoreSystem>();
-        
         AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM16);
-        AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM32);
+        //AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM32);
+        CurrentScoreSystemInternal = ScoreSystems[1];
         HighScoresContainer.LoadHighScores();
-        Logger.LogMessage("Finished Awake");
     }
 
-    private void Update() {
-        if (Input.GetKeyDown(KeyCode.P))
-            pickedNewScoreSystem = false;
-
+    internal static void GameUpdate() {
         if (Input.GetKey(KeyCode.P)) {
             if (Input.GetKeyDown(KeyCode.Alpha1))
-                pickedNewScoreSystem = PickScoreSystem(1);
+                PickScoreSystem(0);
             else if (Input.GetKeyDown(KeyCode.Alpha2))
-                pickedNewScoreSystem = PickScoreSystem(2);
+                PickScoreSystem(1);
             else if (Input.GetKeyDown(KeyCode.Alpha3))
-                pickedNewScoreSystem = PickScoreSystem(3);
+                PickScoreSystem(2);
             else if (Input.GetKeyDown(KeyCode.Alpha4))
-                pickedNewScoreSystem = PickScoreSystem(4);
+                PickScoreSystem(3);
             else if (Input.GetKeyDown(KeyCode.Alpha5))
-                pickedNewScoreSystem = PickScoreSystem(5);
+                PickScoreSystem(4);
             else if (Input.GetKeyDown(KeyCode.Alpha6))
-                pickedNewScoreSystem = PickScoreSystem(6);
+                PickScoreSystem(5);
             else if (Input.GetKeyDown(KeyCode.Alpha7))
-                pickedNewScoreSystem = PickScoreSystem(7);
+                PickScoreSystem(6);
             else if (Input.GetKeyDown(KeyCode.Alpha8))
-                pickedNewScoreSystem = PickScoreSystem(8);
+                PickScoreSystem(7);
             else if (Input.GetKeyDown(KeyCode.Alpha9))
-                pickedNewScoreSystem = PickScoreSystem(9);
+                PickScoreSystem(8);
+            else if (Input.GetKeyDown(KeyCode.Alpha0))
+                PickScoreSystem(9);
         }
-
-        if (Input.GetKeyUp(KeyCode.P) && !pickedNewScoreSystem)
-            PickScoreSystem(0);
     }
 
     internal static bool TryGetFileDirectory(out string directory) {
@@ -120,14 +113,12 @@ public class ScoreMod : BaseUnityPlugin {
         return true;
     }
 
-    private static bool PickScoreSystem(int index) {
+    private static void PickScoreSystem(int index) {
         if (index >= ScoreSystems.Count)
-            return false;
+            return;
 
         CurrentScoreSystemInternal = ScoreSystems[index];
         CompleteScreenUI.UpdateUI();
         LevelSelectUI.UpdateUI();
-
-        return true;
     }
 }
