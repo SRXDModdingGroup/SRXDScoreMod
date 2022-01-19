@@ -21,6 +21,8 @@ internal interface IScoreSystem : IReadOnlyScoreSystem {
 
     public void Complete(PlayState playState);
 
+    public int GetPointValueForSustain(int baseValue, int noteIndex);
+
     public CustomTimingAccuracy GetTimingAccuracyForTap(float timeOffset);
 
     public CustomTimingAccuracy GetTimingAccuracyForBeat(float timeOffset);

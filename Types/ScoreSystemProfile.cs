@@ -188,9 +188,7 @@ public class ScoreSystemProfile {
             multiplierChangeForBrokenHold,
             multiplierChangeForBrokenBeatHold,
             multiplierChangeForBrokenSpin,
-            multiplierChangeForBrokenScratch,
-            sPlusThreshold,
-            rankThresholds);
+            multiplierChangeForBrokenScratch);
         
         unchecked {
             Id = $"{name.Replace(' ', '_')}_{(uint) hash:x8}";

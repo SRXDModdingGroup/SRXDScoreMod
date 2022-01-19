@@ -1,5 +1,5 @@
 ﻿namespace SRXDScoreMod; 
 
-public interface IHashable {
+internal interface IHashable {
     public int GetStableHash();
 }

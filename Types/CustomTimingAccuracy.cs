@@ -2,7 +2,7 @@
 
 namespace SRXDScoreMod; 
 
-public class CustomTimingAccuracy : IHashable {
+public class CustomTimingAccuracy {
     public string DisplayName { get; }
     
     public string StatsName { get; }
@@ -17,10 +17,4 @@ public class CustomTimingAccuracy : IHashable {
         Color = color;
         BaseAccuracy = baseAccuracy;
     }
-
-    public int GetStableHash() => HashUtility.Combine(
-        DisplayName,
-        StatsName,
-        Color,
-        (int) BaseAccuracy);
 }

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace SRXDScoreMod; 
 
-public static class HashUtility {
+internal static class HashUtility {
     private const uint HASH_BIAS = 2166136261u;
     private const int HASH_COEFF = 486187739;
     

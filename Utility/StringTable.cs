@@ -5,7 +5,7 @@ using System.Text;
 namespace SRXDScoreMod; 
 
 // Used to log play data in a tabular format
-public class StringTable {
+internal class StringTable {
     public enum Alignment {
         Left,
         Right

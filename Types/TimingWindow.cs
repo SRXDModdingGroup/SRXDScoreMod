@@ -16,5 +16,5 @@ public class TimingWindow : IHashable {
         UpperBound = upperBound;
     }
 
-    public int GetStableHash() => HashUtility.Combine(TimingAccuracy, UpperBound);
+    public int GetStableHash() => HashUtility.Combine(PointValue, SecondaryPointValue, UpperBound);
 }

@@ -25,13 +25,14 @@ internal class GameplayUI {
     private static Animation timingFeedbackAnimation;
     private static TMP_Text systemNameText;
     private static TMP_Text bestPossibleText;
+    private static Dictionary<TextCharacter, Color> colorOverrides = new();
 
     public static void UpdateUI() {
         if (systemNameText != null)
             systemNameText.text = ScoreMod.CurrentScoreSystemInternal.Name;
     }
 
-    private static void PlayCustomTimingFeedback(PlayState playState, CustomTimingAccuracy timingAccuracy) {
+    internal static void PlayCustomTimingFeedback(PlayState playState, CustomTimingAccuracy timingAccuracy) {
         var baseAccuracy = timingAccuracy.BaseAccuracy;
             
         TrackGameplayFeedbackObjects.PlayTimingFeedback(playState, baseAccuracy);
@@ -42,11 +43,12 @@ internal class GameplayUI {
             NoteTimingAccuracy.Late => 2,
             _ => 3
         };
-        
+
         var transform = timingFeedbackAnimation.transform.GetChild(target);
         var feedbackText = transform.GetComponent<TextCharacter>();
 
         feedbackText.Text = timingAccuracy.DisplayName;
+        colorOverrides[feedbackText] = timingAccuracy.Color;
     }
 
     private static TMP_Text GenerateText(GameObject baseObject, Vector3 position, float fontSize, Color color, string text = "") {
@@ -65,6 +67,12 @@ internal class GameplayUI {
         textComponent.verticalAlignment = VerticalAlignmentOptions.Top;
 
         return textComponent;
+    }
+
+    [HarmonyPatch(typeof(TextCharacter), "LateUpdate"), HarmonyPrefix]
+    private static void TextCharacter_LateUpdate_Prefix(TextCharacter __instance) {
+        if (colorOverrides.TryGetValue(__instance, out var color))
+            __instance.color = color.WithA(__instance.color.a);
     }
 
     [HarmonyPatch(typeof(XDHudCanvases), nameof(XDHudCanvases.Start)), HarmonyPostfix]

@@ -3,15 +3,13 @@
 namespace SRXDScoreMod; 
 
 internal static class DefaultScoreSystemProfiles {
-    public static readonly string Test = "Test";
-    
-    private static readonly CustomTimingAccuracy E_OKAY = new("Okay", "Okay", Color.gray, NoteTimingAccuracy.Early);
+    private static readonly CustomTimingAccuracy E_OKAY = new("Okay", "Okay", 0.5f * Color.gray, NoteTimingAccuracy.Early);
     private static readonly CustomTimingAccuracy E_GOOD = new("Good", "Good", Color.yellow, NoteTimingAccuracy.Early);
-    private static readonly CustomTimingAccuracy E_GREAT = new("Great", "Great", Color.green, NoteTimingAccuracy.Early);
+    private static readonly CustomTimingAccuracy E_GREAT = new("Great", "Great", 0.85f * Color.green + 0.15f * Color.cyan, NoteTimingAccuracy.Early);
     private static readonly CustomTimingAccuracy PERFECT = new("Perfect", "Perfect", Color.cyan, NoteTimingAccuracy.Perfect);
-    private static readonly CustomTimingAccuracy L_GREAT = new("Great", "Great", Color.green, NoteTimingAccuracy.Late);
+    private static readonly CustomTimingAccuracy L_GREAT = new("Great", "Great", 0.85f * Color.green + 0.15f * Color.cyan, NoteTimingAccuracy.Late);
     private static readonly CustomTimingAccuracy L_GOOD = new("Good", "Good", Color.yellow, NoteTimingAccuracy.Late);
-    private static readonly CustomTimingAccuracy L_OKAY = new("Okay", "Okay", Color.gray, NoteTimingAccuracy.Late);
+    private static readonly CustomTimingAccuracy L_OKAY = new("Okay", "Okay", 0.5f * Color.gray, NoteTimingAccuracy.Late);
 
     private static readonly TimingWindow[] PRESS_TIMING_WINDOWS = {
         new(E_OKAY, 4, 0, -0.0667f),
@@ -57,10 +55,10 @@ internal static class DefaultScoreSystemProfiles {
         beatReleaseTimingWindows: RELEASE_TIMING_WINDOWS,
         matchPointValue: 4,
         spinStartPointValue: 16,
-        holdTickRate: 16,
-        beatHoldTickRate: 16,
-        spinTickRate: 16,
-        scratchTickRate: 16,
+        holdTickRate: 20,
+        beatHoldTickRate: 20,
+        spinTickRate: 20,
+        scratchTickRate: 20,
         maxMultiplier: 4,
         pointsPerMultiplier: new []{ 16 },
         multiplierChangeForOverbeat: -3,
@@ -85,10 +83,10 @@ internal static class DefaultScoreSystemProfiles {
         beatReleaseTimingWindows: RELEASE_TIMING_WINDOWS,
         matchPointValue: 4,
         spinStartPointValue: 16,
-        holdTickRate: 16,
-        beatHoldTickRate: 16,
-        spinTickRate: 16,
-        scratchTickRate: 16,
+        holdTickRate: 20,
+        beatHoldTickRate: 20,
+        spinTickRate: 20,
+        scratchTickRate: 20,
         maxMultiplier: 4,
         pointsPerMultiplier: new []{ 32 },
         multiplierChangeForOverbeat: -3,
