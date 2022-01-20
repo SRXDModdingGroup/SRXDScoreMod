@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
 using SMU.Utilities;
-using UnityEngine;
 
 namespace SRXDScoreMod;
 

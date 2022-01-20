@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace SRXDScoreMod; 
 
@@ -56,7 +57,9 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
     public string PostGameInfo2Name => string.Empty;
 
     public string PostGameInfo3Name => "PFC";
-    
+
+    public List<ColoredGraphValue> PerformanceGraphValues { get; }
+
     public TimingWindow[] TimingWindowsForDisplay { get; } = {
         new (EARLY, 0, 0, -130f),
         new (EARLY, 0, 0, -50f),
@@ -66,6 +69,10 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
 
     private GameplayVariables gameplayVariables;
     private PlayState.ScoreState scoreState = new();
+
+    public BaseScoreSystemWrapper() {
+        PerformanceGraphValues = new List<ColoredGraphValue>();
+    }
 
     public void Init(PlayState playState) {
         gameplayVariables = GameplayVariables.Instance;
@@ -91,6 +98,27 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
 
         IsHighScore = Score > highScore;
         Rank = playState.trackData.GetRankCalculatedFromScore(Score);
+        PerformanceGraphValues.Clear();
+
+        foreach (var section in playState.playStateStats.sections) {
+            if (section.maxPossibleScore == 0)
+                continue;
+            
+            float value = Mathf.Clamp((float) section.score / section.maxPossibleScore, 0.05f, 1f);
+            Color color;
+            
+            int lates = section.sectionStatsCollection.GetStat(PlayStateStats.StatType.Late).value;
+            int earlies = section.sectionStatsCollection.GetStat(PlayStateStats.StatType.Early).value;
+            
+            if (section.sectionStatsCollection.GetStat(PlayStateStats.StatType.Missed).value > 0 || section.score == 0)
+                color = Color.red;
+            else if (section.score >= section.maxPossibleScore && lates <= 0 && earlies <= 0)
+                color = Color.cyan;
+            else
+                color = Color.yellow;
+            
+            PerformanceGraphValues.Add(new ColoredGraphValue(value, color));
+        }
     }
 
     public int GetPointValueForSustain(int baseValue, int noteIndex) => baseValue;

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace SRXDScoreMod; 
 
@@ -16,6 +17,8 @@ internal interface IScoreSystem : IReadOnlyScoreSystem {
     public string PostGameInfo2Name { get; }
     
     public string PostGameInfo3Name { get; }
+    
+    public List<ColoredGraphValue> PerformanceGraphValues { get; }
     
     public void Init(PlayState playState);
 

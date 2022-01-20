@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace SRXDScoreMod; 
@@ -53,6 +52,8 @@ internal class CustomScoreSystem : IScoreSystem {
 
     public string PostGameInfo3Name => "Early / Late";
 
+    public List<ColoredGraphValue> PerformanceGraphValues { get; }
+
     public string PostGameInfo1Value { get; private set; }
     
     public string PostGameInfo2Value { get; private set; }
@@ -94,6 +95,8 @@ internal class CustomScoreSystem : IScoreSystem {
     private int maxPossibleStreak;
     private int maxPossibleStreakSoFar;
     private int pointsToNextMultiplier;
+    private int earlies;
+    private int lates;
     private NoteScoreState[] scoreStates;
     private List<float> overbeatTimes;
     private PlayableTrackData trackData;
@@ -127,6 +130,7 @@ internal class CustomScoreSystem : IScoreSystem {
         liftoffTimingWindows = profile.LiftoffTimingWindows;
         beatReleaseTimingWindows = profile.BeatReleaseTimingWindows;
         overbeatTimes = new List<float>();
+        PerformanceGraphValues = new List<ColoredGraphValue>();
     }
 
     #region IScoreSystemFunctions
@@ -148,7 +152,7 @@ internal class CustomScoreSystem : IScoreSystem {
         overbeatTimes.Clear();
         trackData = playState.trackData;
         
-        InitScoreStates(playState.trackData);
+        InitScoreStates();
         
         var highScoreInfo = HighScoresContainer.GetHighScore(playState.TrackInfoRef, playState.trackData.Difficulty, Id, string.Empty);
 
@@ -174,6 +178,7 @@ internal class CustomScoreSystem : IScoreSystem {
         else
             PostGameInfo1Value = ((float) Score / MaxPossibleScore).ToString("P");
 
+        GetValuesFromScoreStates();
         PostGameInfo2Value = GetAccuracy().ToString("P");
         PostGameInfo3Value = GetEarlyLateRatio();
     }
@@ -402,23 +407,18 @@ internal class CustomScoreSystem : IScoreSystem {
         StarColor = Color.cyan;
     }
 
-    private void InitScoreStates(PlayableTrackData trackData) {
+    private void InitScoreStates() {
         scoreStates = new NoteScoreState[trackData.NoteCount];
 
         int maxTapValue = GetMaxPointValue(tapTimingWindows);
         int maxBeatValue = GetMaxPointValue(beatTimingWindows);
         int maxLiftoffValue = GetMaxPointValue(liftoffTimingWindows);
         int maxBeatReleaseValue = GetMaxPointValue(beatReleaseTimingWindows);
-        int maxSecondaryTapValue = GetMaxSecondaryPointValue(tapTimingWindows);
-        int maxSecondaryBeatValue = GetMaxSecondaryPointValue(beatTimingWindows);
-        int maxSecondaryLiftoffValue = GetMaxSecondaryPointValue(liftoffTimingWindows);
-        int maxSecondaryBeatReleaseValue = GetMaxSecondaryPointValue(beatReleaseTimingWindows);
 
         for (int i = 0; i < scoreStates.Length; i++) {
             var note = trackData.GetNote(i);
             int availableBasePoints = 0;
             int availableBaseSustainPoints = 0;
-            int availableSecondaryScore = 0;
             int availableStreak = 0;
 
             switch (note.NoteType) {
@@ -429,7 +429,6 @@ internal class CustomScoreSystem : IScoreSystem {
                     break;
                 case NoteType.DrumStart:
                     availableBasePoints = maxBeatValue;
-                    availableSecondaryScore = maxSecondaryBeatValue;
                     availableStreak = 1;
 
                     if (note.length > 0f)
@@ -450,7 +449,6 @@ internal class CustomScoreSystem : IScoreSystem {
 
                     availableBasePoints = maxTapValue;
                     availableBaseSustainPoints = Mathf.FloorToInt(holdTickRate * (freestyleSection0.EndTime - freestyleSection0.Time));
-                    availableSecondaryScore = maxSecondaryTapValue;
                     availableStreak = 1;
                     
                     break;
@@ -464,7 +462,6 @@ internal class CustomScoreSystem : IScoreSystem {
                         break;
 
                     availableBasePoints = maxLiftoffValue;
-                    availableSecondaryScore = maxSecondaryLiftoffValue;
                     availableStreak = 1;
 
                     break;
@@ -483,7 +480,6 @@ internal class CustomScoreSystem : IScoreSystem {
                         break;
                     
                     availableBasePoints = maxBeatReleaseValue;
-                    availableSecondaryScore = maxSecondaryBeatReleaseValue;
                     availableStreak = 1;
 
                     break;
@@ -510,6 +506,77 @@ internal class CustomScoreSystem : IScoreSystem {
                 availableTotalPoints,
                 availableTotalSustainPoints,
                 availableStreak);
+        }
+    }
+
+    private void GetValuesFromScoreStates() {
+        earlies = 0;
+        lates = 0;
+        PerformanceGraphValues.Clear();
+        overbeatTimes.Sort();
+
+        float sectionLength = trackData.SoundEndTime / 60f;
+        float nextSectionTime = sectionLength;
+        int counter = 1;
+        int totalValueForSection = 0;
+        int maxValueForSection = 0;
+        bool currentSectionLostMultiplier = false;
+
+        for (int i = 0; i < trackData.NoteCount; i++) {
+            var note = trackData.GetNote(i);
+            float time = note.time;
+            
+            while (time > nextSectionTime)
+                PopSection();
+
+            var scoreState = scoreStates[i];
+
+            totalValueForSection += scoreState.GainedTotalPoints + scoreState.GainedTotalSustainPoints;
+            maxValueForSection += scoreState.AvailableTotalPoints + scoreState.AvailableTotalSustainPoints;
+
+            if (scoreState.LostMultiplier)
+                currentSectionLostMultiplier = true;
+            
+            var timingAccuracy = scoreState.TimingAccuracy;
+            
+            if (timingAccuracy == null)
+                continue;
+
+            var baseTimingAccuracy = timingAccuracy.BaseAccuracy;
+            
+            if (baseTimingAccuracy == NoteTimingAccuracy.Early)
+                earlies++;
+            else if (baseTimingAccuracy == NoteTimingAccuracy.Late)
+                lates++;
+        }
+        
+        PopSection();
+
+        void PopSection() {
+            if (maxValueForSection > 0) {
+                while (overbeatTimes.Count > 0 && overbeatTimes[0] < nextSectionTime) {
+                    currentSectionLostMultiplier = true;
+                    overbeatTimes.RemoveAt(0);
+                }
+                
+                float value = Mathf.Clamp((float) totalValueForSection / maxValueForSection, 0.05f, 1f);
+                Color color;
+
+                if (currentSectionLostMultiplier || totalValueForSection == 0)
+                    color = Color.red;
+                else if (totalValueForSection == maxValueForSection)
+                    color = Color.cyan;
+                else
+                    color = Color.yellow;
+                
+                PerformanceGraphValues.Add(new ColoredGraphValue(value, color));
+                totalValueForSection = 0;
+                maxValueForSection = 0;
+                currentSectionLostMultiplier = false;
+            }
+
+            counter++;
+            nextSectionTime = sectionLength * counter;
         }
     }
 
@@ -571,29 +638,12 @@ internal class CustomScoreSystem : IScoreSystem {
     }
 
     private string GetEarlyLateRatio() {
-        int earlies = 0;
-        int lates = 0;
-
-        foreach (var scoreState in scoreStates) {
-            var timingAccuracy = scoreState.TimingAccuracy;
-            
-            if (timingAccuracy == null)
-                continue;
-
-            var baseTimingAccuracy = timingAccuracy.BaseAccuracy;
-            
-            if (baseTimingAccuracy == NoteTimingAccuracy.Early)
-                earlies++;
-            else if (baseTimingAccuracy == NoteTimingAccuracy.Late)
-                lates++;
-        }
-        
         if (earlies == 0 && lates == 0)
             return "0 : 0";
 
         int sum = earlies + lates;
-        int early = (int) Math.Round((float) earlies / sum * 100f);
-        int late = (int) Math.Round((float) lates / sum * 100f);
+        int early = Mathf.RoundToInt((float) earlies / sum * 100f);
+        int late = Mathf.RoundToInt((float) lates / sum * 100f);
 
         if (early + late > 100)
             late = 100 - early;
@@ -634,19 +684,6 @@ internal class CustomScoreSystem : IScoreSystem {
 
         return max;
     }
-    
-    private static int GetMaxSecondaryPointValue(TimingWindow[] timingWindows) {
-        int max = 0;
-
-        foreach (var window in timingWindows) {
-            int pointValue = window.SecondaryPointValue;
-
-            if (pointValue > max)
-                max = pointValue;
-        }
-
-        return max;
-    }
 
     private static FullComboState GetFullComboState(int score, int maxScore, int streak, int maxStreak) {
         if (maxScore == 0 || maxStreak == 0)
@@ -677,7 +714,6 @@ internal class CustomScoreSystem : IScoreSystem {
         public int AvailableBaseSustainPoints { get; }
         public int AvailableTotalPoints { get; }
         public int AvailableTotalSustainPoints { get; }
-        public int AvailableStreak { get; }
         public int GainedBasePoints { get; set; }
         public int GainedBaseSustainPoints { get; set; }
         public int GainedTotalPoints { get; set; }
@@ -695,7 +731,6 @@ internal class CustomScoreSystem : IScoreSystem {
             AvailableBaseSustainPoints = availableBaseSustainPoints;
             AvailableTotalPoints = availableTotalPoints;
             AvailableTotalSustainPoints = availableTotalSustainPoints;
-            AvailableStreak = availableStreak;
             GainedBasePoints = 0;
             GainedBaseSustainPoints = 0;
             GainedTotalPoints = 0;

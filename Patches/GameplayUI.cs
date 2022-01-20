@@ -92,7 +92,7 @@ internal class GameplayUI {
 
         systemNameText = GenerateText(baseText, new Vector3(235f, 102f, 0f), 4f, Color.white);
         bestPossibleText = GenerateText(baseText, new Vector3(235f, 67f, 0f), 8f, Color.cyan);
-        bestPossibleText.gameObject.SetActive(ScoreMod.CurrentScoreSystemInternal.ImplementsScorePrediction);;
+        bestPossibleText.gameObject.SetActive(ScoreMod.CurrentScoreSystemInternal.ImplementsScorePrediction);
 
         switch (ScoreMod.PaceType.Value) {
             case "Score":

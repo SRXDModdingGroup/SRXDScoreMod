@@ -6,6 +6,7 @@ using System.Reflection.Emit;
 using HarmonyLib;
 using SMU.Utilities;
 using TMPro;
+using UnityEngine;
 
 namespace SRXDScoreMod; 
 
@@ -16,7 +17,7 @@ internal static class CompleteScreenUI {
     private static TranslatedTextMeshPro fcLabel;
     private static TranslatedTextMeshPro pfcLabel;
         
-    public static void UpdateUI() {
+    public static void UpdateUI(float animationTime) {
         if (levelCompleteMenu == null || !levelCompleteMenu.gameObject.activeSelf)
             return;
 
@@ -27,7 +28,7 @@ internal static class CompleteScreenUI {
         if (scoreSystem.SecondaryScore == 0)
             levelCompleteMenu.scoreValueText.SetText(scoreSystem.Score.ToString());
         else
-            levelCompleteMenu.scoreValueText.SetText($"<line-height=50%>{scoreSystem.Score:0}\n<size=50%>+{scoreSystem.SecondaryScore}:0");
+            levelCompleteMenu.scoreValueText.SetText($"<line-height=50%>{scoreSystem.Score:0}\n<size=50%>+{scoreSystem.SecondaryScore:0}");
         
         levelCompleteMenu.streakValueText.SetText(scoreSystem.Streak.ToString());
         levelCompleteMenu.rankAnimator.Setup(scoreSystem.Rank, null);
@@ -42,6 +43,21 @@ internal static class CompleteScreenUI {
         levelCompleteMenu.accuracyGameObject.SetActive(!string.IsNullOrWhiteSpace(scoreSystem.PostGameInfo3Value));
         accLabel.textToAppend = scoreSystem.PostGameInfo3Name;
         levelCompleteMenu.accuracyBonusText.SetText(scoreSystem.PostGameInfo3Value);
+
+        var timelineGraph = levelCompleteMenu.timelineGraph;
+        var animCurve = timelineGraph.animCurve;
+        
+        timelineGraph.animCurve = AnimationCurve.Linear(0f, 0f, animationTime, animCurve.Evaluate(animCurve.GetEndTime()));
+        timelineGraph.SetupPerformanceGraph(levelCompleteMenu.playState, null, 0f);
+    }
+
+    private static void FillPerformanceGraphValues(List<float> values, List<Color> colors) {
+        var pairs = ScoreMod.CurrentScoreSystemInternal.PerformanceGraphValues;
+
+        foreach (var pair in pairs) {
+            values.Add(pair.Value);
+            colors.Add(pair.Color);
+        }
     }
 
     private static string GetInterpolatedScoreString(int score, int secondaryScore, float time) {
@@ -60,7 +76,7 @@ internal static class CompleteScreenUI {
         accLabel.translation = null;
         fcLabel.translation = null;
         pfcLabel.translation = null;
-        UpdateUI();
+        UpdateUI(1f);
     }
 
     [HarmonyPatch(typeof(RankAnimator), nameof(RankAnimator.Setup)), HarmonyTranspiler]
@@ -154,6 +170,39 @@ internal static class CompleteScreenUI {
             new (OpCodes.Call, CompleteScreenUI_GetInterpolatedScoreString)
         });
             
+        operations.Execute(instructionsList);
+
+        return instructionsList;
+    }
+
+    [HarmonyPatch(typeof(PerformanceGraph), nameof(PerformanceGraph.SetupPerformanceGraph)), HarmonyTranspiler]
+    private static IEnumerable<CodeInstruction> PerformanceGraph_SetupPerformanceGraph_Transpiler(IEnumerable<CodeInstruction> instructions) {
+        var instructionsList = new List<CodeInstruction>(instructions);
+        var operations = new DeferredListOperation<CodeInstruction>();
+        var CompleteScreenUI_FillPerformanceGraphValues = typeof(CompleteScreenUI).GetMethod(nameof(FillPerformanceGraphValues), BindingFlags.NonPublic | BindingFlags.Static);
+        var AnimatedGraph_elementColors = typeof(AnimatedGraph).GetField("elementColors", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        var match0 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.opcode == OpCodes.Ldc_I4_0,
+            instr => instr.opcode == OpCodes.Stloc_1, // index
+            instr => instr.Branches(out _),
+            instr => instr.opcode == OpCodes.Ldarg_0 // this
+        }).First()[0];
+
+        var startLabels = instructionsList[match0.Start + 3].labels;
+        var match1 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.Branches(out var label) && label.HasValue && startLabels.Contains(label.Value)
+        }).Last()[0];
+
+        int start = match0.Start;
+        
+        operations.Replace(start, match1.End - start, new CodeInstruction[] {
+            new (OpCodes.Ldloc_0), // values
+            new (OpCodes.Ldarg_0), // this
+            new (OpCodes.Ldfld, AnimatedGraph_elementColors),
+            new (OpCodes.Call, CompleteScreenUI_FillPerformanceGraphValues)
+        });
+        
         operations.Execute(instructionsList);
 
         return instructionsList;

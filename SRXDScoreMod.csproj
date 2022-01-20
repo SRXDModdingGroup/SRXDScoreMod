@@ -94,6 +94,7 @@
         <Compile Include="ScoreSystems\CustomScoreSystem.cs" />
         <Compile Include="ScoreSystems\IReadOnlyScoreSystem.cs" />
         <Compile Include="ScoreSystems\IScoreSystem.cs" />
+        <Compile Include="Types\ColoredGraphValue.cs" />
         <Compile Include="Types\CustomTimingAccuracy.cs" />
         <Compile Include="Types\HighScoreInfo.cs" />
         <Compile Include="Types\IHashable.cs" />
