@@ -16,19 +16,35 @@ internal static class CompleteScreenUI {
     private static TranslatedTextMeshPro accLabel;
     private static TranslatedTextMeshPro fcLabel;
     private static TranslatedTextMeshPro pfcLabel;
-        
-    public static void UpdateUI(float animationTime) {
+    private static TMP_Text scoreSystemNameText;
+    
+    public static void UpdateUI(bool updateGraphs) {
         if (levelCompleteMenu == null || !levelCompleteMenu.gameObject.activeSelf)
             return;
 
         var scoreSystem = ScoreMod.CurrentScoreSystemInternal;
+        var scoreValueText = levelCompleteMenu.scoreValueText;
 
-        levelCompleteMenu.scoreValueText.verticalAlignment = VerticalAlignmentOptions.Middle;
+        if (scoreSystemNameText == null) {
+            scoreSystemNameText = GameObject.Instantiate(scoreValueText.gameObject, scoreValueText.transform.parent, true).GetComponent<TMP_Text>();
+            scoreSystemNameText.gameObject.SetActive(true);
+            scoreSystemNameText.transform.localPosition += new Vector3(-25f, 70f, 0f);
+            scoreSystemNameText.horizontalAlignment = HorizontalAlignmentOptions.Left;
+            scoreSystemNameText.verticalAlignment = VerticalAlignmentOptions.Middle;
+            scoreSystemNameText.overflowMode = TextOverflowModes.Overflow;
+            scoreSystemNameText.rectTransform.anchorMax += 100f * Vector2.right;
+            scoreSystemNameText.fontSize *= 0.7f;
+            scoreSystemNameText.outlineColor = Color.cyan;
+            scoreSystemNameText.outlineWidth = 0.15f;
+        }
+
+        scoreSystemNameText.SetText(scoreSystem.Name);
+        scoreValueText.verticalAlignment = VerticalAlignmentOptions.Middle;
             
         if (scoreSystem.SecondaryScore == 0)
-            levelCompleteMenu.scoreValueText.SetText(scoreSystem.Score.ToString());
+            scoreValueText.SetText(scoreSystem.Score.ToString());
         else
-            levelCompleteMenu.scoreValueText.SetText($"<line-height=50%>{scoreSystem.Score:0}\n<size=50%>+{scoreSystem.SecondaryScore:0}");
+            scoreValueText.SetText($"<line-height=50%>{scoreSystem.Score:0}\n<size=50%>+{scoreSystem.SecondaryScore:0}");
         
         levelCompleteMenu.streakValueText.SetText(scoreSystem.Streak.ToString());
         levelCompleteMenu.rankAnimator.Setup(scoreSystem.Rank, null);
@@ -43,12 +59,18 @@ internal static class CompleteScreenUI {
         levelCompleteMenu.accuracyGameObject.SetActive(!string.IsNullOrWhiteSpace(scoreSystem.PostGameInfo3Value));
         accLabel.textToAppend = scoreSystem.PostGameInfo3Name;
         levelCompleteMenu.accuracyBonusText.SetText(scoreSystem.PostGameInfo3Value);
-
-        var timelineGraph = levelCompleteMenu.timelineGraph;
-        var animCurve = timelineGraph.animCurve;
         
-        timelineGraph.animCurve = AnimationCurve.Linear(0f, 0f, animationTime, animCurve.Evaluate(animCurve.GetEndTime()));
-        timelineGraph.SetupPerformanceGraph(levelCompleteMenu.playState, null, 0f);
+        if (!updateGraphs)
+            return;
+
+        var stats = levelCompleteMenu.playState.playStateStats;
+        var extendedStats = levelCompleteMenu.extendedStats;
+        
+        levelCompleteMenu.timelineGraph.SetupPerformanceGraph(levelCompleteMenu.playState, stats, 1f);
+        extendedStats.Setup(stats);
+        
+        if (PlayerSettingsData.Instance.ShowExtendedStats.Value > 0)
+            extendedStats.Display();
     }
 
     private static void FillPerformanceGraphValues(List<float> values, List<Color> colors) {
@@ -59,6 +81,8 @@ internal static class CompleteScreenUI {
             colors.Add(pair.Color);
         }
     }
+
+    private static PieGraphValue GetPieGraphValue(int index) => ScoreMod.CurrentScoreSystemInternal.PieGraphValues[index];
 
     private static string GetInterpolatedScoreString(int score, int secondaryScore, float time) {
         if (secondaryScore == 0)
@@ -76,7 +100,7 @@ internal static class CompleteScreenUI {
         accLabel.translation = null;
         fcLabel.translation = null;
         pfcLabel.translation = null;
-        UpdateUI(1f);
+        UpdateUI(false);
     }
 
     [HarmonyPatch(typeof(RankAnimator), nameof(RankAnimator.Setup)), HarmonyTranspiler]
@@ -201,6 +225,45 @@ internal static class CompleteScreenUI {
             new (OpCodes.Ldarg_0), // this
             new (OpCodes.Ldfld, AnimatedGraph_elementColors),
             new (OpCodes.Call, CompleteScreenUI_FillPerformanceGraphValues)
+        });
+        
+        operations.Execute(instructionsList);
+
+        return instructionsList;
+    }
+
+    [HarmonyPatch(typeof(ExtendedStats), nameof(ExtendedStats.Display)), HarmonyTranspiler]
+    private static IEnumerable<CodeInstruction> ExtendedStats_Display_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
+        var instructionsList = new List<CodeInstruction>(instructions);
+        var operations = new DeferredListOperation<CodeInstruction>();
+        var pieGraphValue = generator.DeclareLocal(typeof(PieGraphValue));
+        var CompleteScreenUI_GetPieGraphValue = typeof(CompleteScreenUI).GetMethod(nameof(GetPieGraphValue), BindingFlags.NonPublic | BindingFlags.Static);
+        var PieGraphValue_get_Perfect = typeof(PieGraphValue).GetProperty(nameof(PieGraphValue.Perfect)).GetGetMethod();
+        var PieGraphValue_get_Good = typeof(PieGraphValue).GetProperty(nameof(PieGraphValue.Good)).GetGetMethod();
+        var PieGraphValue_get_Missed = typeof(PieGraphValue).GetProperty(nameof(PieGraphValue.Missed)).GetGetMethod();
+
+        var match = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.opcode == OpCodes.Ldloc_2, // statsCollection
+            instr => instr.opcode == OpCodes.Ldc_I4_1
+        }).Then(new Func<CodeInstruction, bool>[] {
+            instr => instr.StoresLocalAtIndex(6) // misses
+        }).First();
+
+        int start = match[0].Start;
+        
+        operations.Replace(start, match[1].End - start, new CodeInstruction[] {
+            new (OpCodes.Ldloc_1), // index
+            new (OpCodes.Call, CompleteScreenUI_GetPieGraphValue),
+            new (OpCodes.Stloc_S, pieGraphValue),
+            new (OpCodes.Ldloc_S, pieGraphValue),
+            new (OpCodes.Call, PieGraphValue_get_Perfect),
+            new (OpCodes.Stloc_S, (byte) 5), // perfect
+            new (OpCodes.Ldloc_S, pieGraphValue),
+            new (OpCodes.Call, PieGraphValue_get_Good),
+            new (OpCodes.Stloc_S, (byte) 4), // good
+            new (OpCodes.Ldloc_S, pieGraphValue),
+            new (OpCodes.Call, PieGraphValue_get_Missed),
+            new (OpCodes.Stloc_S, (byte) 6), // misses
         });
         
         operations.Execute(instructionsList);

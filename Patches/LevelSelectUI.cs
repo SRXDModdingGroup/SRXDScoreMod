@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
 using SMU.Utilities;
+using TMPro;
 using UnityEngine;
 
 namespace SRXDScoreMod; 
@@ -12,11 +13,17 @@ namespace SRXDScoreMod;
 // Contains patch functions to make the level select menu show modded scores
 internal static class LevelSelectUI {
     private static XDLevelSelectMenuBase currentLevelSelectMenu;
+    private static TMP_Text scoreSystemNameText;
     
     public static void UpdateUI() {
+        var scoreSystem = ScoreMod.CurrentScoreSystemInternal;
+        
+        if (scoreSystemNameText != null)
+            scoreSystemNameText.SetText(scoreSystem.Name);
+        
         if (currentLevelSelectMenu == null || !currentLevelSelectMenu.isActiveAndEnabled)
             return;
-
+        
         var handle = currentLevelSelectMenu.CurrentMetaDataHandle;
         
         if (handle == null)
@@ -25,7 +32,7 @@ internal static class LevelSelectUI {
         var metadataSet = handle.TrackDataMetadata;
         int index = metadataSet.GetClosestActiveIndexForDifficulty(PlayerSettingsData.Instance.SelectedDifficulty);
         var metadata = metadataSet.GetMetadataForActiveIndex(index);
-        var highScoreInfo = ScoreMod.CurrentScoreSystemInternal.GetHighScoreInfoForTrack(handle.TrackInfoRef, metadata);
+        var highScoreInfo = scoreSystem.GetHighScoreInfoForTrack(handle.TrackInfoRef, metadata);
 
         string score = highScoreInfo.GetScoreString();
         string rank = highScoreInfo.Rank;
@@ -44,8 +51,23 @@ internal static class LevelSelectUI {
     [HarmonyPatch(typeof(XDLevelSelectMenuBase), nameof(XDLevelSelectMenuBase.OpenMenu)), HarmonyPostfix]
     private static void XDLevelSelectMenuBase_OpenMenu_Postfix(XDLevelSelectMenuBase __instance) {
         currentLevelSelectMenu = __instance;
+
+        var scoreValueText = __instance.score[0];
         
-        var parent = __instance.score[0].transform.parent;
+        if (scoreSystemNameText != null)
+            GameObject.Destroy(scoreSystemNameText);
+
+        scoreSystemNameText = GameObject.Instantiate(scoreValueText.gameObject, scoreValueText.transform.parent, true).GetComponent<TMP_Text>();
+        scoreSystemNameText.gameObject.SetActive(true);
+        scoreSystemNameText.transform.localPosition += new Vector3(-107f, 70f, 0f);
+        scoreSystemNameText.horizontalAlignment = HorizontalAlignmentOptions.Left;
+        scoreSystemNameText.verticalAlignment = VerticalAlignmentOptions.Middle;
+        scoreSystemNameText.overflowMode = TextOverflowModes.Overflow;
+        scoreSystemNameText.rectTransform.anchorMax += 100f * Vector2.right;
+        scoreSystemNameText.fontSize *= 0.7f;
+        scoreSystemNameText.outlineWidth = 0.15f;
+        
+        var parent = scoreValueText.transform.parent;
 
         if (parent.localScale.x < 0.95f)
             return;
@@ -57,6 +79,8 @@ internal static class LevelSelectUI {
 
             child.localPosition += 10f * Vector3.down;
         }
+        
+        UpdateUI();
     }
 
     [HarmonyPatch(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty"), HarmonyTranspiler]

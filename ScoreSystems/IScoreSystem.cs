@@ -20,6 +20,8 @@ internal interface IScoreSystem : IReadOnlyScoreSystem {
     
     public List<ColoredGraphValue> PerformanceGraphValues { get; }
     
+    public PieGraphValue[] PieGraphValues { get; }
+    
     public void Init(PlayState playState);
 
     public void Complete(PlayState playState);

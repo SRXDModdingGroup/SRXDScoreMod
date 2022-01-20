@@ -59,6 +59,8 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
     public string PostGameInfo3Name => "PFC";
 
     public List<ColoredGraphValue> PerformanceGraphValues { get; }
+    
+    public PieGraphValue[] PieGraphValues { get; }
 
     public TimingWindow[] TimingWindowsForDisplay { get; } = {
         new (EARLY, 0, 0, -130f),
@@ -72,6 +74,7 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
 
     public BaseScoreSystemWrapper() {
         PerformanceGraphValues = new List<ColoredGraphValue>();
+        PieGraphValues = new PieGraphValue[7];
     }
 
     public void Init(PlayState playState) {
@@ -100,7 +103,9 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
         Rank = playState.trackData.GetRankCalculatedFromScore(Score);
         PerformanceGraphValues.Clear();
 
-        foreach (var section in playState.playStateStats.sections) {
+        var stats = playState.playStateStats;
+
+        foreach (var section in stats.sections) {
             if (section.maxPossibleScore == 0)
                 continue;
             
@@ -118,6 +123,26 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
                 color = Color.yellow;
             
             PerformanceGraphValues.Add(new ColoredGraphValue(value, color));
+        }
+
+        var pieStats = new PlayStateStats.StatsCollection[7] {
+            stats.match,
+            stats.hold,
+            stats.tap,
+            stats.beat,
+            stats.release,
+            stats.spins,
+            stats.scratches
+        };
+
+        for (int i = 0; i < 7; i++) {
+            var statsForPie = pieStats[i];
+            
+            int perfect = statsForPie.GetStat(PlayStateStats.StatType.Perfect).value + statsForPie.GetStat(PlayStateStats.StatType.Scored).value;
+            int good = statsForPie.GetStat(PlayStateStats.StatType.Early).value + statsForPie.GetStat(PlayStateStats.StatType.Late).value;
+            int missed = statsForPie.GetStat(PlayStateStats.StatType.Missed).value;
+
+            PieGraphValues[i] = new PieGraphValue(perfect, good, missed);
         }
     }
 

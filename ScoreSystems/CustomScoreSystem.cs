@@ -53,6 +53,8 @@ internal class CustomScoreSystem : IScoreSystem {
     public string PostGameInfo3Name => "Early / Late";
 
     public List<ColoredGraphValue> PerformanceGraphValues { get; }
+    
+    public PieGraphValue[] PieGraphValues { get; }
 
     public string PostGameInfo1Value { get; private set; }
     
@@ -131,6 +133,7 @@ internal class CustomScoreSystem : IScoreSystem {
         beatReleaseTimingWindows = profile.BeatReleaseTimingWindows;
         overbeatTimes = new List<float>();
         PerformanceGraphValues = new List<ColoredGraphValue>();
+        PieGraphValues = new PieGraphValue[7];
     }
 
     #region IScoreSystemFunctions
@@ -515,21 +518,44 @@ internal class CustomScoreSystem : IScoreSystem {
         PerformanceGraphValues.Clear();
         overbeatTimes.Sort();
 
-        float sectionLength = trackData.SoundEndTime / 60f;
-        float nextSectionTime = sectionLength;
+        for (int i = 0; i < PieGraphValues.Length; i++)
+            PieGraphValues[i] = new PieGraphValue(0, 0, 0);
+
+        int firstNoteIndex;
+
+        for (firstNoteIndex = 0; firstNoteIndex < scoreStates.Length; firstNoteIndex++) {
+            var scoreState = scoreStates[firstNoteIndex];
+            
+            if (scoreState.AvailableBasePoints > 0 || scoreState.AvailableBaseSustainPoints > 0)
+                break;
+        }
+        
+        float firstNoteTime = trackData.GetNote(firstNoteIndex).time;
+        float sectionLength = (trackData.GameplayEndTime - firstNoteTime) / 60f;
+        float sectionEndTime = firstNoteTime + sectionLength;
         int counter = 1;
         int totalValueForSection = 0;
         int maxValueForSection = 0;
         bool currentSectionLostMultiplier = false;
 
-        for (int i = 0; i < trackData.NoteCount; i++) {
+        for (int i = firstNoteIndex; i < trackData.NoteCount; i++) {
+            var scoreState = scoreStates[i];
+            int availableBasePoints = scoreState.AvailableBasePoints + scoreState.AvailableBaseSustainPoints;
+            
+            if (availableBasePoints == 0)
+                continue;
+            
             var note = trackData.GetNote(i);
             float time = note.time;
             
-            while (time > nextSectionTime)
-                PopSection();
-
-            var scoreState = scoreStates[i];
+            if (time > sectionEndTime) {
+                while (sectionEndTime < time) {
+                    counter++;
+                    sectionEndTime = firstNoteTime + counter * sectionLength;
+                }
+                
+                PopSection(firstNoteTime + (counter - 1) * sectionLength);
+            }
 
             totalValueForSection += scoreState.GainedTotalPoints + scoreState.GainedTotalSustainPoints;
             maxValueForSection += scoreState.AvailableTotalPoints + scoreState.AvailableTotalSustainPoints;
@@ -538,45 +564,65 @@ internal class CustomScoreSystem : IScoreSystem {
                 currentSectionLostMultiplier = true;
             
             var timingAccuracy = scoreState.TimingAccuracy;
-            
-            if (timingAccuracy == null)
-                continue;
 
-            var baseTimingAccuracy = timingAccuracy.BaseAccuracy;
-            
-            if (baseTimingAccuracy == NoteTimingAccuracy.Early)
-                earlies++;
-            else if (baseTimingAccuracy == NoteTimingAccuracy.Late)
-                lates++;
-        }
-        
-        PopSection();
+            if (timingAccuracy != null) {
+                var baseTimingAccuracy = timingAccuracy.BaseAccuracy;
 
-        void PopSection() {
-            if (maxValueForSection > 0) {
-                while (overbeatTimes.Count > 0 && overbeatTimes[0] < nextSectionTime) {
-                    currentSectionLostMultiplier = true;
-                    overbeatTimes.RemoveAt(0);
-                }
-                
-                float value = Mathf.Clamp((float) totalValueForSection / maxValueForSection, 0.05f, 1f);
-                Color color;
-
-                if (currentSectionLostMultiplier || totalValueForSection == 0)
-                    color = Color.red;
-                else if (totalValueForSection == maxValueForSection)
-                    color = Color.cyan;
-                else
-                    color = Color.yellow;
-                
-                PerformanceGraphValues.Add(new ColoredGraphValue(value, color));
-                totalValueForSection = 0;
-                maxValueForSection = 0;
-                currentSectionLostMultiplier = false;
+                if (baseTimingAccuracy == NoteTimingAccuracy.Early)
+                    earlies++;
+                else if (baseTimingAccuracy == NoteTimingAccuracy.Late)
+                    lates++;
             }
 
-            counter++;
-            nextSectionTime = sectionLength * counter;
+            int gainedBasePoints = scoreState.GainedBasePoints + scoreState.GainedBaseSustainPoints;
+            int pieIndex = note.NoteType switch {
+                NoteType.Match => 0,
+                NoteType.HoldStart => 1,
+                NoteType.Tap => 2,
+                NoteType.DrumStart => 3,
+                NoteType.SectionContinuationOrEnd => 4,
+                NoteType.DrumEnd => 4,
+                NoteType.SpinRightStart => 5,
+                NoteType.SpinLeftStart => 5,
+                NoteType.ScratchStart => 6,
+                _ => 0
+            };
+
+            var pieValue = PieGraphValues[pieIndex];
+
+            if (gainedBasePoints == 0)
+                pieValue.Missed += availableBasePoints;
+            else {
+                pieValue.Perfect += gainedBasePoints;
+                pieValue.Good += availableBasePoints - gainedBasePoints;
+            }
+        }
+        
+        PopSection(trackData.GameplayEndTime);
+
+        void PopSection(float endTime) {
+            if (maxValueForSection == 0)
+                return;
+            
+            while (overbeatTimes.Count > 0 && overbeatTimes[0] < endTime) {
+                currentSectionLostMultiplier = true;
+                overbeatTimes.RemoveAt(0);
+            }
+                
+            float value = Mathf.Clamp((float) totalValueForSection / maxValueForSection, 0.05f, 1f);
+            Color color;
+
+            if (currentSectionLostMultiplier || totalValueForSection == 0)
+                color = Color.red;
+            else if (totalValueForSection == maxValueForSection)
+                color = Color.cyan;
+            else
+                color = Color.yellow;
+                
+            PerformanceGraphValues.Add(new ColoredGraphValue(value, color));
+            totalValueForSection = 0;
+            maxValueForSection = 0;
+            currentSectionLostMultiplier = false;
         }
     }
 
@@ -669,7 +715,7 @@ internal class CustomScoreSystem : IScoreSystem {
             savedInfo.Streak,
             savedInfo.SecondaryScore,
             GetRank(savedInfo.Score, savedInfo.MaxScore),
-            GetFullComboState(savedInfo.Score, savedInfo.MaxStreak, savedInfo.Streak, savedInfo.MaxStreak));
+            GetFullComboState(savedInfo.Score, savedInfo.MaxScore, savedInfo.Streak, savedInfo.MaxStreak));
     }
 
     private static int GetMaxPointValue(TimingWindow[] timingWindows) {

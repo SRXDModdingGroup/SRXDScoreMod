@@ -98,6 +98,7 @@
         <Compile Include="Types\CustomTimingAccuracy.cs" />
         <Compile Include="Types\HighScoreInfo.cs" />
         <Compile Include="Types\IHashable.cs" />
+        <Compile Include="Types\PieGraphValue.cs" />
         <Compile Include="Types\RankThreshold.cs" />
         <Compile Include="Types\SavedHighScoreInfo.cs" />
         <Compile Include="Types\ScoreSystemProfile.cs" />

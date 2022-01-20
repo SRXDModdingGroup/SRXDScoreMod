@@ -14,8 +14,7 @@ namespace SRXDScoreMod;
 [BepInPlugin("SRXD.ScoreMod", "ScoreMod", "1.1.1.0")]
 public class ScoreMod : BaseUnityPlugin {
     internal new static ManualLogSource Logger { get; private set; }
-    internal static ConfigEntry<bool> StartEnabled { get; private set; }
-    internal static ConfigEntry<string> DefaultProfile { get; private set; }
+    internal static ConfigEntry<string> DefaultSystem { get; private set; }
     internal static ConfigEntry<string> PaceType { get; private set; }
     internal static ConfigEntry<float> TapTimingOffset { get; private set; }
     internal static ConfigEntry<float> BeatTimingOffset { get; private set; }
@@ -28,6 +27,7 @@ public class ScoreMod : BaseUnityPlugin {
     
     internal static List<CustomScoreSystem> CustomScoreSystems { get; private set; }
 
+    private static int scoreSystemIndex;
     private static string fileDirectory;
     
     public static void AddCustomScoreSystem(ScoreSystemProfile profile) {
@@ -40,8 +40,7 @@ public class ScoreMod : BaseUnityPlugin {
     private void Awake() {
         Logger = base.Logger;
         
-        StartEnabled = Config.Bind("Settings", "StartEnabled", true, "Enable modded score on startup");
-        DefaultProfile = Config.Bind("Settings", "DefaultProfile", "0", "The name or index of the default scoring profile");
+        DefaultSystem = Config.Bind("Settings", "DefaultSystem", "0", "The name or index of the default scoring system");
         PaceType = Config.Bind("Settings", "PaceType", "Both", new ConfigDescription("Whether to show the max possible score, its delta relative to PB, both, or hide the Pace display", new AcceptableValueList<string>("Delta", "Score", "Both", "Hide")));
         TapTimingOffset = Config.Bind("Settings", "TapTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for taps and liftoffs");
         BeatTimingOffset = Config.Bind("Settings", "BeatTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for beats and hard beat releases");
@@ -54,11 +53,27 @@ public class ScoreMod : BaseUnityPlugin {
         harmony.PatchAll(typeof(LevelSelectUI));
         ScoreSystems = new List<IScoreSystem>();
         ScoreSystems.Add(new BaseScoreSystemWrapper());
-        CurrentScoreSystemInternal = ScoreSystems[0];
         CustomScoreSystems = new List<CustomScoreSystem>();
         AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM16);
-        //AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM32);
-        CurrentScoreSystemInternal = ScoreSystems[1];
+        AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM32);
+
+        if (!int.TryParse(DefaultSystem.Value, out scoreSystemIndex)) {
+            scoreSystemIndex = 0;
+            
+            for (int i = 0; i < ScoreSystems.Count; i++) {
+                if (ScoreSystems[i].Name != DefaultSystem.Value)
+                    continue;
+                
+                scoreSystemIndex = i;
+
+                break;
+            }
+        }
+
+        if (scoreSystemIndex >= ScoreSystems.Count)
+            scoreSystemIndex = ScoreSystems.Count - 1;
+        
+        CurrentScoreSystemInternal = ScoreSystems[scoreSystemIndex];
         HighScoresContainer.LoadHighScores();
     }
 
@@ -114,12 +129,13 @@ public class ScoreMod : BaseUnityPlugin {
     }
 
     private static void PickScoreSystem(int index) {
-        if (index >= ScoreSystems.Count)
+        if (index >= ScoreSystems.Count || index == scoreSystemIndex)
             return;
 
+        scoreSystemIndex = index;
         CurrentScoreSystemInternal = ScoreSystems[index];
         GameplayUI.UpdateUI();
-        CompleteScreenUI.UpdateUI(0.1f);
+        CompleteScreenUI.UpdateUI(true);
         LevelSelectUI.UpdateUI();
     }
 }

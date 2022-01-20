@@ -70,7 +70,8 @@ internal static class HighScoresContainer {
             key = $"{key}_{modifierSetId}";
 
         if (!highScores.TryGetValue(key, out var oldInfo)) {
-            highScores[key] = info;
+            highScores[key] = new SavedHighScoreInfo(key, info.Score, info.Streak, info.MaxScore, info.MaxStreak, info.SecondaryScore);
+            SaveHighScores();
 
             return true;
         }

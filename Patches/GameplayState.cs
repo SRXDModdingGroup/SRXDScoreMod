@@ -10,12 +10,14 @@ namespace SRXDScoreMod;
 
 // Contains patch functions for receiving data from gameplay
 internal static class GameplayState {
-    public static bool Playing { get; private set; }
+    private static bool playing;
+    private static float tapTimingOffset;
+    private static float beatTimingOffset;
 
     #region NoteEvents
 
     private static void NormalNoteHit(PlayState playState, int noteIndex, Note note, float timeOffset) {
-        if (!Playing)
+        if (!playing)
             return;
 
         switch (note.NoteType) {
@@ -25,6 +27,8 @@ internal static class GameplayState {
 
                 return;
             case NoteType.Tap:
+                timeOffset += tapTimingOffset;
+                
                 foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
                     scoreSystem.HitTap(noteIndex, timeOffset);
                 
@@ -33,6 +37,8 @@ internal static class GameplayState {
 
                 return;
             case NoteType.DrumStart:
+                timeOffset += beatTimingOffset;
+                
                 foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
                     scoreSystem.HitBeat(noteIndex, timeOffset);
                 
@@ -44,8 +50,10 @@ internal static class GameplayState {
     }
 
     private static void BeatReleaseHit(PlayState playState, int noteIndex, float timeOffset) {
-        if (!Playing)
+        if (!playing)
             return;
+
+        timeOffset += beatTimingOffset;
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
             scoreSystem.HitBeatRelease(noteIndex, timeOffset);
@@ -55,8 +63,10 @@ internal static class GameplayState {
     }
 
     private static void HoldHit(PlayState playState, int noteIndex, float timeOffset) {
-        if (!Playing)
+        if (!playing)
             return;
+
+        timeOffset += tapTimingOffset;
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
             scoreSystem.HitTap(noteIndex, timeOffset);
@@ -66,8 +76,10 @@ internal static class GameplayState {
     }
 
     private static void LiftoffHit(PlayState playState, int noteIndex, float timeOffset) {
-        if (!Playing)
+        if (!playing)
             return;
+
+        timeOffset += tapTimingOffset;
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
             scoreSystem.HitLiftoff(noteIndex, timeOffset);
@@ -77,7 +89,7 @@ internal static class GameplayState {
     }
 
     private static void SpinHit(int noteIndex) {
-        if (!Playing)
+        if (!playing)
             return;
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
@@ -85,7 +97,7 @@ internal static class GameplayState {
     }
 
     private static void Overbeat(float time) {
-        if (!Playing)
+        if (!playing)
             return;
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
@@ -93,7 +105,7 @@ internal static class GameplayState {
     }
 
     private static void NormalNoteMiss(int noteIndex, Note note) {
-        if (!Playing)
+        if (!playing)
             return;
         
         switch (note.NoteType) {
@@ -125,7 +137,7 @@ internal static class GameplayState {
     }
 
     private static void BeatReleaseMiss(int noteIndex) {
-        if (!Playing)
+        if (!playing)
             return;
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
@@ -133,7 +145,7 @@ internal static class GameplayState {
     }
     
     private static void BeatHoldMiss(int noteIndex, int endNoteIndex) {
-        if (!Playing)
+        if (!playing)
             return;
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
@@ -141,7 +153,7 @@ internal static class GameplayState {
     }
 
     private static void HoldMiss(int noteIndex, int endNoteIndex, bool hasEntered) {
-        if (!Playing)
+        if (!playing)
             return;
 
         if (hasEntered) {
@@ -155,7 +167,7 @@ internal static class GameplayState {
     }
 
     private static void LiftoffMiss(int noteIndex) {
-        if (!Playing)
+        if (!playing)
             return;
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
@@ -163,7 +175,7 @@ internal static class GameplayState {
     }
 
     private static void SpinMiss(int noteIndex, bool failedInitialSpin) {
-        if (!Playing)
+        if (!playing)
             return;
 
         if (failedInitialSpin) {
@@ -177,7 +189,7 @@ internal static class GameplayState {
     }
 
     private static void ScratchMiss(int noteIndex) {
-        if (!Playing)
+        if (!playing)
             return;
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
@@ -185,7 +197,7 @@ internal static class GameplayState {
     }
 
     private static void UpdateBeatHoldTime(int noteIndex, float heldTime) {
-        if (!Playing)
+        if (!playing)
             return;
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
@@ -193,7 +205,7 @@ internal static class GameplayState {
     }
     
     private static void UpdateHoldTime(int noteIndex, float heldTime) {
-        if (!Playing)
+        if (!playing)
             return;
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
@@ -201,7 +213,7 @@ internal static class GameplayState {
     }
     
     private static void UpdateSpinTime(int noteIndex, float heldTime) {
-        if (!Playing)
+        if (!playing)
             return;
 
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
@@ -209,7 +221,7 @@ internal static class GameplayState {
     }
     
     private static void UpdateScratchTime(int noteIndex, float heldTime) {
-        if (!Playing)
+        if (!playing)
             return;
         
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
@@ -229,7 +241,9 @@ internal static class GameplayState {
 
     [HarmonyPatch(typeof(Track), nameof(Track.PlayTrack)), HarmonyPostfix]
     private static void Track_PlayTrack_Postfix(Track __instance) {
-        Playing = true;
+        playing = true;
+        tapTimingOffset = ScoreMod.TapTimingOffset.Value;
+        beatTimingOffset = ScoreMod.BeatTimingOffset.Value;
         
         foreach (var scoreSystem in ScoreMod.ScoreSystems)
             scoreSystem.Init(__instance.playStateFirst);
@@ -237,7 +251,7 @@ internal static class GameplayState {
         
     [HarmonyPatch(typeof(Track), nameof(Track.PracticeTrack)), HarmonyPostfix]
     private static void Track_PracticeTrack_Postfix(Track __instance) {
-        Playing = true;
+        playing = true;
         
         foreach (var scoreSystem in ScoreMod.ScoreSystems)
             scoreSystem.Init(__instance.playStateFirst);
@@ -245,12 +259,12 @@ internal static class GameplayState {
 
     [HarmonyPatch(typeof(Track), nameof(Track.ReturnToPickTrack)), HarmonyPostfix]
     private static void Track_ReturnToPickTrack_Postfix() {
-        Playing = false;
+        playing = false;
     }
 
     [HarmonyPatch(typeof(PlayState), nameof(PlayState.Complete)), HarmonyPostfix]
     private static void PlayState_Complete_Postfix(PlayState __instance) {
-        Playing = false;
+        playing = false;
         
         foreach (var scoreSystem in ScoreMod.ScoreSystems)
             scoreSystem.Complete(__instance);
@@ -258,7 +272,7 @@ internal static class GameplayState {
 
     [HarmonyPatch(typeof(TrackGameplayLogic), nameof(TrackGameplayLogic.UpdateNoteState)), HarmonyPostfix]
     private static void TrackGameplayLogic_UpdateNoteState_Postfix(int noteIndex, bool __result) {
-        if (!Playing || !__result)
+        if (!playing || !__result)
             return;
 
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
