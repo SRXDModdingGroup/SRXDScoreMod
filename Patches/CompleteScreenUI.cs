@@ -17,6 +17,7 @@ internal static class CompleteScreenUI {
     private static TranslatedTextMeshPro fcLabel;
     private static TranslatedTextMeshPro pfcLabel;
     private static TMP_Text scoreSystemNameText;
+    private static Vector3 nameTextPosition;
     
     public static void UpdateUI(bool updateGraphs) {
         if (levelCompleteMenu == null || !levelCompleteMenu.gameObject.activeSelf)
@@ -28,7 +29,7 @@ internal static class CompleteScreenUI {
         if (scoreSystemNameText == null) {
             scoreSystemNameText = GameObject.Instantiate(scoreValueText.gameObject, scoreValueText.transform.parent, true).GetComponent<TMP_Text>();
             scoreSystemNameText.gameObject.SetActive(true);
-            scoreSystemNameText.transform.localPosition += new Vector3(-25f, 70f, 0f);
+            nameTextPosition = scoreSystemNameText.transform.localPosition + new Vector3(-25f, 70f, 0f);
             scoreSystemNameText.horizontalAlignment = HorizontalAlignmentOptions.Left;
             scoreSystemNameText.verticalAlignment = VerticalAlignmentOptions.Middle;
             scoreSystemNameText.overflowMode = TextOverflowModes.Overflow;
@@ -38,6 +39,11 @@ internal static class CompleteScreenUI {
             scoreSystemNameText.outlineWidth = 0.15f;
         }
 
+        if (scoreSystem.IsHighScore)
+            scoreSystemNameText.transform.localPosition = nameTextPosition + 18f * Vector3.up;
+        else
+            scoreSystemNameText.transform.localPosition = nameTextPosition;
+        
         scoreSystemNameText.SetText(scoreSystem.Name);
         scoreValueText.verticalAlignment = VerticalAlignmentOptions.Middle;
             
