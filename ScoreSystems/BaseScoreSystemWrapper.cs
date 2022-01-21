@@ -63,10 +63,9 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
     public PieGraphValue[] PieGraphValues { get; }
 
     public TimingWindow[] TimingWindowsForDisplay { get; } = {
-        new (EARLY, 0, 0, -130f),
-        new (EARLY, 0, 0, -50f),
-        new (PERFECT, 0, 0, 50f),
-        new (LATE, 0, 0, 130f)
+        new (EARLY, 0, 0, -0.05f),
+        new (PERFECT, 0, 0, 0.05f),
+        new (LATE, 0, 0, 0.13f)
     };
 
     private GameplayVariables gameplayVariables;

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using BepInEx;
@@ -11,13 +12,15 @@ namespace SRXDScoreMod;
 
 // Contains code to initialize the mod
 [BepInDependency("com.pink.spinrhythm.moddingutils", "1.0.1")]
-[BepInPlugin("SRXD.ScoreMod", "ScoreMod", "1.2.0.0")]
+[BepInPlugin("SRXD.ScoreMod", "ScoreMod", "1.2.0.2")]
 public class ScoreMod : BaseUnityPlugin {
     internal new static ManualLogSource Logger { get; private set; }
     internal static ConfigEntry<string> DefaultSystem { get; private set; }
     internal static ConfigEntry<string> PaceType { get; private set; }
     internal static ConfigEntry<float> TapTimingOffset { get; private set; }
     internal static ConfigEntry<float> BeatTimingOffset { get; private set; }
+
+    public static event Action<IReadOnlyScoreSystem> OnScoreSystemChanged;
 
     public static IReadOnlyScoreSystem CurrentScoreSystem => CurrentScoreSystemInternal;
 
@@ -137,5 +140,6 @@ public class ScoreMod : BaseUnityPlugin {
         GameplayUI.UpdateUI();
         CompleteScreenUI.UpdateUI(true);
         LevelSelectUI.UpdateUI();
+        OnScoreSystemChanged?.Invoke(CurrentScoreSystem);
     }
 }
