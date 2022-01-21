@@ -105,7 +105,7 @@ internal class CustomScoreSystem : IScoreSystem {
 
     internal CustomScoreSystem(ScoreSystemProfile profile) {
         Name = profile.Name;
-        Id = profile.Id;
+        Id = profile.SystemId;
         matchPointValue = profile.MatchPointValue;
         spinStartPointValue = profile.SpinStartPointValue;
         maxMultiplier = profile.MaxMultiplier;

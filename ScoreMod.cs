@@ -58,7 +58,7 @@ public class ScoreMod : BaseUnityPlugin {
         ScoreSystems.Add(new BaseScoreSystemWrapper());
         CustomScoreSystems = new List<CustomScoreSystem>();
         AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM16);
-        AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM32);
+        // AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM32);
 
         if (!int.TryParse(DefaultSystem.Value, out scoreSystemIndex)) {
             scoreSystemIndex = 0;
