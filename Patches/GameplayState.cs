@@ -242,8 +242,8 @@ internal static class GameplayState {
     [HarmonyPatch(typeof(Track), nameof(Track.PlayTrack)), HarmonyPostfix]
     private static void Track_PlayTrack_Postfix(Track __instance) {
         playing = true;
-        tapTimingOffset = ScoreMod.TapTimingOffset.Value;
-        beatTimingOffset = ScoreMod.BeatTimingOffset.Value;
+        tapTimingOffset = 0.001f * ScoreMod.TapTimingOffset.Value;
+        beatTimingOffset = 0.001f * ScoreMod.BeatTimingOffset.Value;
         
         foreach (var scoreSystem in ScoreMod.ScoreSystems)
             scoreSystem.Init(__instance.playStateFirst);
