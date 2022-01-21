@@ -1,13 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
 
 namespace SRXDScoreMod; 
 
 // Contains a set of modded high scores and manages the high score file
 internal static class HighScoresContainer {
     private static readonly bool SAVE_HIGH_SCORES = true;
-    private static readonly Regex MATCH_CUSTOM_ID = new(@"CUSTOM_(.+?)_(\-?\d+)");
     private static readonly HashSet<string> FORBIDDEN_NAMES = new() {
         "CreateCustomTrack",
         "Tutorial XD",
@@ -142,23 +140,13 @@ internal static class HighScoresContainer {
     }
 
     private static string GetTrackId(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType) {
-        string uniqueName = trackInfoRef.UniqueName;
-
-        if (FORBIDDEN_NAMES.Contains(uniqueName))
-            return string.Empty;
+        if (!trackInfoRef.IsCustomFile)
+            return $"{trackInfoRef.AssetName.Replace(' ', '_')}_{difficultyType}";
         
-        var match = MATCH_CUSTOM_ID.Match(uniqueName);
-
-        if (!match.Success)
-            return $"{uniqueName.Replace(' ', '_')}_{difficultyType}";
-        
-        var groups = match.Groups;
-        uint fileHash;
+        var customFile = trackInfoRef.customFile;
 
         unchecked {
-            fileHash = (uint) int.Parse(groups[2].Value);
+            return $"CUSTOM_{customFile.FileNameNoExtension.Replace(' ', '_')}_{(uint) customFile.FileHash:x8}_{difficultyType}";
         }
-
-        return $"{groups[1].Value.Replace(' ', '_')}_{fileHash:x8}_{difficultyType}";
     }
 }

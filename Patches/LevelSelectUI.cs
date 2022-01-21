@@ -69,15 +69,14 @@ internal static class LevelSelectUI {
         
         var parent = scoreValueText.transform.parent;
 
-        if (parent.localScale.x < 0.95f)
-            return;
-        
-        parent.localScale = 0.9f * Vector3.one;
-                
-        for (int i = 2; i < 7; i++) {
-            var child = parent.GetChild(i);
+        if (parent.localScale.x >= 0.95f) {
+            parent.localScale = 0.9f * Vector3.one;
 
-            child.localPosition += 10f * Vector3.down;
+            for (int i = 2; i < 7; i++) {
+                var child = parent.GetChild(i);
+
+                child.localPosition += 10f * Vector3.down;
+            }
         }
         
         UpdateUI();
