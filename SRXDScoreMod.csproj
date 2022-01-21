@@ -104,7 +104,6 @@
         <Compile Include="Types\ScoreSystemProfile.cs" />
         <Compile Include="Types\TimingWindow.cs" />
         <Compile Include="Utility\CodeInstructionExtensions.cs" />
-        <Compile Include="Utility\ReflectionUtils.cs" />
         <Compile Include="Utility\StringTable.cs" />
         <Compile Include="Utility\HashUtility.cs" />
     </ItemGroup>
