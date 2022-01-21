@@ -3,13 +3,13 @@
 namespace SRXDScoreMod; 
 
 internal static class DefaultScoreSystemProfiles {
-    private static readonly CustomTimingAccuracy E_OKAY = new("Okay", "Okay", new Color(0.5f, 0.5f, 0.5f), NoteTimingAccuracy.Early);
+    private static readonly CustomTimingAccuracy E_OKAY = new("Okay", "Okay", new Color(0.25f, 0.25f, 0.25f), NoteTimingAccuracy.Early);
     private static readonly CustomTimingAccuracy E_GOOD = new("Good", "Good", Color.yellow, NoteTimingAccuracy.Early);
-    private static readonly CustomTimingAccuracy E_GREAT = new("Great", "Great", new Color(0f, 1f, 0.3f), NoteTimingAccuracy.Early);
+    private static readonly CustomTimingAccuracy E_GREAT = new("Great", "Great", new Color(0f, 1f, 0.1f), NoteTimingAccuracy.Early);
     private static readonly CustomTimingAccuracy PERFECT = new("Perfect", "Perfect", Color.cyan, NoteTimingAccuracy.Perfect);
-    private static readonly CustomTimingAccuracy L_GREAT = new("Great", "Great", new Color(0f, 1f, 0.3f), NoteTimingAccuracy.Late);
+    private static readonly CustomTimingAccuracy L_GREAT = new("Great", "Great", new Color(0f, 1f, 0.1f), NoteTimingAccuracy.Late);
     private static readonly CustomTimingAccuracy L_GOOD = new("Good", "Good", Color.yellow, NoteTimingAccuracy.Late);
-    private static readonly CustomTimingAccuracy L_OKAY = new("Okay", "Okay", new Color(0.5f, 0.5f, 0.5f), NoteTimingAccuracy.Late);
+    private static readonly CustomTimingAccuracy L_OKAY = new("Okay", "Okay", new Color(0.25f, 0.25f, 0.25f), NoteTimingAccuracy.Late);
 
     private static readonly TimingWindow[] PRESS_TIMING_WINDOWS = {
         new(E_OKAY, 4, 0, -0.0667f),
