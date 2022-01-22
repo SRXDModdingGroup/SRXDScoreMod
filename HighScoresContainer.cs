@@ -6,12 +6,8 @@ namespace SRXDScoreMod;
 // Contains a set of modded high scores and manages the high score file
 internal static class HighScoresContainer {
     private static readonly bool SAVE_HIGH_SCORES = true;
-    private static readonly HashSet<string> FORBIDDEN_NAMES = new() {
-        "CreateCustomTrack",
-        "Tutorial XD",
-        "RandomizeTrack"
-    };
 
+    private static bool anyUnsaved;
     private static string filePath;
     private static Dictionary<string, SavedHighScoreInfo> highScores;
 
@@ -48,7 +44,7 @@ internal static class HighScoresContainer {
     }
 
     public static void SaveHighScores() {
-        if (!SAVE_HIGH_SCORES || !TryGetFilePath())
+        if (!SAVE_HIGH_SCORES || !TryGetFilePath() || !anyUnsaved)
             return;
 
         using var writer = new StreamWriter(filePath);
@@ -69,7 +65,7 @@ internal static class HighScoresContainer {
 
         if (!highScores.TryGetValue(key, out var oldInfo)) {
             highScores[key] = new SavedHighScoreInfo(key, info.Score, info.Streak, info.MaxScore, info.MaxStreak, info.SecondaryScore);
-            SaveHighScores();
+            anyUnsaved = true;
 
             return true;
         }
@@ -109,7 +105,7 @@ internal static class HighScoresContainer {
             return false;
         
         highScores[key] = new SavedHighScoreInfo(key, score, streak, info.MaxScore, info.MaxStreak, secondaryScore);
-        SaveHighScores();
+        anyUnsaved = true;
 
         return isNewBest;
     }

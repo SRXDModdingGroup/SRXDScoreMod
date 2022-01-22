@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using SMU.Extensions;
 using SMU.Utilities;
 
 namespace SRXDScoreMod;
@@ -244,30 +245,65 @@ internal static class GameplayState {
         playing = true;
         tapTimingOffset = 0.001f * ScoreMod.TapTimingOffset.Value;
         beatTimingOffset = 0.001f * ScoreMod.BeatTimingOffset.Value;
-        
-        foreach (var scoreSystem in ScoreMod.ScoreSystems)
-            scoreSystem.Init(__instance.playStateFirst);
-    }
-        
-    [HarmonyPatch(typeof(Track), nameof(Track.PracticeTrack)), HarmonyPostfix]
-    private static void Track_PracticeTrack_Postfix(Track __instance) {
-        playing = true;
-        
-        foreach (var scoreSystem in ScoreMod.ScoreSystems)
-            scoreSystem.Init(__instance.playStateFirst);
-    }
 
-    [HarmonyPatch(typeof(Track), nameof(Track.ReturnToPickTrack)), HarmonyPostfix]
-    private static void Track_ReturnToPickTrack_Postfix() {
-        playing = false;
+        var playState = __instance.playStateFirst;
+
+        if (playState.isInPracticeMode)
+            return;
+
+        int endIndex = playState.trackData.NoteCount;
+        
+        foreach (var scoreSystem in ScoreMod.ScoreSystems)
+            scoreSystem.Init(playState, 0, endIndex);
     }
 
     [HarmonyPatch(typeof(PlayState), nameof(PlayState.Complete)), HarmonyPostfix]
     private static void PlayState_Complete_Postfix(PlayState __instance) {
         playing = false;
         
+        if (__instance.isInPracticeMode || __instance.SetupParameters.editMode)
+            return;
+        
         foreach (var scoreSystem in ScoreMod.ScoreSystems)
             scoreSystem.Complete(__instance);
+        
+        HighScoresContainer.SaveHighScores();
+    }
+
+    [HarmonyPatch(typeof(TrackEditorGUI), nameof(TrackEditorGUI.SetTimeToCuePoint)), HarmonyPostfix]
+    private static void TrackEditorGUI_SetTimeToCuePoint_Postfix() {
+        var playState = Track.Instance.playStateFirst;
+        
+        if (!playState.isInPracticeMode)
+            return;
+
+        var trackData = playState.trackData;
+        int startIndex = 0;
+        float ignoreBefore = playState.invalidUntilTime;
+        
+        for (int i = 0; i < trackData.NoteCount; i++) {
+            if (trackData.GetNote(i).time <= ignoreBefore)
+                continue;
+            
+            startIndex = i;
+                
+            break;
+        }
+        
+        int endIndex = trackData.NoteCount;
+        float ignoreAfter = playState.dontDrawNotesBeyondTime;
+
+        for (int i = startIndex; i < trackData.NoteCount; i++) {
+            if (trackData.GetNote(i).time < ignoreAfter)
+                continue;
+
+            endIndex = i;
+
+            break;
+        }
+        
+        foreach (var scoreSystem in ScoreMod.ScoreSystems)
+            scoreSystem.Init(playState, startIndex, endIndex);
     }
 
     [HarmonyPatch(typeof(TrackGameplayLogic), nameof(TrackGameplayLogic.UpdateNoteState)), HarmonyPostfix]

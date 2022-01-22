@@ -193,9 +193,17 @@ internal class GameplayUI {
     }
 
     [HarmonyPatch(typeof(Track), nameof(Track.UpdateUI)), HarmonyPostfix]
-    private static void Track_UpdateUI_Postfix() {
+    private static void Track_UpdateUI_Postfix(Track __instance) {
         if (bestPossibleText == null)
             return;
+
+        var playState = __instance.playStateFirst;
+
+        if (playState.isInPracticeMode || __instance.IsInEditMode) {
+            bestPossibleText.gameObject.SetActive(false);
+            
+            return;
+        }
 
         var scoreSystem = ScoreMod.CurrentScoreSystemInternal;
 

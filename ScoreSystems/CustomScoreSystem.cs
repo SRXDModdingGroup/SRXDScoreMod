@@ -138,7 +138,7 @@ internal class CustomScoreSystem : IScoreSystem {
 
     #region IScoreSystemFunctions
 
-    public void Init(PlayState playState) {
+    public void Init(PlayState playState, int startIndex, int endIndex) {
         Score = 0;
         SecondaryScore = 0;
         MaxPossibleScore = 0;
@@ -155,7 +155,7 @@ internal class CustomScoreSystem : IScoreSystem {
         overbeatTimes.Clear();
         trackData = playState.trackData;
         
-        InitScoreStates();
+        InitScoreStates(startIndex, endIndex);
         
         var highScoreInfo = HighScoresContainer.GetHighScore(playState.TrackInfoRef, playState.trackData.Difficulty, Id, string.Empty);
 
@@ -410,7 +410,7 @@ internal class CustomScoreSystem : IScoreSystem {
         StarColor = Color.cyan;
     }
 
-    private void InitScoreStates() {
+    private void InitScoreStates(int startIndex, int endIndex) {
         scoreStates = new NoteScoreState[trackData.NoteCount];
 
         int maxTapValue = GetMaxPointValue(tapTimingWindows);
@@ -419,6 +419,12 @@ internal class CustomScoreSystem : IScoreSystem {
         int maxBeatReleaseValue = GetMaxPointValue(beatReleaseTimingWindows);
 
         for (int i = 0; i < scoreStates.Length; i++) {
+            if (i < startIndex || i >= endIndex) {
+                scoreStates[i] = new NoteScoreState(0, 0, 0, 0, 0);
+                
+                continue;
+            }
+            
             var note = trackData.GetNote(i);
             int availableBasePoints = 0;
             int availableBaseSustainPoints = 0;

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using SMU.Extensions;
 using SMU.Utilities;
 using TMPro;
 using UnityEngine;
@@ -16,11 +17,6 @@ internal static class LevelSelectUI {
     private static TMP_Text scoreSystemNameText;
     
     public static void UpdateUI() {
-        var scoreSystem = ScoreMod.CurrentScoreSystemInternal;
-        
-        if (scoreSystemNameText != null)
-            scoreSystemNameText.SetText(scoreSystem.Name);
-        
         if (currentLevelSelectMenu == null || !currentLevelSelectMenu.isActiveAndEnabled)
             return;
         
@@ -29,6 +25,7 @@ internal static class LevelSelectUI {
         if (handle == null)
             return;
 
+        var scoreSystem = ScoreMod.CurrentScoreSystemInternal;
         var metadataSet = handle.TrackDataMetadata;
         int index = metadataSet.GetClosestActiveIndexForDifficulty(PlayerSettingsData.Instance.SelectedDifficulty);
         var metadata = metadataSet.GetMetadataForActiveIndex(index);
@@ -46,18 +43,16 @@ internal static class LevelSelectUI {
         
         foreach (var text in currentLevelSelectMenu.streak)
             text.text = streak;
+        
+        if (scoreSystemNameText != null)
+            scoreSystemNameText.SetText(scoreSystem.Name);
     }
-        
-    [HarmonyPatch(typeof(XDLevelSelectMenuBase), nameof(XDLevelSelectMenuBase.OpenMenu)), HarmonyPostfix]
-    private static void XDLevelSelectMenuBase_OpenMenu_Postfix(XDLevelSelectMenuBase __instance) {
-        currentLevelSelectMenu = __instance;
 
-        var scoreValueText = __instance.score[0];
-        
+    private static void CreateScoreSystemNameText(TMP_Text bastText) {
         if (scoreSystemNameText != null)
             GameObject.Destroy(scoreSystemNameText);
 
-        scoreSystemNameText = GameObject.Instantiate(scoreValueText.gameObject, scoreValueText.transform.parent, true).GetComponent<TMP_Text>();
+        scoreSystemNameText = GameObject.Instantiate(bastText.gameObject, bastText.transform.parent, true).GetComponent<TMP_Text>();
         scoreSystemNameText.gameObject.SetActive(true);
         scoreSystemNameText.transform.localPosition += new Vector3(-107f, 70f, 0f);
         scoreSystemNameText.horizontalAlignment = HorizontalAlignmentOptions.Left;
@@ -65,8 +60,15 @@ internal static class LevelSelectUI {
         scoreSystemNameText.overflowMode = TextOverflowModes.Overflow;
         scoreSystemNameText.rectTransform.anchorMax += 100f * Vector2.right;
         scoreSystemNameText.fontSize *= 0.7f;
-        scoreSystemNameText.outlineWidth = 0.15f;
         
+        scoreSystemNameText.SetText(ScoreMod.CurrentScoreSystemInternal.Name);
+    }
+        
+    [HarmonyPatch(typeof(XDLevelSelectMenuBase), nameof(XDLevelSelectMenuBase.OpenMenu)), HarmonyPostfix]
+    private static void XDLevelSelectMenuBase_OpenMenu_Postfix(XDLevelSelectMenuBase __instance) {
+        currentLevelSelectMenu = __instance;
+
+        var scoreValueText = __instance.score[0];
         var parent = scoreValueText.transform.parent;
 
         if (parent.localScale.x >= 0.95f) {
@@ -79,7 +81,19 @@ internal static class LevelSelectUI {
             }
         }
         
-        UpdateUI();
+        if (scoreSystemNameText == null)
+            return;
+        
+        GameObject.Destroy(scoreSystemNameText);
+        scoreSystemNameText = null;
+    }
+
+    [HarmonyPatch(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty"), HarmonyPostfix]
+    private static void XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty_Postfix(XDLevelSelectMenuBase __instance) {
+        if (__instance == null || __instance.score == null || __instance.score[0] == null || scoreSystemNameText != null)
+            return;
+        
+        CreateScoreSystemNameText(__instance.score[0]);
     }
 
     [HarmonyPatch(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty"), HarmonyTranspiler]

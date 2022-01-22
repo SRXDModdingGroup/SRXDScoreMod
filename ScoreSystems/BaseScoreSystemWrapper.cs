@@ -76,7 +76,7 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
         PieGraphValues = new PieGraphValue[7];
     }
 
-    public void Init(PlayState playState) {
+    public void Init(PlayState playState, int startIndex, int endIndex) {
         gameplayVariables = GameplayVariables.Instance;
         scoreState = playState.scoreState;
     }

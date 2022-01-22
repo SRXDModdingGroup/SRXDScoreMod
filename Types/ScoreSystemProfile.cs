@@ -1,4 +1,6 @@
-﻿namespace SRXDScoreMod; 
+﻿using SMU.Utilities;
+
+namespace SRXDScoreMod; 
 
 // Contains information about note point values, timing windows, and points per multiplier for each score container
 public class ScoreSystemProfile {

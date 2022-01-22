@@ -1,4 +1,6 @@
-﻿namespace SRXDScoreMod;
+﻿using SMU.Utilities;
+
+namespace SRXDScoreMod;
 
 internal readonly struct SavedHighScoreInfo {
     public int Score { get; }

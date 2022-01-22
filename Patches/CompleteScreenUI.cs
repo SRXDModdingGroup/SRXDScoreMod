@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using SMU.Extensions;
 using SMU.Utilities;
 using TMPro;
 using UnityEngine;

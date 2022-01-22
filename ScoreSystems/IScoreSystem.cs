@@ -22,7 +22,7 @@ internal interface IScoreSystem : IReadOnlyScoreSystem {
     
     public PieGraphValue[] PieGraphValues { get; }
     
-    public void Init(PlayState playState);
+    public void Init(PlayState playState, int startIndex, int endIndex);
 
     public void Complete(PlayState playState);
 

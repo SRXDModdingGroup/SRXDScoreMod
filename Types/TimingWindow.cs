@@ -1,4 +1,6 @@
-﻿namespace SRXDScoreMod; 
+﻿using SMU.Utilities;
+
+namespace SRXDScoreMod; 
 
 public class TimingWindow : IHashable {
     public CustomTimingAccuracy TimingAccuracy { get; }
