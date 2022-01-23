@@ -242,6 +242,9 @@ internal static class GameplayState {
 
     [HarmonyPatch(typeof(Track), nameof(Track.PlayTrack)), HarmonyPostfix]
     private static void Track_PlayTrack_Postfix(Track __instance) {
+        if (__instance.IsInEditMode)
+            return;
+        
         playing = true;
         tapTimingOffset = 0.001f * ScoreMod.TapTimingOffset.Value;
         beatTimingOffset = 0.001f * ScoreMod.BeatTimingOffset.Value;

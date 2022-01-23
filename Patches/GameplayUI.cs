@@ -215,7 +215,7 @@ internal class GameplayUI {
             
         bestPossibleText.gameObject.SetActive(true);
 
-        int bestPossible = scoreSystem.MaxPossibleScore + scoreSystem.Score - scoreSystem.MaxPossibleScoreSoFar;
+        int bestPossible = scoreSystem.Score + scoreSystem.MaxPossibleScore - scoreSystem.MaxPossibleScoreSoFar;
         int delta = bestPossible - scoreSystem.HighScore;
             
         if (delta >= 0)

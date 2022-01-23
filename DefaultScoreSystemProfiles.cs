@@ -49,7 +49,7 @@ internal static class DefaultScoreSystemProfiles {
     
     public static ScoreSystemProfile StandardPPM16 { get; } = new(
         name: "Standard",
-        fixedId: "fws16",
+        id: "fws16",
         tapTimingWindows: PRESS_TIMING_WINDOWS,
         beatTimingWindows: PRESS_TIMING_WINDOWS,
         liftoffTimingWindows: RELEASE_TIMING_WINDOWS,

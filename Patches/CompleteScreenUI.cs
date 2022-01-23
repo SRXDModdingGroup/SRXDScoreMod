@@ -110,6 +110,13 @@ internal static class CompleteScreenUI {
         UpdateUI(false);
     }
 
+    [HarmonyPatch(typeof(XDLevelCompleteMenu), "ProcessGeneralSongComplete"), HarmonyPrefix]
+    private static bool XDLevelCompleteMenu_ProcessGeneralSongComplete_Prefix() {
+        var modifierSet = ScoreMod.CurrentModifierSet;
+
+        return modifierSet == null || !modifierSet.GetAnyEnabled();
+    }
+
     [HarmonyPatch(typeof(RankAnimator), nameof(RankAnimator.Setup)), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> RankAnimator_Setup_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);

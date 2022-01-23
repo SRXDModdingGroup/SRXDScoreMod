@@ -10,18 +10,20 @@ internal class CustomScoreSystem : IScoreSystem {
     
     public string Id { get; }
     
-    public int Score { get; private set; }
-    
+    public string Key { get; }
+
+    public int Score => Mathf.CeilToInt(modifierMultiplier * score);
+
     public int SecondaryScore { get; private set; }
 
     public int HighScore { get; private set; }
 
     public int HighSecondaryScore { get; private set; }
-    
-    public int MaxPossibleScore { get; private set; }
 
-    public int MaxPossibleScoreSoFar { get; private set; }
-    
+    public int MaxPossibleScore => Mathf.CeilToInt(modifierMultiplier * maxPossibleScore);
+
+    public int MaxPossibleScoreSoFar => Mathf.CeilToInt(modifierMultiplier * maxPossibleScoreSoFar);
+
     public int Streak { get; private set; }
     
     public int MaxStreak { get; private set; }
@@ -94,18 +96,23 @@ internal class CustomScoreSystem : IScoreSystem {
 
     #endregion
     
+    private int score;
+    private int maxPossibleScore;
+    private int maxPossibleScoreSoFar;
     private int maxPossibleStreak;
     private int maxPossibleStreakSoFar;
     private int pointsToNextMultiplier;
     private int earlies;
     private int lates;
+    private float modifierMultiplier;
     private NoteScoreState[] scoreStates;
     private List<float> overbeatTimes;
     private PlayableTrackData trackData;
 
     internal CustomScoreSystem(ScoreSystemProfile profile) {
         Name = profile.Name;
-        Id = profile.SystemId;
+        Id = profile.Id;
+        Key = profile.Key;
         matchPointValue = profile.MatchPointValue;
         spinStartPointValue = profile.SpinStartPointValue;
         maxMultiplier = profile.MaxMultiplier;
@@ -139,10 +146,10 @@ internal class CustomScoreSystem : IScoreSystem {
     #region IScoreSystemFunctions
 
     public void Init(PlayState playState, int startIndex, int endIndex) {
-        Score = 0;
+        score = 0;
         SecondaryScore = 0;
-        MaxPossibleScore = 0;
-        MaxPossibleScoreSoFar = 0;
+        maxPossibleScore = 0;
+        maxPossibleScoreSoFar = 0;
         Streak = 0;
         MaxStreak = 0;
         Multiplier = maxMultiplier;
@@ -154,10 +161,11 @@ internal class CustomScoreSystem : IScoreSystem {
         pointsToNextMultiplier = GetPointsToNextMultiplier(maxMultiplier);
         overbeatTimes.Clear();
         trackData = playState.trackData;
+        modifierMultiplier = ScoreMod.CurrentModifierSet?.GetOverallMultiplier() ?? 1f;
         
         InitScoreStates(startIndex, endIndex);
         
-        var highScoreInfo = HighScoresContainer.GetHighScore(playState.TrackInfoRef, playState.trackData.Difficulty, Id, string.Empty);
+        var highScoreInfo = HighScoresContainer.GetHighScore(playState.TrackInfoRef, playState.trackData.Difficulty, Key, string.Empty);
 
         HighScore = highScoreInfo.Score;
         HighSecondaryScore = highScoreInfo.SecondaryScore;
@@ -165,18 +173,26 @@ internal class CustomScoreSystem : IScoreSystem {
     }
 
     public void Complete(PlayState playState) {
-        Rank = GetRank(Score, MaxPossibleScore);
+        Rank = GetRank(Score, maxPossibleScore);
         UpdateFullComboState();
 
-        IsHighScore = HighScoresContainer.TrySetHighScore(playState.TrackInfoRef, playState.CurrentDifficulty, Id, string.Empty, new SavedHighScoreInfo(
+        var modifierSet = ScoreMod.CurrentModifierSet;
+        string modifierSetKey;
+
+        if (modifierSet != null && modifierSet.GetAnyEnabled())
+            modifierSetKey = modifierSet.Key;
+        else
+            modifierSetKey = string.Empty;
+
+        IsHighScore = HighScoresContainer.TrySetHighScore(playState.TrackInfoRef, playState.CurrentDifficulty, Key, modifierSetKey, new SavedHighScoreInfo(
             string.Empty,
             Score,
             Streak,
-            MaxPossibleScore,
+            maxPossibleScore,
             maxPossibleStreak,
             SecondaryScore));
 
-        if (MaxPossibleScore <= 0)
+        if (maxPossibleScore <= 0)
             PostGameInfo1Value = "100%";
         else
             PostGameInfo1Value = ((float) Score / MaxPossibleScore).ToString("P");
@@ -284,7 +300,7 @@ internal class CustomScoreSystem : IScoreSystem {
             pointsToNextMultiplier -= acc;
         
         scoreAdded += Multiplier * acc;
-        Score += scoreAdded;
+        score += scoreAdded;
         SecondaryScore += secondaryAmount;
 
         var scoreState = scoreStates[noteIndex];
@@ -295,7 +311,7 @@ internal class CustomScoreSystem : IScoreSystem {
 
             int maxAmount = maxMultiplier * amount;
             
-            MaxPossibleScoreSoFar += maxAmount;
+            maxPossibleScoreSoFar += maxAmount;
             scoreState.RemainingTotalSustainPoints -= maxAmount;
         }
         else {
@@ -303,7 +319,7 @@ internal class CustomScoreSystem : IScoreSystem {
             scoreState.GainedTotalPoints = scoreAdded;
             scoreState.TimingAccuracy = timingAccuracy;
             
-            MaxPossibleScoreSoFar += scoreState.RemainingTotalPoints;
+            maxPossibleScoreSoFar += scoreState.RemainingTotalPoints;
             scoreState.RemainingTotalPoints = 0;
         }
 
@@ -374,7 +390,7 @@ internal class CustomScoreSystem : IScoreSystem {
     }
 
     private void UpdateFullComboState() {
-        if (Streak > maxPossibleStreakSoFar || Score > MaxPossibleScoreSoFar) {
+        if (Streak > maxPossibleStreakSoFar || score > maxPossibleScoreSoFar) {
             FullComboState = FullComboState.PerfectFullCombo;
             StarState = FullComboState.PerfectFullCombo;
             StarColor = Color.red;
@@ -389,7 +405,7 @@ internal class CustomScoreSystem : IScoreSystem {
             return;
         }
 
-        if (Score < MaxPossibleScoreSoFar - sPlusThreshold) {
+        if (score < maxPossibleScoreSoFar - sPlusThreshold) {
             FullComboState = FullComboState.FullCombo;
             StarState = FullComboState.FullCombo;
             StarColor = Color.green;
@@ -397,7 +413,7 @@ internal class CustomScoreSystem : IScoreSystem {
             return;
         }
         
-        if (Score < MaxPossibleScoreSoFar) {
+        if (score < maxPossibleScoreSoFar) {
             FullComboState = FullComboState.FullCombo;
             StarState = FullComboState.PerfectFullCombo;
             StarColor = Color.green;
@@ -507,7 +523,7 @@ internal class CustomScoreSystem : IScoreSystem {
             int availableTotalPoints = maxMultiplier * availableBasePoints;
             int availableTotalSustainPoints = maxMultiplier * availableBaseSustainPoints;
 
-            MaxPossibleScore += availableTotalPoints + availableTotalSustainPoints;
+            maxPossibleScore += availableTotalPoints + availableTotalSustainPoints;
             maxPossibleStreak += availableStreak;
             scoreStates[i] = new NoteScoreState(
                 availableBasePoints,
@@ -638,7 +654,7 @@ internal class CustomScoreSystem : IScoreSystem {
         if (scoreState.Completed)
             return false;
 
-        MaxPossibleScoreSoFar += scoreState.RemainingTotalPoints + scoreState.RemainingTotalSustainPoints;
+        maxPossibleScoreSoFar += scoreState.RemainingTotalPoints + scoreState.RemainingTotalSustainPoints;
         maxPossibleStreakSoFar += scoreState.RemainingStreak;
         scoreState.RemainingTotalPoints = 0;
         scoreState.RemainingTotalSustainPoints = 0;
@@ -714,7 +730,15 @@ internal class CustomScoreSystem : IScoreSystem {
     }
 
     private HighScoreInfo GetHighScoreInfoForTrack(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType) {
-        var savedInfo = HighScoresContainer.GetHighScore(trackInfoRef, difficultyType, Id, string.Empty);
+        var modifierSet = ScoreMod.CurrentModifierSet;
+        string modifierSetKey;
+
+        if (modifierSet != null && modifierSet.GetAnyEnabled())
+            modifierSetKey = modifierSet.Key;
+        else
+            modifierSetKey = string.Empty;
+        
+        var savedInfo = HighScoresContainer.GetHighScore(trackInfoRef, difficultyType, Key, modifierSetKey);
 
         return new HighScoreInfo(
             savedInfo.Score,

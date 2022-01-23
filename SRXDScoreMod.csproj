@@ -97,12 +97,16 @@
         <Compile Include="Types\ColoredGraphValue.cs" />
         <Compile Include="Types\CustomTimingAccuracy.cs" />
         <Compile Include="Types\HighScoreInfo.cs" />
+        <Compile Include="Types\Modifier.cs" />
+        <Compile Include="Types\ModifierSet.cs" />
         <Compile Include="Types\PieGraphValue.cs" />
         <Compile Include="Types\RankThreshold.cs" />
         <Compile Include="Types\SavedHighScoreInfo.cs" />
         <Compile Include="Types\ScoreSystemProfile.cs" />
         <Compile Include="Types\TimingWindow.cs" />
-        <Compile Include="Utility\StringTable.cs" />
+    </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Utility" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

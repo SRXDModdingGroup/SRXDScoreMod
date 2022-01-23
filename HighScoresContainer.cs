@@ -111,11 +111,11 @@ internal static class HighScoresContainer {
     }
 
     public static SavedHighScoreInfo GetHighScore(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType,
-        string scoreSystemId, string modifierSetId) {
-        string key = $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystemId}";
+        string scoreSystemKey, string modifierSetKey) {
+        string key = $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystemKey}";
 
-        if (!string.IsNullOrWhiteSpace(modifierSetId))
-            key = $"{key}_{modifierSetId}";
+        if (!string.IsNullOrWhiteSpace(modifierSetKey))
+            key = $"{key}_{modifierSetKey}";
 
         if (highScores.TryGetValue(key, out var item))
             return item;

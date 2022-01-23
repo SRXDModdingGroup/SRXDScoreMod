@@ -5,6 +5,8 @@ namespace SRXDScoreMod;
 
 internal interface IScoreSystem : IReadOnlyScoreSystem {
     public string Id { get; }
+    
+    public string Key { get; }
         
     int MaxPossibleScoreSoFar { get; }
 

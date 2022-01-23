@@ -11,7 +11,7 @@ public class ScoreSystemProfile {
     /// <summary>
     /// The unique identifier for the profile. This value should not be changed after the profile is first introduced
     /// </summary>
-    public string FixedId { get; }
+    public string Id { get; }
     /// <summary>
     /// The timing windows and corresponding point values and timing accuracies for taps
     /// </summary>
@@ -113,11 +113,11 @@ public class ScoreSystemProfile {
     /// </summary>
     public RankThreshold[] RankThresholds { get; }
     
-    internal string SystemId { get; }
+    internal string Key { get; }
 
     public ScoreSystemProfile(
         string name,
-        string fixedId,
+        string id,
         TimingWindow[] tapTimingWindows,
         TimingWindow[] beatTimingWindows,
         TimingWindow[] liftoffTimingWindows,
@@ -144,7 +144,7 @@ public class ScoreSystemProfile {
         int sPlusThreshold,
         RankThreshold[] rankThresholds) {
         Name = name;
-        FixedId = fixedId;
+        Id = id.Replace(' ', '_');
         TapTimingWindows = tapTimingWindows;
         BeatTimingWindows = beatTimingWindows;
         LiftoffTimingWindows = liftoffTimingWindows;
@@ -172,6 +172,7 @@ public class ScoreSystemProfile {
         RankThresholds = rankThresholds;
 
         int hash = HashUtility.Combine(
+            id,
             tapTimingWindows,
             beatTimingWindows,
             liftoffTimingWindows,
@@ -197,7 +198,7 @@ public class ScoreSystemProfile {
             multiplierChangeForBrokenScratch);
         
         unchecked {
-            SystemId = $"{fixedId.Replace(' ', '_')}_{(uint) hash:x8}";
+            Key = $"{Id}_{(uint) hash:x8}";
         }
     }
 }

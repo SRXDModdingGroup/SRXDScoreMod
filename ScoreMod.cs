@@ -23,6 +23,8 @@ public class ScoreMod : BaseUnityPlugin {
     public static event Action<IReadOnlyScoreSystem> OnScoreSystemChanged;
 
     public static IReadOnlyScoreSystem CurrentScoreSystem => CurrentScoreSystemInternal;
+    
+    public static ModifierSet CurrentModifierSet { get; private set; }
 
     internal static IScoreSystem CurrentScoreSystemInternal { get; private set; }
     
@@ -34,10 +36,31 @@ public class ScoreMod : BaseUnityPlugin {
     private static string fileDirectory;
     
     public static void AddCustomScoreSystem(ScoreSystemProfile profile) {
+        foreach (var system in ScoreSystems) {
+            if (profile.Id != system.Id)
+                continue;
+            
+            Logger.LogWarning($"WARNING: Score system with ID {profile.Id} already exists");
+                
+            return;
+        }
+        
         var scoreSystem = new CustomScoreSystem(profile);
         
         ScoreSystems.Add(scoreSystem);
         CustomScoreSystems.Add(scoreSystem);
+    }
+
+    public static void SetModifierSer(ModifierSet modifierSet) {
+        if (CurrentModifierSet != null) {
+            foreach (var pair in CurrentModifierSet.Modifiers)
+                pair.Value.EnabledInternal.Value = false;
+        }
+
+        CurrentModifierSet = modifierSet;
+        
+        if (CurrentModifierSet == null)
+            return;
     }
 
     private void Awake() {
