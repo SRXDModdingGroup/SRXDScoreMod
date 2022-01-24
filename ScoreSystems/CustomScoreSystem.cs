@@ -165,7 +165,7 @@ internal class CustomScoreSystem : IScoreSystem {
         
         InitScoreStates(startIndex, endIndex);
         
-        var highScoreInfo = HighScoresContainer.GetHighScore(playState.TrackInfoRef, playState.trackData.Difficulty, Key, string.Empty);
+        var highScoreInfo = HighScoresContainer.GetHighScore(playState.TrackInfoRef, playState.trackData.Difficulty, this, ScoreMod.CurrentModifierSet);
 
         HighScore = highScoreInfo.Score;
         HighSecondaryScore = highScoreInfo.SecondaryScore;
@@ -177,20 +177,15 @@ internal class CustomScoreSystem : IScoreSystem {
         UpdateFullComboState();
 
         var modifierSet = ScoreMod.CurrentModifierSet;
-        string modifierSetKey;
-
-        if (modifierSet != null && modifierSet.GetAnyEnabled())
-            modifierSetKey = modifierSet.Key;
-        else
-            modifierSetKey = string.Empty;
-
-        IsHighScore = HighScoresContainer.TrySetHighScore(playState.TrackInfoRef, playState.CurrentDifficulty, Key, modifierSetKey, new SavedHighScoreInfo(
+        
+        IsHighScore = HighScoresContainer.TrySetHighScore(playState.TrackInfoRef, playState.CurrentDifficulty, this, modifierSet, new SavedHighScoreInfo(
             string.Empty,
             Score,
             Streak,
             maxPossibleScore,
             maxPossibleStreak,
-            SecondaryScore));
+            SecondaryScore,
+            modifierSet));
 
         if (maxPossibleScore <= 0)
             PostGameInfo1Value = "100%";
@@ -730,15 +725,7 @@ internal class CustomScoreSystem : IScoreSystem {
     }
 
     private HighScoreInfo GetHighScoreInfoForTrack(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType) {
-        var modifierSet = ScoreMod.CurrentModifierSet;
-        string modifierSetKey;
-
-        if (modifierSet != null && modifierSet.GetAnyEnabled())
-            modifierSetKey = modifierSet.Key;
-        else
-            modifierSetKey = string.Empty;
-        
-        var savedInfo = HighScoresContainer.GetHighScore(trackInfoRef, difficultyType, Key, modifierSetKey);
+        var savedInfo = HighScoresContainer.GetHighScore(trackInfoRef, difficultyType, this, ScoreMod.CurrentModifierSet);
 
         return new HighScoreInfo(
             savedInfo.Score,

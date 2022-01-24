@@ -2,15 +2,15 @@
 
 namespace SRXDScoreMod; 
 
-public class Modifier : IHashable {
+public class Modifier {
     /// <summary>
     /// The name of the modifier
     /// </summary>
     public string Name { get; }
     /// <summary>
-    /// The unique identifier for the modifier. This value should not be changed after the modifier is first introduced
+    /// The unique index for the modifier. This value should be between 0 and 31, should not be used by another modifier in the same set, and should not be changed after the modifier is first introduced
     /// </summary>
-    public string Id { get; }
+    public int Index { get; }
     /// <summary>
     /// The fraction of the total score to be added if this modifier is enabled
     /// </summary>
@@ -22,12 +22,10 @@ public class Modifier : IHashable {
     
     internal Bindable<bool> EnabledInternal { get; }
 
-    public Modifier(string name, string id, float value) {
+    public Modifier(string name, int index, float value) {
         Name = name;
-        Id = id;
+        Index = index;
         Value = value;
-        EnabledInternal = new Bindable<bool>();
+        EnabledInternal = new Bindable<bool>(false);
     }
-
-    public int GetStableHash() => HashUtility.Combine(Id, Value);
 }

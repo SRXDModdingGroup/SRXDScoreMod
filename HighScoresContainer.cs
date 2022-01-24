@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using SMU.Utilities;
 
 namespace SRXDScoreMod; 
 
@@ -27,19 +29,24 @@ internal static class HighScoresContainer {
                     
             string[] split = line.Split(' ');
                     
-            if (split.Length < 7
+            if (split.Length < 9
                 || !int.TryParse(split[1], out int score)
                 || !int.TryParse(split[2], out int streak)
                 || !int.TryParse(split[3], out int maxScore)
                 || !int.TryParse(split[4], out int maxStreak)
-                || !int.TryParse(split[5], out int secondaryScore))
+                || !int.TryParse(split[5], out int secondaryScore)
+                || !uint.TryParse(split[6], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint modifierFlags)
+                || !uint.TryParse(split[7], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint modifierMultiplierHash))
                 continue;
 
             string key = split[0];
-            var newInfo = new SavedHighScoreInfo(key, score, streak, maxScore, maxStreak, secondaryScore);
-                    
-            if (newInfo.Hash == split[6])
-                highScores.Add(key, newInfo);
+
+            unchecked {
+                var newInfo = new SavedHighScoreInfo(key, score, streak, maxScore, maxStreak, secondaryScore, modifierFlags, (int) modifierMultiplierHash);
+                
+                if (newInfo.Hash == split[8])
+                    highScores.Add(key, newInfo);
+            }
         }
     }
 
@@ -51,20 +58,32 @@ internal static class HighScoresContainer {
         
         foreach (var pair in highScores) {
             var item = pair.Value;
-                    
-            writer.WriteLine($"{pair.Key} {item.Score} {item.Streak} {item.MaxScore} {item.MaxStreak} {item.SecondaryScore} {item.Hash}");
+            
+            unchecked {
+                writer.WriteLine($"{pair.Key} {item.Score} {item.Streak} {item.MaxScore} {item.MaxStreak} {item.SecondaryScore} {item.ModifierFlags:x8} {(uint) item.ModifierMultiplierHash:x8} {item.Hash}");
+            }
+        }
+    }
+
+    public static void RemoveInvalidHighScoresForModifierSet(ModifierSet modifierSet) {
+        string[] keys = new string[highScores.Count];
+        
+        highScores.Keys.CopyTo(keys, 0);
+
+        foreach (string key in keys) {
+            var info = highScores[key];
+            
+            if (info.ModifierMultiplierHash != HashUtility.GetStableHash(modifierSet.GetMultiplierGivenActiveFlags(info.ModifierFlags)))
+                highScores.Remove(key);
         }
     }
 
     public static bool TrySetHighScore(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType,
-        string scoreSystemId, string modifierSetId, SavedHighScoreInfo info) {
-        string key = $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystemId}";
-
-        if (!string.IsNullOrWhiteSpace(modifierSetId))
-            key = $"{key}_{modifierSetId}";
+        IScoreSystem scoreSystem, ModifierSet modifierSet, SavedHighScoreInfo info) {
+        string key = GetKey(trackInfoRef, difficultyType, scoreSystem, modifierSet);
 
         if (!highScores.TryGetValue(key, out var oldInfo)) {
-            highScores[key] = new SavedHighScoreInfo(key, info.Score, info.Streak, info.MaxScore, info.MaxStreak, info.SecondaryScore);
+            highScores.Add(key, new SavedHighScoreInfo(key, info.Score, info.Streak, info.MaxScore, info.MaxStreak, info.SecondaryScore, modifierSet));
             anyUnsaved = true;
 
             return true;
@@ -78,13 +97,6 @@ internal static class HighScoresContainer {
             
         int score = oldInfo.Score;
         int streak = oldInfo.Streak;
-                
-        if (score > oldInfo.MaxScore || streak > oldInfo.MaxStreak) {
-            ScoreMod.Logger.LogWarning($"WARNING: Score for for \"{key}\" is greater than saved Max Score. Score will not be saved");
-
-            return false;
-        }
-            
         int secondaryScore = oldInfo.SecondaryScore;
         bool isNewBest = false;
         bool anyChanged = false;
@@ -104,23 +116,20 @@ internal static class HighScoresContainer {
         if (!anyChanged)
             return false;
         
-        highScores[key] = new SavedHighScoreInfo(key, score, streak, info.MaxScore, info.MaxStreak, secondaryScore);
+        highScores[key] = new SavedHighScoreInfo(key, score, streak, info.MaxScore, info.MaxStreak, secondaryScore, modifierSet);
         anyUnsaved = true;
 
         return isNewBest;
     }
 
     public static SavedHighScoreInfo GetHighScore(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType,
-        string scoreSystemKey, string modifierSetKey) {
-        string key = $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystemKey}";
+        IScoreSystem scoreSystem, ModifierSet modifierSet) {
+        string key = GetKey(trackInfoRef, difficultyType, scoreSystem, modifierSet);
 
-        if (!string.IsNullOrWhiteSpace(modifierSetKey))
-            key = $"{key}_{modifierSetKey}";
+        if (highScores.TryGetValue(key, out var info))
+            return info;
 
-        if (highScores.TryGetValue(key, out var item))
-            return item;
-
-        return new SavedHighScoreInfo(string.Empty, 0, 0, 0, 0, 0);
+        return new SavedHighScoreInfo(string.Empty, 0, 0, 0, 0, 0, modifierSet);
     }
 
     private static bool TryGetFilePath() {
@@ -144,5 +153,12 @@ internal static class HighScoresContainer {
         unchecked {
             return $"CUSTOM_{customFile.FileNameNoExtension.Replace(' ', '_')}_{(uint) customFile.FileHash:x8}_{difficultyType}";
         }
+    }
+
+    private static string GetKey(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType, IScoreSystem scoreSystem, ModifierSet modifierSet) {
+        if (modifierSet != null && modifierSet.GetAnyEnabled())
+            return $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystem.Key}_{modifierSet.Id}";
+        
+        return $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystem.Key}";
     }
 }

@@ -108,13 +108,14 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
             IsHighScore = Score > highScore;
         }
         else {
-            IsHighScore = HighScoresContainer.TrySetHighScore(playState.TrackInfoRef, playState.CurrentDifficulty, Key, modifierSet.Key, new SavedHighScoreInfo(
+            IsHighScore = HighScoresContainer.TrySetHighScore(playState.TrackInfoRef, playState.CurrentDifficulty, this, modifierSet, new SavedHighScoreInfo(
                 string.Empty,
                 Score,
                 Streak,
                 metadata?.MaxNoteScore ?? 0,
                 metadata?.MaxCombo ?? 0,
-                SecondaryScore));
+                SecondaryScore,
+                modifierSet));
         }
 
         Rank = playState.trackData.GetRankCalculatedFromScore(Score);
@@ -191,7 +192,7 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
         if (modifierSet == null || !modifierSet.GetAnyEnabled())
             score = stats.GetBestScoreForDifficulty(metadata).GetValue();
         else
-            score = HighScoresContainer.GetHighScore(trackInfoRef, metadata.DifficultyType, Key, modifierSet.Key).Score;
+            score = HighScoresContainer.GetHighScore(trackInfoRef, metadata.DifficultyType, this, modifierSet).Score;
 
         int streak = stats.GetBestStreakForDifficulty(metadata).GetValue();
 

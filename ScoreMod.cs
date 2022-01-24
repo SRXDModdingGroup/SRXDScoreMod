@@ -51,16 +51,18 @@ public class ScoreMod : BaseUnityPlugin {
         CustomScoreSystems.Add(scoreSystem);
     }
 
-    public static void SetModifierSer(ModifierSet modifierSet) {
+    public static void SetModifierSet(ModifierSet modifierSet) {
+        if (modifierSet == CurrentModifierSet)
+            return;
+        
         if (CurrentModifierSet != null) {
             foreach (var pair in CurrentModifierSet.Modifiers)
                 pair.Value.EnabledInternal.Value = false;
         }
 
         CurrentModifierSet = modifierSet;
-        
-        if (CurrentModifierSet == null)
-            return;
+        HighScoresContainer.RemoveInvalidHighScoresForModifierSet(modifierSet);
+        LevelSelectUI.UpdateUI();
     }
 
     private void Awake() {

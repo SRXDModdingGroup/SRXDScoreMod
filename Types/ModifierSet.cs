@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using SMU.Utilities;
 
 namespace SRXDScoreMod; 
 
@@ -17,8 +16,8 @@ public class ModifierSet {
     /// The set of available modifiers
     /// </summary>
     public ReadOnlyDictionary<string, Modifier> Modifiers { get; }
-    
-    internal string Key { get; }
+
+    private Modifier[] modifiersByIndex;
 
     public ModifierSet(string name, string id, params Modifier[] modifiers) {
         Name = name;
@@ -26,16 +25,14 @@ public class ModifierSet {
 
         var modifiersDict = new Dictionary<string, Modifier>();
 
-        foreach (var modifier in modifiers)
+        modifiersByIndex = new Modifier[32];
+
+        foreach (var modifier in modifiers) {
             modifiersDict.Add(modifier.Name, modifier);
+            modifiersByIndex[modifier.Index] = modifier;
+        }
 
         Modifiers = new ReadOnlyDictionary<string, Modifier>(modifiersDict);
-
-        int hash = HashUtility.Combine(Id, modifiersDict.Values);
-        
-        unchecked {
-            Key = $"{Id}_{(uint) hash:x8}";
-        }
     }
 
     internal bool GetAnyEnabled() {
@@ -49,13 +46,40 @@ public class ModifierSet {
         return false;
     }
 
+    internal uint GetActiveModifierFlags() {
+        uint bits = 0u;
+
+        for (int i = 0; i < 31; i++) {
+            var modifier = modifiersByIndex[i];
+
+            if (modifier != null && modifier.Enabled.Value)
+                bits |= 1u << i;
+        }
+
+        return bits;
+    }
+
     internal float GetOverallMultiplier() {
         float multiplier = 1f;
 
-        foreach (var pair in Modifiers) {
-            var modifier = pair.Value;
+        foreach (var modifier in modifiersByIndex) {
+            if (modifier != null && modifier.Enabled.Value)
+                multiplier += modifier.Value;
+        }
 
-            if (modifier.Enabled.Value)
+        return multiplier;
+    }
+
+    internal float GetMultiplierGivenActiveFlags(uint flags) {
+        float multiplier = 1f;
+        
+        for (int i = 0, j = 1; i < 31; i++, j <<= 1) {
+            if ((flags & j) == 0u)
+                continue;
+            
+            var modifier = modifiersByIndex[i];
+
+            if (modifier != null)
                 multiplier += modifier.Value;
         }
 
