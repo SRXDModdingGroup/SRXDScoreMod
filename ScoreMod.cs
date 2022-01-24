@@ -128,6 +128,29 @@ public class ScoreMod : BaseUnityPlugin {
             else if (Input.GetKeyDown(KeyCode.Alpha0))
                 PickScoreSystem(9);
         }
+        
+        if (!GameplayState.Playing && Input.GetKey(KeyCode.O)) {
+            if (Input.GetKeyDown(KeyCode.Alpha1))
+                ToggleModifier(0);
+            else if (Input.GetKeyDown(KeyCode.Alpha2))
+                ToggleModifier(1);
+            else if (Input.GetKeyDown(KeyCode.Alpha3))
+                ToggleModifier(2);
+            else if (Input.GetKeyDown(KeyCode.Alpha4))
+                ToggleModifier(3);
+            else if (Input.GetKeyDown(KeyCode.Alpha5))
+                ToggleModifier(4);
+            else if (Input.GetKeyDown(KeyCode.Alpha6))
+                ToggleModifier(5);
+            else if (Input.GetKeyDown(KeyCode.Alpha7))
+                ToggleModifier(6);
+            else if (Input.GetKeyDown(KeyCode.Alpha8))
+                ToggleModifier(7);
+            else if (Input.GetKeyDown(KeyCode.Alpha9))
+                ToggleModifier(8);
+            else if (Input.GetKeyDown(KeyCode.Alpha0))
+                ToggleModifier(9);
+        }
     }
 
     internal static bool TryGetFileDirectory(out string directory) {
@@ -166,5 +189,15 @@ public class ScoreMod : BaseUnityPlugin {
         CompleteScreenUI.UpdateUI(true);
         LevelSelectUI.UpdateUI();
         OnScoreSystemChanged?.Invoke(CurrentScoreSystem);
+    }
+
+    private static void ToggleModifier(int index) {
+        if (!CurrentModifierSet.ToggleModifier(index))
+            return;
+
+        var modifier = CurrentModifierSet.ModifiersArray[index];
+        
+        NotificationSystemGUI.AddMessage($"{(modifier.EnabledInternal.Value ? "Enabled" : "Disabled")} modifier {CurrentModifierSet.Name}.{modifier.Name}");
+        LevelSelectUI.UpdateUI();
     }
 }

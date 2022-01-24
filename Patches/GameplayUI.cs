@@ -33,6 +33,9 @@ internal class GameplayUI {
     }
 
     internal static void PlayCustomTimingFeedback(PlayState playState, CustomTimingAccuracy timingAccuracy) {
+        if (!GameplayState.Playing)
+            return;
+        
         var baseAccuracy = timingAccuracy.BaseAccuracy;
             
         TrackGameplayFeedbackObjects.PlayTimingFeedback(playState, baseAccuracy);

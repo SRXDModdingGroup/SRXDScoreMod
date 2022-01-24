@@ -17,22 +17,36 @@ public class ModifierSet {
     /// </summary>
     public ReadOnlyDictionary<string, Modifier> Modifiers { get; }
 
+    internal Modifier[] ModifiersArray { get; }
+    
     private Modifier[] modifiersByIndex;
 
-    public ModifierSet(string name, string id, params Modifier[] modifiers) {
+    public ModifierSet(string name, string id, params Modifier[] modifiersArray) {
         Name = name;
         Id = id;
+        this.ModifiersArray = modifiersArray;
 
         var modifiersDict = new Dictionary<string, Modifier>();
 
         modifiersByIndex = new Modifier[32];
 
-        foreach (var modifier in modifiers) {
+        foreach (var modifier in modifiersArray) {
             modifiersDict.Add(modifier.Name, modifier);
             modifiersByIndex[modifier.Index] = modifier;
         }
 
         Modifiers = new ReadOnlyDictionary<string, Modifier>(modifiersDict);
+    }
+
+    internal bool ToggleModifier(int index) {
+        if (index >= ModifiersArray.Length)
+            return false;
+
+        var enabled = ModifiersArray[index].EnabledInternal;
+
+        enabled.Value = !enabled.Value;
+
+        return true;
     }
 
     internal bool GetAnyEnabled() {
