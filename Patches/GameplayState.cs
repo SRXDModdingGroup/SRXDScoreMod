@@ -15,6 +15,18 @@ internal static class GameplayState {
     private static float tapTimingOffset;
     private static float beatTimingOffset;
 
+    private static void Complete(PlayState playState) {
+        playing = false;
+        
+        if (playState.isInPracticeMode || playState.SetupParameters.editMode)
+            return;
+        
+        foreach (var scoreSystem in ScoreMod.ScoreSystems)
+            scoreSystem.Complete(playState);
+        
+        HighScoresContainer.SaveHighScores();
+    }
+
     #region NoteEvents
 
     private static void NormalNoteHit(PlayState playState, int noteIndex, Note note, float timeOffset) {
@@ -260,18 +272,11 @@ internal static class GameplayState {
             scoreSystem.Init(playState, 0, endIndex);
     }
 
-    [HarmonyPatch(typeof(PlayState), nameof(PlayState.Complete)), HarmonyPostfix]
-    private static void PlayState_Complete_Postfix(PlayState __instance) {
-        playing = false;
-        
-        if (__instance.isInPracticeMode || __instance.SetupParameters.editMode)
-            return;
-        
-        foreach (var scoreSystem in ScoreMod.ScoreSystems)
-            scoreSystem.Complete(__instance);
-        
-        HighScoresContainer.SaveHighScores();
-    }
+    [HarmonyPatch(typeof(Track), nameof(Track.CompleteSong)), HarmonyPostfix]
+    private static void Track_CompleteSong_Postfix(Track __instance) => Complete(__instance.playStateFirst);
+
+    [HarmonyPatch(typeof(Track), nameof(Track.FailSong)), HarmonyPostfix]
+    private static void Track_FailSong_Postfix(Track __instance) => Complete(__instance.playStateFirst);
 
     [HarmonyPatch(typeof(TrackEditorGUI), nameof(TrackEditorGUI.SetTimeToCuePoint)), HarmonyPostfix]
     private static void TrackEditorGUI_SetTimeToCuePoint_Postfix() {
