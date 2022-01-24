@@ -197,7 +197,8 @@ public class ScoreMod : BaseUnityPlugin {
 
         var modifier = CurrentModifierSet.ModifiersArray[index];
         
-        NotificationSystemGUI.AddMessage($"{(modifier.EnabledInternal.Value ? "Enabled" : "Disabled")} modifier {CurrentModifierSet.Name}.{modifier.Name}");
+        NotificationSystemGUI.AddMessage($"{(modifier.EnabledInternal.Value ? "Enabled" : "Disabled")} modifier {CurrentModifierSet.Name}.{modifier.Name}",
+            forceExtraMessageIfDuplicate: true);
         LevelSelectUI.UpdateUI();
     }
 }

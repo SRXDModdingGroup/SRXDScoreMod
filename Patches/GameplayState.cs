@@ -12,21 +12,10 @@ namespace SRXDScoreMod;
 // Contains patch functions for receiving data from gameplay
 internal static class GameplayState {
     internal static bool Playing { get; private set;  }
-    
+
+    private static bool trackCompleted;
     private static float tapTimingOffset;
     private static float beatTimingOffset;
-
-    private static void Complete(PlayState playState) {
-        Playing = false;
-        
-        if (playState.isInPracticeMode || playState.SetupParameters.editMode)
-            return;
-        
-        foreach (var scoreSystem in ScoreMod.ScoreSystems)
-            scoreSystem.Complete(playState);
-        
-        HighScoresContainer.SaveHighScores();
-    }
 
     #region NoteEvents
 
@@ -256,6 +245,19 @@ internal static class GameplayState {
     [HarmonyPatch(typeof(PlayState), nameof(PlayState.Complete)), HarmonyPostfix]
     private static void PlayState_Complete_Postfix(PlayState __instance) {
         Playing = false;
+        
+        if (!trackCompleted)
+            return;
+
+        trackCompleted = false;
+        
+        if (__instance.isInPracticeMode || __instance.SetupParameters.editMode)
+            return;
+        
+        foreach (var scoreSystem in ScoreMod.ScoreSystems)
+            scoreSystem.Complete(__instance);
+        
+        HighScoresContainer.SaveHighScores();
     }
 
     [HarmonyPatch(typeof(Track), nameof(Track.PlayTrack)), HarmonyPostfix]
@@ -278,11 +280,11 @@ internal static class GameplayState {
             scoreSystem.Init(playState, 0, endIndex);
     }
 
-    [HarmonyPatch(typeof(Track), nameof(Track.CompleteSong)), HarmonyPostfix]
-    private static void Track_CompleteSong_Postfix(Track __instance) => Complete(__instance.playStateFirst);
+    [HarmonyPatch(typeof(Track), nameof(Track.CompleteSong)), HarmonyPrefix]
+    private static void Track_CompleteSong_Prefix(Track __instance) => trackCompleted = true;
 
-    [HarmonyPatch(typeof(Track), nameof(Track.FailSong)), HarmonyPostfix]
-    private static void Track_FailSong_Postfix(Track __instance) => Complete(__instance.playStateFirst);
+    [HarmonyPatch(typeof(Track), nameof(Track.FailSong)), HarmonyPrefix]
+    private static void Track_FailSong_Prefix(Track __instance) => trackCompleted = true;
 
     [HarmonyPatch(typeof(TrackEditorGUI), nameof(TrackEditorGUI.SetTimeToCuePoint)), HarmonyPostfix]
     private static void TrackEditorGUI_SetTimeToCuePoint_Postfix() {
