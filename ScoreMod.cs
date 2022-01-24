@@ -192,7 +192,7 @@ public class ScoreMod : BaseUnityPlugin {
     }
 
     private static void ToggleModifier(int index) {
-        if (!CurrentModifierSet.ToggleModifier(index))
+        if (CurrentModifierSet == null || !CurrentModifierSet.ToggleModifier(index))
             return;
 
         var modifier = CurrentModifierSet.ModifiersArray[index];
