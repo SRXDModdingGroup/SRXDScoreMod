@@ -346,7 +346,12 @@ internal class CustomScoreSystem : IScoreSystem {
     }
     
     private void MissPairedNote(int noteIndex, int endNoteIndex, int multiplierChange) {
-        if (!AddRemainingValueToMaxScoreSoFar(noteIndex) && !AddRemainingValueToMaxScoreSoFar(endNoteIndex))
+        bool anyRemaining = AddRemainingValueToMaxScoreSoFar(noteIndex);
+
+        if (AddRemainingValueToMaxScoreSoFar(endNoteIndex))
+            anyRemaining = true;
+        
+        if (!anyRemaining)
             return;
         
         ChangeMultiplier(noteIndex, multiplierChange);
