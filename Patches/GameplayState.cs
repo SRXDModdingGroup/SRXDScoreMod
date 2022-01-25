@@ -231,7 +231,12 @@ internal static class GameplayState {
             scoreSystem.UpdateScratch(noteIndex, heldTime);
     }
 
-    private static int GetPointValueForSustain(int baseValue, int noteIndex) => ScoreMod.CurrentScoreSystemInternal.GetPointValueForSustain(baseValue, noteIndex);
+    private static int GetPointValueForSustain(int baseValue, int noteIndex) {
+        if (!Playing)
+            return baseValue;
+        
+        return ScoreMod.CurrentScoreSystemInternal.GetPointValueForSustain(baseValue, noteIndex);
+    }
 
     #endregion
 

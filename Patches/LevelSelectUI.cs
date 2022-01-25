@@ -13,6 +13,8 @@ namespace SRXDScoreMod;
 
 // Contains patch functions to make the level select menu show modded scores
 internal static class LevelSelectUI {
+    internal static bool MenuOpen => currentLevelSelectMenu != null && currentLevelSelectMenu.isActiveAndEnabled;
+    
     private static XDLevelSelectMenuBase currentLevelSelectMenu;
     private static TMP_Text scoreSystemNameText;
     
@@ -45,7 +47,7 @@ internal static class LevelSelectUI {
             text.text = streak;
         
         if (scoreSystemNameText != null)
-            scoreSystemNameText.SetText(scoreSystem.Name);
+            scoreSystemNameText.SetText(ScoreMod.ScoreSystemAndMultiplierLabel);
     }
 
     private static void CreateScoreSystemNameText(TMP_Text bastText) {
@@ -61,7 +63,7 @@ internal static class LevelSelectUI {
         scoreSystemNameText.rectTransform.anchorMax += 100f * Vector2.right;
         scoreSystemNameText.fontSize *= 0.7f;
         
-        scoreSystemNameText.SetText(ScoreMod.CurrentScoreSystemInternal.Name);
+        scoreSystemNameText.SetText(ScoreMod.ScoreSystemAndMultiplierLabel);
     }
         
     [HarmonyPatch(typeof(XDLevelSelectMenuBase), nameof(XDLevelSelectMenuBase.OpenMenu)), HarmonyPostfix]

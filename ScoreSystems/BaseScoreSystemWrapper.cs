@@ -14,7 +14,7 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
 
     public string Key => "base_0.15";
 
-    public int Score => Mathf.CeilToInt(modifierMultiplier * (scoreState.FinalisedScore > 0 ? scoreState.FinalisedScore : scoreState.totalNoteScore));
+    public int Score => ScoreMod.GetModifiedScore(scoreState.FinalisedScore > 0 ? scoreState.FinalisedScore : scoreState.totalNoteScore);
 
     public int HighSecondaryScore => 0;
         
@@ -72,7 +72,6 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
 
     private GameplayVariables gameplayVariables;
     private PlayState.ScoreState scoreState = new();
-    private float modifierMultiplier;
 
     public BaseScoreSystemWrapper() {
         PerformanceGraphValues = new List<ColoredGraphValue>();
@@ -82,7 +81,6 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
     public void Init(PlayState playState, int startIndex, int endIndex) {
         gameplayVariables = GameplayVariables.Instance;
         scoreState = playState.scoreState;
-        modifierMultiplier = ScoreMod.CurrentModifierSet?.GetOverallMultiplier() ?? 1f;
     }
 
     public void Complete(PlayState playState) {
@@ -92,10 +90,20 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
         
         if (playState.TrackDataSetup.IsSetupForSingleTrackSegment)
             metadata = playState.TrackDataSetup.TrackDataSegmentForSingleTrackDataSetup.GetTrackDataMetadata();
-
-        var modifierSet = ScoreMod.CurrentModifierSet;
-
-        if (modifierSet == null || !modifierSet.GetAnyEnabled()) {
+        
+        if (ScoreMod.AnyModifiersEnabled) {
+            var modifierSet = ScoreMod.CurrentModifierSet;
+            
+            IsHighScore = HighScoresContainer.TrySetHighScore(playState.TrackInfoRef, playState.CurrentDifficulty, this, modifierSet, new SavedHighScoreInfo(
+                string.Empty,
+                Score,
+                MaxStreak,
+                metadata?.MaxNoteScore ?? 0,
+                metadata?.MaxCombo ?? 0,
+                SecondaryScore,
+                modifierSet));
+        }
+        else {
             int highScore = 0;
 
             if (metadata != null && trackInfoRef?.Stats != null) {
@@ -106,16 +114,6 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
             }
 
             IsHighScore = Score > highScore;
-        }
-        else {
-            IsHighScore = HighScoresContainer.TrySetHighScore(playState.TrackInfoRef, playState.CurrentDifficulty, this, modifierSet, new SavedHighScoreInfo(
-                string.Empty,
-                Score,
-                Streak,
-                metadata?.MaxNoteScore ?? 0,
-                metadata?.MaxCombo ?? 0,
-                SecondaryScore,
-                modifierSet));
         }
 
         Rank = playState.trackData.GetRankCalculatedFromScore(Score);
@@ -185,18 +183,16 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
     public HighScoreInfo GetHighScoreInfoForTrack(TrackInfoAssetReference trackInfoRef, TrackDataMetadata metadata) {
         var stats = trackInfoRef.Stats;
         var fullComboState = FullComboState.None;
-        var modifierSet = ScoreMod.CurrentModifierSet;
-        
         int score;
-        
-        if (modifierSet == null || !modifierSet.GetAnyEnabled())
-            score = stats.GetBestScoreForDifficulty(metadata).GetValue();
+
+        if (ScoreMod.AnyModifiersEnabled)
+            score = HighScoresContainer.GetHighScore(trackInfoRef, metadata.DifficultyType, this, ScoreMod.CurrentModifierSet).Score;
         else
-            score = HighScoresContainer.GetHighScore(trackInfoRef, metadata.DifficultyType, this, modifierSet).Score;
+            score = stats.GetBestScoreForDifficulty(metadata).GetValue();
 
         int streak = stats.GetBestStreakForDifficulty(metadata).GetValue();
 
-        if (score > metadata.PfcScoreThreshold && score > 0)
+        if (score >= ScoreMod.GetModifiedScore(metadata.PfcScoreThreshold) && score > 0)
             fullComboState = FullComboState.PerfectFullCombo;
         else if (streak >= metadata.MaxCombo && streak > 0)
             fullComboState = FullComboState.FullCombo;

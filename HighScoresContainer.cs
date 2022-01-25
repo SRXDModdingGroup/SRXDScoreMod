@@ -36,17 +36,16 @@ internal static class HighScoresContainer {
                 || !int.TryParse(split[4], out int maxStreak)
                 || !int.TryParse(split[5], out int secondaryScore)
                 || !uint.TryParse(split[6], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint modifierFlags)
-                || !uint.TryParse(split[7], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint modifierMultiplierHash))
+                || !int.TryParse(split[7], out int modifierMultiplier))
                 continue;
 
             string key = split[0];
+            var newInfo = new SavedHighScoreInfo(key, score, streak, maxScore, maxStreak, secondaryScore, modifierFlags, modifierMultiplier);
 
-            unchecked {
-                var newInfo = new SavedHighScoreInfo(key, score, streak, maxScore, maxStreak, secondaryScore, modifierFlags, (int) modifierMultiplierHash);
-                
-                if (newInfo.Hash == split[8])
-                    highScores.Add(key, newInfo);
-            }
+            if (newInfo.Hash == split[8])
+                highScores.Add(key, newInfo);
+            else
+                ScoreMod.Logger.LogWarning($"WARNING: Did not load score {key}");
         }
     }
 
@@ -58,23 +57,27 @@ internal static class HighScoresContainer {
         
         foreach (var pair in highScores) {
             var item = pair.Value;
-            
-            unchecked {
-                writer.WriteLine($"{pair.Key} {item.Score} {item.Streak} {item.MaxScore} {item.MaxStreak} {item.SecondaryScore} {item.ModifierFlags:x8} {(uint) item.ModifierMultiplierHash:x8} {item.Hash}");
-            }
+
+            writer.WriteLine($"{pair.Key} {item.Score} {item.Streak} {item.MaxScore} {item.MaxStreak} {item.SecondaryScore} {item.ModifierFlags:x8} {item.ModifierMultiplier} {item.Hash}");
         }
     }
 
     public static void RemoveInvalidHighScoresForModifierSet(ModifierSet modifierSet) {
+        if (highScores.Count == 0)
+            return;
+        
         string[] keys = new string[highScores.Count];
         
         highScores.Keys.CopyTo(keys, 0);
 
         foreach (string key in keys) {
             var info = highScores[key];
+
+            if (info.ModifierMultiplier == modifierSet.GetMultiplierGivenActiveFlags(info.ModifierFlags))
+                continue;
             
-            if (info.ModifierMultiplierHash != HashUtility.GetStableHash(modifierSet.GetMultiplierGivenActiveFlags(info.ModifierFlags)))
-                highScores.Remove(key);
+            highScores.Remove(key);
+            ScoreMod.Logger.LogWarning($"WARNING: Removed score {key}");
         }
     }
 

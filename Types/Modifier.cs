@@ -12,9 +12,9 @@ public class Modifier {
     /// </summary>
     public int Index { get; }
     /// <summary>
-    /// The fraction of the total score to be added if this modifier is enabled
+    /// The percent score bonus to be added if this modifier is enabled
     /// </summary>
-    public float Value { get; }
+    public int Value { get; }
     /// <summary>
     /// Set to true when the modifier is enabled, and false when it is disabled
     /// </summary>
@@ -22,7 +22,7 @@ public class Modifier {
     
     internal Bindable<bool> EnabledInternal { get; }
 
-    public Modifier(string name, int index, float value) {
+    public Modifier(string name, int index, int value) {
         Name = name;
         Index = index;
         Value = value;

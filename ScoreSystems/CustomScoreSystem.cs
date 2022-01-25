@@ -12,7 +12,7 @@ internal class CustomScoreSystem : IScoreSystem {
     
     public string Key { get; }
 
-    public int Score => Mathf.CeilToInt(modifierMultiplier * score);
+    public int Score => ScoreMod.GetModifiedScore(score);
 
     public int SecondaryScore { get; private set; }
 
@@ -20,9 +20,9 @@ internal class CustomScoreSystem : IScoreSystem {
 
     public int HighSecondaryScore { get; private set; }
 
-    public int MaxPossibleScore => Mathf.CeilToInt(modifierMultiplier * maxPossibleScore);
+    public int MaxPossibleScore => ScoreMod.GetModifiedScore(maxPossibleScore);
 
-    public int MaxPossibleScoreSoFar => Mathf.CeilToInt(modifierMultiplier * maxPossibleScoreSoFar);
+    public int MaxPossibleScoreSoFar => ScoreMod.GetModifiedScore(maxPossibleScoreSoFar);
 
     public int Streak { get; private set; }
     
@@ -104,7 +104,6 @@ internal class CustomScoreSystem : IScoreSystem {
     private int pointsToNextMultiplier;
     private int earlies;
     private int lates;
-    private float modifierMultiplier;
     private NoteScoreState[] scoreStates;
     private List<float> overbeatTimes;
     private PlayableTrackData trackData;
@@ -161,7 +160,6 @@ internal class CustomScoreSystem : IScoreSystem {
         pointsToNextMultiplier = GetPointsToNextMultiplier(maxMultiplier);
         overbeatTimes.Clear();
         trackData = playState.trackData;
-        modifierMultiplier = ScoreMod.CurrentModifierSet?.GetOverallMultiplier() ?? 1f;
         
         InitScoreStates(startIndex, endIndex);
         
@@ -181,7 +179,7 @@ internal class CustomScoreSystem : IScoreSystem {
         IsHighScore = HighScoresContainer.TrySetHighScore(playState.TrackInfoRef, playState.CurrentDifficulty, this, modifierSet, new SavedHighScoreInfo(
             string.Empty,
             Score,
-            Streak,
+            MaxStreak,
             maxPossibleScore,
             maxPossibleStreak,
             SecondaryScore,

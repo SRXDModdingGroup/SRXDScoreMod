@@ -25,6 +25,10 @@ public class ScoreMod : BaseUnityPlugin {
     public static IReadOnlyScoreSystem CurrentScoreSystem => CurrentScoreSystemInternal;
     
     public static ModifierSet CurrentModifierSet { get; private set; }
+    
+    internal static bool AnyModifiersEnabled { get; private set; }
+    
+    internal static string ScoreSystemAndMultiplierLabel { get; private set; }
 
     internal static IScoreSystem CurrentScoreSystemInternal { get; private set; }
     
@@ -33,6 +37,7 @@ public class ScoreMod : BaseUnityPlugin {
     internal static List<CustomScoreSystem> CustomScoreSystems { get; private set; }
 
     private static int scoreSystemIndex;
+    private static float modifierMultiplier;
     private static string fileDirectory;
     
     public static void AddCustomScoreSystem(ScoreSystemProfile profile) {
@@ -54,14 +59,24 @@ public class ScoreMod : BaseUnityPlugin {
     public static void SetModifierSet(ModifierSet modifierSet) {
         if (modifierSet == CurrentModifierSet)
             return;
-        
+
         if (CurrentModifierSet != null) {
             foreach (var pair in CurrentModifierSet.Modifiers)
                 pair.Value.EnabledInternal.Value = false;
         }
 
         CurrentModifierSet = modifierSet;
-        HighScoresContainer.RemoveInvalidHighScoresForModifierSet(modifierSet);
+        AnyModifiersEnabled = false;
+        modifierMultiplier = 1f;
+
+        if (modifierSet != null) {
+            foreach (var pair in modifierSet.Modifiers)
+                pair.Value.EnabledInternal.Value = false;
+        
+            HighScoresContainer.RemoveInvalidHighScoresForModifierSet(modifierSet);
+        }
+        
+        UpdateLabelString();
         LevelSelectUI.UpdateUI();
     }
 
@@ -79,6 +94,7 @@ public class ScoreMod : BaseUnityPlugin {
         harmony.PatchAll(typeof(GameplayUI));
         harmony.PatchAll(typeof(CompleteScreenUI));
         harmony.PatchAll(typeof(LevelSelectUI));
+        HighScoresContainer.LoadHighScores();
         ScoreSystems = new List<IScoreSystem>();
         ScoreSystems.Add(new BaseScoreSystemWrapper());
         CustomScoreSystems = new List<CustomScoreSystem>();
@@ -102,7 +118,12 @@ public class ScoreMod : BaseUnityPlugin {
             scoreSystemIndex = ScoreSystems.Count - 1;
         
         CurrentScoreSystemInternal = ScoreSystems[scoreSystemIndex];
-        HighScoresContainer.LoadHighScores();
+        modifierMultiplier = 1f;
+        UpdateLabelString();
+        // SetModifierSet(new ModifierSet("Test", "test",
+        //     new Modifier("Mod0", 0, 10),
+        //     new Modifier("Mod1", 1, 25),
+        //     new Modifier("Mod2", 2, -50)));
     }
 
     internal static void GameUpdate() {
@@ -129,7 +150,7 @@ public class ScoreMod : BaseUnityPlugin {
                 PickScoreSystem(9);
         }
         
-        if (!GameplayState.Playing && Input.GetKey(KeyCode.O)) {
+        if (Input.GetKey(KeyCode.O)) {
             if (Input.GetKeyDown(KeyCode.Alpha1))
                 ToggleModifier(0);
             else if (Input.GetKeyDown(KeyCode.Alpha2))
@@ -179,12 +200,20 @@ public class ScoreMod : BaseUnityPlugin {
         return true;
     }
 
+    internal static int GetModifiedScore(int score) {
+        if (AnyModifiersEnabled)
+            return Mathf.CeilToInt(modifierMultiplier * score);
+
+        return score;
+    }
+
     private static void PickScoreSystem(int index) {
         if (index >= ScoreSystems.Count || index == scoreSystemIndex)
             return;
 
         scoreSystemIndex = index;
         CurrentScoreSystemInternal = ScoreSystems[index];
+        UpdateLabelString();
         GameplayUI.UpdateUI();
         CompleteScreenUI.UpdateUI(true);
         LevelSelectUI.UpdateUI();
@@ -192,13 +221,26 @@ public class ScoreMod : BaseUnityPlugin {
     }
 
     private static void ToggleModifier(int index) {
-        if (CurrentModifierSet == null || !CurrentModifierSet.ToggleModifier(index))
+        if (GameplayState.Playing || !LevelSelectUI.MenuOpen || CurrentModifierSet == null || !CurrentModifierSet.ToggleModifier(index))
             return;
 
         var modifier = CurrentModifierSet.ModifiersArray[index];
         
-        NotificationSystemGUI.AddMessage($"{(modifier.EnabledInternal.Value ? "Enabled" : "Disabled")} modifier {CurrentModifierSet.Name}.{modifier.Name}",
+        NotificationSystemGUI.AddMessage($"{(modifier.EnabledInternal.Value ? "Enabled" : "Disabled")} modifier {modifier.Name}",
             forceExtraMessageIfDuplicate: true);
+        AnyModifiersEnabled = CurrentModifierSet.GetAnyEnabled();
+        modifierMultiplier = 0.01f * CurrentModifierSet.GetOverallMultiplier();
+        UpdateLabelString();
         LevelSelectUI.UpdateUI();
+    }
+
+    private static void UpdateLabelString() {
+        if (AnyModifiersEnabled) {
+            int multiplier = CurrentModifierSet.GetOverallMultiplier();
+            
+            ScoreSystemAndMultiplierLabel = $"{CurrentScoreSystem.Name} ({multiplier / 100}.{(multiplier % 100).ToString().TrimEnd('0')}x)";
+        }
+        else
+            ScoreSystemAndMultiplierLabel = CurrentScoreSystem.Name;
     }
 }

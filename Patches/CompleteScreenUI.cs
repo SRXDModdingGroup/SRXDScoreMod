@@ -45,7 +45,7 @@ internal static class CompleteScreenUI {
         else
             scoreSystemNameText.transform.localPosition = nameTextPosition;
         
-        scoreSystemNameText.SetText(scoreSystem.Name);
+        scoreSystemNameText.SetText(ScoreMod.ScoreSystemAndMultiplierLabel);
         scoreValueText.verticalAlignment = VerticalAlignmentOptions.Middle;
             
         if (scoreSystem.SecondaryScore == 0)
@@ -111,11 +111,7 @@ internal static class CompleteScreenUI {
     }
 
     [HarmonyPatch(typeof(XDLevelCompleteMenu), "ProcessGeneralSongComplete"), HarmonyPrefix]
-    private static bool XDLevelCompleteMenu_ProcessGeneralSongComplete_Prefix() {
-        var modifierSet = ScoreMod.CurrentModifierSet;
-
-        return modifierSet == null || !modifierSet.GetAnyEnabled();
-    }
+    private static bool XDLevelCompleteMenu_ProcessGeneralSongComplete_Prefix() => !ScoreMod.AnyModifiersEnabled;
 
     [HarmonyPatch(typeof(RankAnimator), nameof(RankAnimator.Setup)), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> RankAnimator_Setup_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {

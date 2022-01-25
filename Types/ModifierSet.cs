@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using UnityEngine;
 
 namespace SRXDScoreMod; 
 
@@ -60,6 +61,55 @@ public class ModifierSet {
         return false;
     }
 
+    internal int GetOverallMultiplier() {
+        int multiplier = 100;
+        int negativeOnly = 100;
+
+        foreach (var modifier in modifiersByIndex) {
+            if (modifier == null || !modifier.Enabled.Value)
+                continue;
+
+            int value = modifier.Value;
+            
+            multiplier += value;
+
+            if (value < 0)
+                negativeOnly += value;
+        }
+
+        if (negativeOnly < 100)
+            return Mathf.Max(0, negativeOnly);
+
+        return multiplier;
+    }
+
+    internal int GetMultiplierGivenActiveFlags(uint flags) {
+        int multiplier = 100;
+        int negativeOnly = 100;
+        
+        for (int i = 0, j = 1; i < 31; i++, j <<= 1) {
+            if ((flags & j) == 0u)
+                continue;
+            
+            var modifier = modifiersByIndex[i];
+
+            if (modifier == null)
+                continue;
+
+            int value = modifier.Value;
+            
+            multiplier += value;
+            
+            if (value < 0)
+                negativeOnly += value;
+        }
+        
+        if (negativeOnly < 100)
+            return Mathf.Max(0, negativeOnly);
+
+        return multiplier;
+    }
+    
     internal uint GetActiveModifierFlags() {
         uint bits = 0u;
 
@@ -71,32 +121,5 @@ public class ModifierSet {
         }
 
         return bits;
-    }
-
-    internal float GetOverallMultiplier() {
-        float multiplier = 1f;
-
-        foreach (var modifier in modifiersByIndex) {
-            if (modifier != null && modifier.Enabled.Value)
-                multiplier += modifier.Value;
-        }
-
-        return multiplier;
-    }
-
-    internal float GetMultiplierGivenActiveFlags(uint flags) {
-        float multiplier = 1f;
-        
-        for (int i = 0, j = 1; i < 31; i++, j <<= 1) {
-            if ((flags & j) == 0u)
-                continue;
-            
-            var modifier = modifiersByIndex[i];
-
-            if (modifier != null)
-                multiplier += modifier.Value;
-        }
-
-        return multiplier;
     }
 }

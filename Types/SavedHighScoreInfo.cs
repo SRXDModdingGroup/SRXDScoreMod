@@ -9,16 +9,16 @@ internal class SavedHighScoreInfo {
     public int MaxStreak { get; }
     public int SecondaryScore { get; }
     public uint ModifierFlags { get; }
-    public int ModifierMultiplierHash { get; }
+    public int ModifierMultiplier { get; }
     public string Hash { get; }
             
-    public SavedHighScoreInfo(string key, int score, int streak, int maxScore, int maxStreak, int secondaryScore, uint modifierFlags, int modifierMultiplierHash)
+    public SavedHighScoreInfo(string key, int score, int streak, int maxScore, int maxStreak, int secondaryScore, uint modifierFlags, int modifierMultiplier)
         : this(score, streak, maxScore, maxStreak, secondaryScore) {
         ModifierFlags = modifierFlags;
-        ModifierMultiplierHash = modifierMultiplierHash;
+        ModifierMultiplier = modifierMultiplier;
 
         unchecked {
-            Hash = ((uint) HashUtility.Combine(key, score, streak, maxScore, maxStreak, secondaryScore, (int) modifierFlags, modifierMultiplierHash)).ToString("x8");
+            Hash = ((uint) HashUtility.Combine(key, score, streak, maxScore, maxStreak, secondaryScore, (int) modifierFlags, modifierMultiplier)).ToString("x8");
         }
     }
 
@@ -26,15 +26,15 @@ internal class SavedHighScoreInfo {
         : this(score, streak, maxScore, maxStreak, secondaryScore) {
         if (modifierSet == null) {
             ModifierFlags = 0u;
-            ModifierMultiplierHash = HashUtility.GetStableHash(1f);
+            ModifierMultiplier = 100;
         }
         else {
             ModifierFlags = modifierSet.GetActiveModifierFlags();
-            ModifierMultiplierHash = HashUtility.GetStableHash(modifierSet.GetOverallMultiplier());
+            ModifierMultiplier = modifierSet.GetOverallMultiplier();
         }
         
         unchecked {
-            Hash = ((uint) HashUtility.Combine(key, score, streak, maxScore, maxStreak, secondaryScore, (int) ModifierFlags, ModifierMultiplierHash)).ToString("x8");
+            Hash = ((uint) HashUtility.Combine(key, score, streak, maxScore, maxStreak, secondaryScore, (int) ModifierFlags, ModifierMultiplier)).ToString("x8");
         }
     }
 
