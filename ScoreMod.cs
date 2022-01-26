@@ -12,7 +12,7 @@ namespace SRXDScoreMod;
 
 // Contains code to initialize the mod
 [BepInDependency("com.pink.spinrhythm.moddingutils", "1.0.2")]
-[BepInPlugin("SRXD.ScoreMod", "ScoreMod", "1.2.0.6")]
+[BepInPlugin("SRXD.ScoreMod", "ScoreMod", "1.2.0.7")]
 public class ScoreMod : BaseUnityPlugin {
     internal new static ManualLogSource Logger { get; private set; }
     internal static ConfigEntry<string> DefaultSystem { get; private set; }
