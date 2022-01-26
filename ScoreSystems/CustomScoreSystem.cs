@@ -82,6 +82,7 @@ internal class CustomScoreSystem : IScoreSystem {
     private int multiplierChangeForBrokenBeatHold;
     private int multiplierChangeForBrokenSpin;
     private int multiplierChangeForBrokenScratch;
+    private int greatSectionThreshold;
     private int sPlusThreshold;
     private float holdTickRate;
     private float beatHoldTickRate;
@@ -126,6 +127,7 @@ internal class CustomScoreSystem : IScoreSystem {
         multiplierChangeForBrokenBeatHold = profile.MultiplierChangeForBrokenBeatHold;
         multiplierChangeForBrokenSpin = profile.MultiplierChangeForBrokenSpin;
         multiplierChangeForBrokenScratch = profile.MultiplierChangeForBrokenScratch;
+        greatSectionThreshold = profile.GreatSectionThreshold;
         sPlusThreshold = profile.SPlusThreshold;
         holdTickRate = profile.HoldTickRate;
         beatHoldTickRate = profile.BeatHoldTickRate;
@@ -403,7 +405,7 @@ internal class CustomScoreSystem : IScoreSystem {
             return;
         }
 
-        if (score < maxPossibleScoreSoFar - sPlusThreshold) {
+        if (score <= maxPossibleScoreSoFar - sPlusThreshold) {
             FullComboState = FullComboState.FullCombo;
             StarState = FullComboState.FullCombo;
             StarColor = Color.green;
@@ -636,6 +638,8 @@ internal class CustomScoreSystem : IScoreSystem {
                 color = Color.red;
             else if (totalValueForSection == maxValueForSection)
                 color = Color.cyan;
+            else if (totalValueForSection > maxValueForSection - greatSectionThreshold)
+                color = Color.green;
             else
                 color = Color.yellow;
                 

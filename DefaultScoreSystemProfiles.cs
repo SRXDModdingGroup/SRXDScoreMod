@@ -73,6 +73,7 @@ internal static class DefaultScoreSystemProfiles {
         multiplierChangeForBrokenBeatHold: 0,
         multiplierChangeForBrokenSpin: 0,
         multiplierChangeForBrokenScratch: -3,
+        greatSectionThreshold: 32,
         sPlusThreshold: 96,
         rankThresholds: RANK_THRESHOLDS);
     

@@ -109,6 +109,10 @@ public class ScoreSystemProfile {
     /// </summary>
     public int SPlusThreshold { get; }
     /// <summary>
+    /// The point threshold for a Great (green) section
+    /// </summary>
+    public int GreatSectionThreshold { get; }
+    /// <summary>
     /// The score percentage thresholds for each rank
     /// </summary>
     public RankThreshold[] RankThresholds { get; }
@@ -141,6 +145,7 @@ public class ScoreSystemProfile {
         int multiplierChangeForBrokenBeatHold,
         int multiplierChangeForBrokenSpin,
         int multiplierChangeForBrokenScratch,
+        int greatSectionThreshold,
         int sPlusThreshold,
         RankThreshold[] rankThresholds) {
         Name = name;
@@ -168,6 +173,7 @@ public class ScoreSystemProfile {
         MultiplierChangeForBrokenBeatHold = multiplierChangeForBrokenBeatHold;
         MultiplierChangeForBrokenSpin = multiplierChangeForBrokenSpin;
         MultiplierChangeForBrokenScratch = multiplierChangeForBrokenScratch;
+        GreatSectionThreshold = greatSectionThreshold;
         SPlusThreshold = sPlusThreshold;
         RankThresholds = rankThresholds;
 
