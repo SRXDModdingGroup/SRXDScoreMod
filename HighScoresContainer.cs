@@ -72,8 +72,10 @@ internal static class HighScoresContainer {
 
         foreach (string key in keys) {
             var info = highScores[key];
+            uint flags = info.ModifierFlags;
 
-            if (info.ModifierMultiplier == modifierSet.GetMultiplierGivenActiveFlags(info.ModifierFlags))
+            if (info.ModifierMultiplier == modifierSet.GetMultiplierGivenActiveFlags(flags)
+                && !modifierSet.GetBlocksSubmissionGivenActiveFlags(flags))
                 continue;
             
             highScores.Remove(key);
@@ -83,6 +85,9 @@ internal static class HighScoresContainer {
 
     public static bool TrySetHighScore(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType,
         IScoreSystem scoreSystem, ModifierSet modifierSet, SavedHighScoreInfo info) {
+        if (modifierSet != null && modifierSet.GetAnyBlocksSubmission())
+            return false;
+        
         string key = GetKey(trackInfoRef, difficultyType, scoreSystem, modifierSet);
 
         if (!highScores.TryGetValue(key, out var oldInfo)) {

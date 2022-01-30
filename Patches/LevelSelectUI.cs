@@ -128,7 +128,8 @@ internal static class LevelSelectUI {
         });
 
         var match1 = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
-            instr => instr.LoadsLocalAtIndex(29) // stats
+            instr => instr.LoadsLocalAtIndex(29), // stats
+            instr => instr.Branches(out _)
         }).Then(new Func<CodeInstruction, bool>[] {
             instr => instr.StoresLocalAtIndex(14) // score
         }).Then(new Func<CodeInstruction, bool>[] {

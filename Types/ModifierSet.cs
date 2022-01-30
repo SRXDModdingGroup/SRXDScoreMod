@@ -61,6 +61,31 @@ public class ModifierSet {
         return false;
     }
 
+    internal bool GetAnyBlocksSubmission() {
+        foreach (var pair in Modifiers) {
+            var modifier = pair.Value;
+
+            if (modifier.BlocksSubmission)
+                return true;
+        }
+
+        return false;
+    }
+
+    internal bool GetBlocksSubmissionGivenActiveFlags(uint flags) {
+        for (int i = 0, j = 1; i < 31; i++, j <<= 1) {
+            if ((flags & j) == 0u)
+                continue;
+            
+            var modifier = modifiersByIndex[i];
+
+            if (modifier != null && modifier.BlocksSubmission)
+                return true;
+        }
+
+        return false;
+    }
+
     internal int GetOverallMultiplier() {
         int multiplier = 100;
         int negativeOnly = 100;

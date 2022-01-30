@@ -16,16 +16,21 @@ public class Modifier {
     /// </summary>
     public int Value { get; }
     /// <summary>
+    /// True if the modifier should block score submission when enabled
+    /// </summary>
+    public bool BlocksSubmission { get; }
+    /// <summary>
     /// Set to true when the modifier is enabled, and false when it is disabled
     /// </summary>
     public IReadOnlyBindable<bool> Enabled => EnabledInternal;
     
     internal Bindable<bool> EnabledInternal { get; }
 
-    public Modifier(string name, int index, int value) {
+    public Modifier(string name, int index, int value, bool blocksSubmission) {
         Name = name;
         Index = index;
         Value = value;
+        BlocksSubmission = blocksSubmission;
         EnabledInternal = new Bindable<bool>(false);
     }
 }
