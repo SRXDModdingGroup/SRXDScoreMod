@@ -47,6 +47,9 @@
         <Reference Include="BepInEx, Version=5.4.17.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\BepInEx.dll</HintPath>
         </Reference>
+        <Reference Include="SpinCore, Version=0.0.1.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>Libs\SpinCore.dll</HintPath>
+        </Reference>
         <Reference Include="SpinModdingUtilities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>Libs\SpinModdingUtilities.dll</HintPath>
         </Reference>

@@ -1,26 +1,32 @@
-﻿using BepInEx;
-using BepInEx.Configuration;
+﻿using System.Linq;
+using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
+using SMU.Utilities;
+using SpinCore;
+using SpinCore.UI;
+using UnityEngine;
 
 namespace SRXDScoreMod; 
 
 [BepInDependency("com.pink.spinrhythm.moddingutils", "1.0.2")]
-[BepInPlugin("SRXD.ScoreMod", "ScoreMod", "1.2.0.8")]
-internal class Plugin : BaseUnityPlugin {
+[BepInDependency("com.pink.spinrhythm.spincore")]
+[BepInPlugin("SRXD.ScoreMod", "ScoreMod", "1.2.0.9")]
+internal class Plugin : SpinPlugin {
     public new static ManualLogSource Logger { get; private set; }
-    public static ConfigEntry<string> DefaultSystem { get; private set; }
-    public static ConfigEntry<string> PaceType { get; private set; }
-    public static ConfigEntry<float> TapTimingOffset { get; private set; }
-    public static ConfigEntry<float> BeatTimingOffset { get; private set; }
+    public static Bindable<int> CurrentSystem { get; private set; }
+    public static Bindable<GameplayUI.PaceType> PaceType { get; private set; }
+    public static Bindable<float> TapTimingOffset { get; private set; }
+    public static Bindable<float> BeatTimingOffset { get; private set; }
     
-    private void Awake() {
+    protected override void Awake() {
+        base.Awake();
         Logger = base.Logger;
-        
-        DefaultSystem = Config.Bind("Settings", "DefaultSystem", "0", "The name or index of the default scoring system");
-        PaceType = Config.Bind("Settings", "PaceType", "Both", new ConfigDescription("Whether to show the max possible score, its delta relative to PB, both, or hide the Pace display", new AcceptableValueList<string>("Delta", "Score", "Both", "Hide")));
-        TapTimingOffset = Config.Bind("Settings", "TapTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for taps and liftoffs");
-        BeatTimingOffset = Config.Bind("Settings", "BeatTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for beats and hard beat releases");
+
+        CurrentSystem = AddBindableConfig("CurrentSystem", 0);
+        PaceType = AddBindableConfig("PaceType", GameplayUI.PaceType.Both);
+        TapTimingOffset = AddBindableConfig("TapTimingOffset", 0f);
+        BeatTimingOffset = AddBindableConfig("BeatTimingOffset", 0f);
 
         var harmony = new Harmony("ScoreMod");
             
@@ -31,4 +37,18 @@ internal class Plugin : BaseUnityPlugin {
         HighScoresContainer.LoadHighScores();
         ScoreMod.Init();
     }
+
+    protected override void CreateMenus() {
+        var root = CreateOptionsTab("ScoreMod").UIRoot;
+
+        if (CurrentSystem.Value >= ScoreMod.ScoreSystems.Count)
+            CurrentSystem.Value = 0;
+        
+        SpinUI.CreateDropdown("Current Score System", root, ScoreMod.ScoreSystems.Select(scoreSystem => scoreSystem.Name).ToArray()).Bind(CurrentSystem);
+        SpinUI.CreateDropdown<GameplayUI.PaceType>("Pace Type", root).Bind(PaceType);
+        SpinUI.CreateSlider("Tap Timing Offset", root, -100f, 100f, wholeNumbers: true, valueDisplay: value => $"{Mathf.RoundToInt(value)}ms").Bind(TapTimingOffset);
+        SpinUI.CreateSlider("Beat Timing Offset", root, -100f, 100f, wholeNumbers: true, valueDisplay: value => $"{Mathf.RoundToInt(value)}ms").Bind(BeatTimingOffset);
+    }
+
+    protected override void LateInit() => ScoreMod.LateInit();
 }

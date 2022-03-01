@@ -14,7 +14,8 @@ namespace SRXDScoreMod;
 
 // Contains patch functions to show modded scores and pace prediction on the in-game HUD
 internal class GameplayUI {
-    private enum PaceType {
+    public enum PaceType {
+        Hide,
         Score,
         Delta,
         Both
@@ -82,7 +83,8 @@ internal class GameplayUI {
 
     [HarmonyPatch(typeof(XDHudCanvases), nameof(XDHudCanvases.Start)), HarmonyPostfix]
     private static void XDHudCanvases_Start_Postfix(XDHudCanvases __instance) {
-        showPace = Plugin.PaceType.Value != "Hide";
+        paceType = Plugin.PaceType.Value;
+        showPace = paceType != PaceType.Hide;
         
         if (systemNameText != null)
             Object.Destroy(systemNameText);
@@ -98,22 +100,6 @@ internal class GameplayUI {
         systemNameText = GenerateText(baseText, new Vector3(235f, 102f, 0f), 4f, Color.white);
         bestPossibleText = GenerateText(baseText, new Vector3(235f, 67f, 0f), 8f, Color.cyan);
         bestPossibleText.gameObject.SetActive(ScoreMod.CurrentScoreSystemInternal.ImplementsScorePrediction);
-
-        switch (Plugin.PaceType.Value) {
-            case "Score":
-                paceType = PaceType.Score;
-
-                break;
-            case "Delta":
-                paceType = PaceType.Delta;
-
-                break;
-            case "Both":
-                paceType = PaceType.Both;
-
-                break;
-        }
-        
         UpdateUI();
     }
 
@@ -199,7 +185,7 @@ internal class GameplayUI {
 
     [HarmonyPatch(typeof(Track), nameof(Track.UpdateUI)), HarmonyPostfix]
     private static void Track_UpdateUI_Postfix(Track __instance) {
-        if (bestPossibleText == null)
+        if (!showPace)
             return;
 
         var playState = __instance.playStateFirst;

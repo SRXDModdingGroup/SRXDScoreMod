@@ -107,8 +107,8 @@ internal static class LevelSelectUI {
         var scoreString = generator.DeclareLocal(typeof(string));
         var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);
         var IScoreSystemInternal_GetHighScoreInfoForTrack = typeof(IScoreSystemInternal).GetMethod(nameof(IScoreSystemInternal.GetHighScoreInfoForTrack), new [] { typeof(TrackInfoAssetReference), typeof(TrackDataMetadata) });
-        var HighScoreInfo_GetScoreString = typeof(HighScoreInfo).GetMethod(nameof(HighScoreInfo.GetScoreString));
-        var HighScoreInfo_GetStreakString = typeof(HighScoreInfo).GetMethod(nameof(HighScoreInfo.GetStreakString));
+        var HighScoreInfo_GetScoreString = typeof(HighScoreInfo).GetMethod(nameof(HighScoreInfo.GetScoreString), BindingFlags.NonPublic | BindingFlags.Instance);
+        var HighScoreInfo_GetStreakString = typeof(HighScoreInfo).GetMethod(nameof(HighScoreInfo.GetStreakString), BindingFlags.NonPublic | BindingFlags.Instance);
         var HighScoreInfo_get_Rank = typeof(HighScoreInfo).GetProperty(nameof(HighScoreInfo.Rank)).GetGetMethod();
         var MetadataHandle_get_TrackInfoRef = typeof(MetadataHandle).GetProperty(nameof(MetadataHandle.TrackInfoRef)).GetGetMethod();
         

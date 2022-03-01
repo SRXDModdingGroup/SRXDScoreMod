@@ -8,7 +8,6 @@ namespace SRXDScoreMod;
 /// Enables the introduction of custom score systems and score modifiers
 /// </summary>
 public static class ScoreMod {
-
     /// <summary>
     /// Invoke when the current score system is changed
     /// </summary>
@@ -29,7 +28,7 @@ public static class ScoreMod {
     internal static IScoreSystemInternal CurrentScoreSystemInternal { get; private set; }
     internal static List<IScoreSystemInternal> ScoreSystems { get; } = new();
     internal static List<CustomScoreSystem> CustomScoreSystems { get; } = new();
-    
+
     private static int scoreSystemIndex;
     private static float modifierMultiplier = 1f;
 
@@ -81,72 +80,17 @@ public static class ScoreMod {
         ScoreSystems.Add(new BaseScoreSystemWrapper());
         AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM16);
         // AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM32);
-
-        string defaultSystem = Plugin.DefaultSystem.Value;
-
-        if (!int.TryParse(defaultSystem, out scoreSystemIndex)) {
-            scoreSystemIndex = 0;
-            
-            for (int i = 0; i < ScoreSystems.Count; i++) {
-                if (ScoreSystems[i].Name != defaultSystem)
-                    continue;
-
-                scoreSystemIndex = i;
-
-                break;
-            }
-        }
-
-        if (scoreSystemIndex >= ScoreSystems.Count)
-            scoreSystemIndex = ScoreSystems.Count - 1;
-
-        CurrentScoreSystemInternal = ScoreSystems[scoreSystemIndex];
+        CurrentScoreSystemInternal = ScoreSystems[0];
         UpdateLabelString();
     }
-    
-    internal static void GameUpdate() {
-        if (Input.GetKey(KeyCode.P)) {
-            if (Input.GetKeyDown(KeyCode.Alpha1))
-                PickScoreSystem(0);
-            else if (Input.GetKeyDown(KeyCode.Alpha2))
-                PickScoreSystem(1);
-            else if (Input.GetKeyDown(KeyCode.Alpha3))
-                PickScoreSystem(2);
-            else if (Input.GetKeyDown(KeyCode.Alpha4))
-                PickScoreSystem(3);
-            else if (Input.GetKeyDown(KeyCode.Alpha5))
-                PickScoreSystem(4);
-            else if (Input.GetKeyDown(KeyCode.Alpha6))
-                PickScoreSystem(5);
-            else if (Input.GetKeyDown(KeyCode.Alpha7))
-                PickScoreSystem(6);
-            else if (Input.GetKeyDown(KeyCode.Alpha8))
-                PickScoreSystem(7);
-            else if (Input.GetKeyDown(KeyCode.Alpha9))
-                PickScoreSystem(8);
-            else if (Input.GetKeyDown(KeyCode.Alpha0))
-                PickScoreSystem(9);
-        }
-    }
+
+    internal static void LateInit() => Plugin.CurrentSystem.BindAndInvoke(OnCurrentSystemChanged);
 
     internal static int GetModifiedScore(int score) {
         if (AnyModifiersEnabled)
             return Mathf.CeilToInt(modifierMultiplier * score);
 
         return score;
-    }
-
-    private static void PickScoreSystem(int index) {
-        if (index >= ScoreSystems.Count || index == scoreSystemIndex)
-            return;
-
-        scoreSystemIndex = index;
-        CurrentScoreSystemInternal = ScoreSystems[index];
-        UpdateLabelString();
-        GameplayUI.UpdateUI();
-        CompleteScreenUI.UpdateUI(true);
-        LevelSelectUI.UpdateUI();
-        OnScoreSystemChanged?.Invoke(CurrentScoreSystem);
     }
 
     private static void UpdateLabelString() {
@@ -157,6 +101,19 @@ public static class ScoreMod {
         }
         else
             ScoreSystemAndMultiplierLabel = CurrentScoreSystem.Name;
+    }
+
+    private static void OnCurrentSystemChanged(int value) {
+        if (value == scoreSystemIndex)
+            return;
+
+        scoreSystemIndex = value;
+        CurrentScoreSystemInternal = ScoreSystems[value];
+        UpdateLabelString();
+        GameplayUI.UpdateUI();
+        CompleteScreenUI.UpdateUI(true);
+        LevelSelectUI.UpdateUI();
+        OnScoreSystemChanged?.Invoke(CurrentScoreSystem);
     }
 
     private static void OnModifierChanged() {

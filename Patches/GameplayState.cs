@@ -242,11 +242,6 @@ internal static class GameplayState {
 
     #region Patches
 
-    [HarmonyPatch(typeof(Game), nameof(Game.Update)), HarmonyPostfix]
-    private static void Game_Update_Postfix() {
-        ScoreMod.GameUpdate();
-    }
-    
     [HarmonyPatch(typeof(PlayState), nameof(PlayState.Complete)), HarmonyPostfix]
     private static void PlayState_Complete_Postfix(PlayState __instance) {
         Playing = false;
