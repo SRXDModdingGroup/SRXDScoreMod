@@ -13,6 +13,7 @@ public class ModifierSet {
 
     internal event Action ModifierChanged;
 
+    private bool invokeModifierChanged = true;
     private Modifier[] modifiers;
     private Modifier[] modifiersByIndex;
 
@@ -26,14 +27,22 @@ public class ModifierSet {
         this.modifiers = modifiers;
         modifiersByIndex = new Modifier[MAX_MODIFIERS];
 
-        foreach (var modifier in modifiers)
+        foreach (var modifier in modifiers) {
+            modifier.EnabledInternal.Bind(_ => {
+                if (invokeModifierChanged)
+                    ModifierChanged?.Invoke();
+            });
             modifiersByIndex[modifier.Index] = modifier;
+        }
     }
 
     internal void DisableAll() {
+        invokeModifierChanged = false;
+        
         foreach (var modifier in modifiers)
             modifier.EnabledInternal.Value = false;
-        
+
+        invokeModifierChanged = true;
         ModifierChanged?.Invoke();
     }
 
