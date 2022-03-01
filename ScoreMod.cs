@@ -10,7 +10,9 @@ using UnityEngine;
 
 namespace SRXDScoreMod; 
 
-// Contains code to initialize the mod
+/// <summary>
+/// Plugin that enables the introduction of custom score systems and score modifiers
+/// </summary>
 [BepInDependency("com.pink.spinrhythm.moddingutils", "1.0.2")]
 [BepInPlugin("SRXD.ScoreMod", "ScoreMod", "1.2.0.8")]
 public class ScoreMod : BaseUnityPlugin {
@@ -20,19 +22,28 @@ public class ScoreMod : BaseUnityPlugin {
     internal static ConfigEntry<float> TapTimingOffset { get; private set; }
     internal static ConfigEntry<float> BeatTimingOffset { get; private set; }
 
-    public static event Action<IReadOnlyScoreSystem> OnScoreSystemChanged;
+    /// <summary>
+    /// Invoke when the current score system is changed
+    /// </summary>
+    public static event Action<IScoreSystem> OnScoreSystemChanged;
 
-    public static IReadOnlyScoreSystem CurrentScoreSystem => CurrentScoreSystemInternal;
+    /// <summary>
+    /// The currently visible score system
+    /// </summary>
+    public static IScoreSystem CurrentScoreSystem => CurrentScoreSystemInternal;
     
+    /// <summary>
+    /// The currently used modifier set
+    /// </summary>
     public static ModifierSet CurrentModifierSet { get; private set; }
     
     internal static bool AnyModifiersEnabled { get; private set; }
     
     internal static string ScoreSystemAndMultiplierLabel { get; private set; }
 
-    internal static IScoreSystem CurrentScoreSystemInternal { get; private set; }
+    internal static IScoreSystemInternal CurrentScoreSystemInternal { get; private set; }
     
-    internal static List<IScoreSystem> ScoreSystems { get; private set; }
+    internal static List<IScoreSystemInternal> ScoreSystems { get; private set; }
     
     internal static List<CustomScoreSystem> CustomScoreSystems { get; private set; }
 
@@ -40,6 +51,10 @@ public class ScoreMod : BaseUnityPlugin {
     private static float modifierMultiplier;
     private static string fileDirectory;
     
+    /// <summary>
+    /// Adds a new custom score system with a given profile
+    /// </summary>
+    /// <param name="profile">The profile to use</param>
     public static void AddCustomScoreSystem(ScoreSystemProfile profile) {
         foreach (var system in ScoreSystems) {
             if (profile.Id != system.Id)
@@ -56,28 +71,28 @@ public class ScoreMod : BaseUnityPlugin {
         CustomScoreSystems.Add(scoreSystem);
     }
 
+    /// <summary>
+    /// Sets the modifier set to use
+    /// </summary>
+    /// <param name="modifierSet">The modifier set to use</param>
     public static void SetModifierSet(ModifierSet modifierSet) {
         if (modifierSet == CurrentModifierSet)
             return;
 
-        if (CurrentModifierSet != null) {
-            foreach (var pair in CurrentModifierSet.Modifiers)
-                pair.Value.EnabledInternal.Value = false;
+        if (CurrentModifierSet != null) { 
+            CurrentModifierSet.ModifierChanged -= OnModifierChanged;
+            CurrentModifierSet.DisableAll();
         }
-
+        
         CurrentModifierSet = modifierSet;
-        AnyModifiersEnabled = false;
-        modifierMultiplier = 1f;
 
         if (modifierSet != null) {
-            foreach (var pair in modifierSet.Modifiers)
-                pair.Value.EnabledInternal.Value = false;
-        
+            modifierSet.DisableAll();
+            modifierSet.ModifierChanged += OnModifierChanged;
             HighScoresContainer.RemoveInvalidHighScoresForModifierSet(modifierSet);
         }
         
-        UpdateLabelString();
-        LevelSelectUI.UpdateUI();
+        OnModifierChanged();
     }
 
     private void Awake() {
@@ -95,8 +110,7 @@ public class ScoreMod : BaseUnityPlugin {
         harmony.PatchAll(typeof(CompleteScreenUI));
         harmony.PatchAll(typeof(LevelSelectUI));
         HighScoresContainer.LoadHighScores();
-        ScoreSystems = new List<IScoreSystem>();
-        ScoreSystems.Add(new BaseScoreSystemWrapper());
+        ScoreSystems = new List<IScoreSystemInternal> { new BaseScoreSystemWrapper() };
         CustomScoreSystems = new List<CustomScoreSystem>();
         AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM16);
         // AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM32);
@@ -149,29 +163,6 @@ public class ScoreMod : BaseUnityPlugin {
             else if (Input.GetKeyDown(KeyCode.Alpha0))
                 PickScoreSystem(9);
         }
-        
-        if (Input.GetKey(KeyCode.O)) {
-            if (Input.GetKeyDown(KeyCode.Alpha1))
-                ToggleModifier(0);
-            else if (Input.GetKeyDown(KeyCode.Alpha2))
-                ToggleModifier(1);
-            else if (Input.GetKeyDown(KeyCode.Alpha3))
-                ToggleModifier(2);
-            else if (Input.GetKeyDown(KeyCode.Alpha4))
-                ToggleModifier(3);
-            else if (Input.GetKeyDown(KeyCode.Alpha5))
-                ToggleModifier(4);
-            else if (Input.GetKeyDown(KeyCode.Alpha6))
-                ToggleModifier(5);
-            else if (Input.GetKeyDown(KeyCode.Alpha7))
-                ToggleModifier(6);
-            else if (Input.GetKeyDown(KeyCode.Alpha8))
-                ToggleModifier(7);
-            else if (Input.GetKeyDown(KeyCode.Alpha9))
-                ToggleModifier(8);
-            else if (Input.GetKeyDown(KeyCode.Alpha0))
-                ToggleModifier(9);
-        }
     }
 
     internal static bool TryGetFileDirectory(out string directory) {
@@ -220,20 +211,6 @@ public class ScoreMod : BaseUnityPlugin {
         OnScoreSystemChanged?.Invoke(CurrentScoreSystem);
     }
 
-    private static void ToggleModifier(int index) {
-        if (GameplayState.Playing || !LevelSelectUI.MenuOpen || CurrentModifierSet == null || !CurrentModifierSet.ToggleModifier(index))
-            return;
-
-        var modifier = CurrentModifierSet.ModifiersArray[index];
-        
-        NotificationSystemGUI.AddMessage($"{(modifier.EnabledInternal.Value ? "Enabled" : "Disabled")} modifier {modifier.Name}",
-            forceExtraMessageIfDuplicate: true);
-        AnyModifiersEnabled = CurrentModifierSet.GetAnyEnabled();
-        modifierMultiplier = 0.01f * CurrentModifierSet.GetOverallMultiplier();
-        UpdateLabelString();
-        LevelSelectUI.UpdateUI();
-    }
-
     private static void UpdateLabelString() {
         if (AnyModifiersEnabled) {
             int multiplier = CurrentModifierSet.GetOverallMultiplier();
@@ -242,5 +219,19 @@ public class ScoreMod : BaseUnityPlugin {
         }
         else
             ScoreSystemAndMultiplierLabel = CurrentScoreSystem.Name;
+    }
+
+    private static void OnModifierChanged() {
+        if (CurrentModifierSet == null) {
+            AnyModifiersEnabled = false;
+            modifierMultiplier = 1f;
+        }
+        else {
+            AnyModifiersEnabled = CurrentModifierSet.GetAnyEnabled();
+            modifierMultiplier = 0.01f * CurrentModifierSet.GetOverallMultiplier();
+        }
+        
+        UpdateLabelString();
+        LevelSelectUI.UpdateUI();
     }
 }

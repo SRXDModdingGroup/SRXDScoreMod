@@ -8,6 +8,7 @@ using SMU.Extensions;
 using SMU.Utilities;
 using TMPro;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace SRXDScoreMod; 
 
@@ -52,9 +53,9 @@ internal static class LevelSelectUI {
 
     private static void CreateScoreSystemNameText(TMP_Text bastText) {
         if (scoreSystemNameText != null)
-            GameObject.Destroy(scoreSystemNameText);
+            Object.Destroy(scoreSystemNameText);
 
-        scoreSystemNameText = GameObject.Instantiate(bastText.gameObject, bastText.transform.parent, true).GetComponent<TMP_Text>();
+        scoreSystemNameText = Object.Instantiate(bastText.gameObject, bastText.transform.parent, true).GetComponent<TMP_Text>();
         scoreSystemNameText.gameObject.SetActive(true);
         scoreSystemNameText.transform.localPosition += new Vector3(-107f, 70f, 0f);
         scoreSystemNameText.horizontalAlignment = HorizontalAlignmentOptions.Left;
@@ -86,7 +87,7 @@ internal static class LevelSelectUI {
         if (scoreSystemNameText == null)
             return;
         
-        GameObject.Destroy(scoreSystemNameText);
+        Object.Destroy(scoreSystemNameText);
         scoreSystemNameText = null;
     }
 
@@ -105,7 +106,7 @@ internal static class LevelSelectUI {
         var highScoreInfo = generator.DeclareLocal(typeof(HighScoreInfo));
         var scoreString = generator.DeclareLocal(typeof(string));
         var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);
-        var IScoreSystem_GetHighScoreInfoForTrack = typeof(IScoreSystem).GetMethod(nameof(IScoreSystem.GetHighScoreInfoForTrack), new [] { typeof(TrackInfoAssetReference), typeof(TrackDataMetadata) });
+        var IScoreSystemInternal_GetHighScoreInfoForTrack = typeof(IScoreSystemInternal).GetMethod(nameof(IScoreSystemInternal.GetHighScoreInfoForTrack), new [] { typeof(TrackInfoAssetReference), typeof(TrackDataMetadata) });
         var HighScoreInfo_GetScoreString = typeof(HighScoreInfo).GetMethod(nameof(HighScoreInfo.GetScoreString));
         var HighScoreInfo_GetStreakString = typeof(HighScoreInfo).GetMethod(nameof(HighScoreInfo.GetStreakString));
         var HighScoreInfo_get_Rank = typeof(HighScoreInfo).GetProperty(nameof(HighScoreInfo.Rank)).GetGetMethod();
@@ -123,7 +124,7 @@ internal static class LevelSelectUI {
             new (OpCodes.Ldloc_0), // handle
             new (OpCodes.Callvirt, MetadataHandle_get_TrackInfoRef),
             new (OpCodes.Ldloc_S, (byte) 28), // metadata
-            new (OpCodes.Callvirt, IScoreSystem_GetHighScoreInfoForTrack),
+            new (OpCodes.Callvirt, IScoreSystemInternal_GetHighScoreInfoForTrack),
             new (OpCodes.Stloc_S, highScoreInfo)
         });
 

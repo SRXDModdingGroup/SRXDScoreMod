@@ -32,6 +32,7 @@
         <DefineConstants>TRACE</DefineConstants>
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
+        <DocumentationFile>bin\Release\SRXDScoreMod.xml</DocumentationFile>
     </PropertyGroup>
     <PropertyGroup>
       <PostBuildEvent>copy /Y "C:\Users\domia\Git\SRXDScoreMod\bin\Release\SRXDScoreMod.dll" "C:\Program Files (x86)\Steam\steamapps\common\Spin Rhythm\BepInEx\plugins"</PostBuildEvent>
@@ -92,8 +93,8 @@
         <Compile Include="Properties\AssemblyInfo.cs" />
         <Compile Include="ScoreSystems\BaseScoreSystemWrapper.cs" />
         <Compile Include="ScoreSystems\CustomScoreSystem.cs" />
-        <Compile Include="ScoreSystems\IReadOnlyScoreSystem.cs" />
         <Compile Include="ScoreSystems\IScoreSystem.cs" />
+        <Compile Include="ScoreSystems\IScoreSystemInternal.cs" />
         <Compile Include="Types\ColoredGraphValue.cs" />
         <Compile Include="Types\CustomTimingAccuracy.cs" />
         <Compile Include="Types\HighScoreInfo.cs" />

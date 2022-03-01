@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace SRXDScoreMod; 
 
-internal class CustomScoreSystem : IScoreSystem {
+internal class CustomScoreSystem : IScoreSystemInternal {
     #region IScoreSystemProperties
 
     public string Name { get; }

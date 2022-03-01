@@ -8,6 +8,7 @@ using SMU.Extensions;
 using SMU.Utilities;
 using TMPro;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace SRXDScoreMod; 
 
@@ -28,7 +29,7 @@ internal static class CompleteScreenUI {
         var scoreValueText = levelCompleteMenu.scoreValueText;
 
         if (scoreSystemNameText == null) {
-            scoreSystemNameText = GameObject.Instantiate(scoreValueText.gameObject, scoreValueText.transform.parent, true).GetComponent<TMP_Text>();
+            scoreSystemNameText = Object.Instantiate(scoreValueText.gameObject, scoreValueText.transform.parent, true).GetComponent<TMP_Text>();
             scoreSystemNameText.gameObject.SetActive(true);
             nameTextPosition = scoreSystemNameText.transform.localPosition + new Vector3(-25f, 70f, 0f);
             scoreSystemNameText.horizontalAlignment = HorizontalAlignmentOptions.Left;
@@ -119,12 +120,12 @@ internal static class CompleteScreenUI {
         var operations = new DeferredListOperation<CodeInstruction>();
         var fullComboState = generator.DeclareLocal(typeof(FullComboState));
         var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);
-        var IReadOnlyScoreSystem_get_FullComboState = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.FullComboState)).GetGetMethod();
+        var IScoreSystem_get_FullComboState = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.FullComboState)).GetGetMethod();
         var PlayState_get_fullComboState = typeof(PlayState).GetProperty(nameof(PlayState.fullComboState)).GetGetMethod();
         
         operations.Insert(0, new CodeInstruction[] {
             new (OpCodes.Call, ScoreMod_get_CurrentScoreSystemInternal),
-            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_FullComboState),
+            new (OpCodes.Callvirt, IScoreSystem_get_FullComboState),
             new (OpCodes.Stloc_S, fullComboState)
         });
 
@@ -151,12 +152,12 @@ internal static class CompleteScreenUI {
     private static IEnumerable<CodeInstruction> LevelCompleteCoreAnimationBehaviour_AnimateText_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
         var operations = new DeferredListOperation<CodeInstruction>();
-        var currentScoreSystem = generator.DeclareLocal(typeof(IReadOnlyScoreSystem));
+        var currentScoreSystem = generator.DeclareLocal(typeof(IScoreSystem));
         var CompleteScreenUI_GetInterpolatedScoreString = typeof(CompleteScreenUI).GetMethod(nameof(GetInterpolatedScoreString), BindingFlags.NonPublic | BindingFlags.Static);
         var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);
-        var IReadOnlyScoreSystem_get_Score = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.Score)).GetGetMethod();
-        var IReadOnlyScoreSystem_get_SecondaryScore = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.SecondaryScore)).GetGetMethod();
-        var IReadOnlyScoreSystem_get_MaxStreak = typeof(IReadOnlyScoreSystem).GetProperty(nameof(IReadOnlyScoreSystem.MaxStreak)).GetGetMethod();
+        var IScoreSystem_get_Score = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.Score)).GetGetMethod();
+        var IScoreSystem_get_SecondaryScore = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.SecondaryScore)).GetGetMethod();
+        var IScoreSystem_get_MaxStreak = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.MaxStreak)).GetGetMethod();
         var PlayState_get_TotalScore = typeof(PlayState).GetProperty(nameof(PlayState.TotalScore)).GetGetMethod();
         var PlayState_get_maxCombo = typeof(PlayState).GetProperty(nameof(PlayState.maxCombo)).GetGetMethod();
         var Single_ToString = typeof(Single).GetMethod(nameof(Single.ToString), new [] { typeof(string) });
@@ -186,7 +187,7 @@ internal static class CompleteScreenUI {
             
         operations.Replace(match.Start, 2, new CodeInstruction[] {
             new (OpCodes.Ldloc_S, currentScoreSystem),
-            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_MaxStreak)
+            new (OpCodes.Callvirt, IScoreSystem_get_MaxStreak)
         });
 
         match = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
@@ -197,9 +198,9 @@ internal static class CompleteScreenUI {
         
         operations.Replace(match.Start, 3, new CodeInstruction[] {
             new (OpCodes.Ldloc_S, currentScoreSystem),
-            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_Score),
+            new (OpCodes.Callvirt, IScoreSystem_get_Score),
             new (OpCodes.Ldloc_S, currentScoreSystem),
-            new (OpCodes.Callvirt, IReadOnlyScoreSystem_get_SecondaryScore),
+            new (OpCodes.Callvirt, IScoreSystem_get_SecondaryScore),
             new (OpCodes.Ldloc_1), // interpolatedTime
             new (OpCodes.Call, CompleteScreenUI_GetInterpolatedScoreString)
         });

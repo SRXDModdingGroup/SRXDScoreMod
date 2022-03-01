@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace SRXDScoreMod; 
 
-internal class BaseScoreSystemWrapper : IScoreSystem {
+internal class BaseScoreSystemWrapper : IScoreSystemInternal {
     private static readonly CustomTimingAccuracy EARLY = new("Early", "Good", Color.yellow, NoteTimingAccuracy.Early);
     private static readonly CustomTimingAccuracy PERFECT = new("Perfect", "Perfect", Color.cyan, NoteTimingAccuracy.Perfect);
     private static readonly CustomTimingAccuracy LATE = new("Late", "Good", Color.yellow, NoteTimingAccuracy.Late);
@@ -141,7 +141,7 @@ internal class BaseScoreSystemWrapper : IScoreSystem {
             PerformanceGraphValues.Add(new ColoredGraphValue(value, color));
         }
 
-        var pieStats = new PlayStateStats.StatsCollection[7] {
+        var pieStats = new[] {
             stats.match,
             stats.hold,
             stats.tap,
