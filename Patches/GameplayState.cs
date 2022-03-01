@@ -271,8 +271,8 @@ internal static class GameplayState {
             return;
         
         Playing = true;
-        tapTimingOffset = 0.001f * ScoreMod.TapTimingOffset.Value;
-        beatTimingOffset = 0.001f * ScoreMod.BeatTimingOffset.Value;
+        tapTimingOffset = 0.001f * Plugin.TapTimingOffset.Value;
+        beatTimingOffset = 0.001f * Plugin.BeatTimingOffset.Value;
 
         var playState = __instance.playStateFirst;
 

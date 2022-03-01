@@ -82,7 +82,7 @@ internal class GameplayUI {
 
     [HarmonyPatch(typeof(XDHudCanvases), nameof(XDHudCanvases.Start)), HarmonyPostfix]
     private static void XDHudCanvases_Start_Postfix(XDHudCanvases __instance) {
-        showPace = ScoreMod.PaceType.Value != "Hide";
+        showPace = Plugin.PaceType.Value != "Hide";
         
         if (systemNameText != null)
             Object.Destroy(systemNameText);
@@ -99,7 +99,7 @@ internal class GameplayUI {
         bestPossibleText = GenerateText(baseText, new Vector3(235f, 67f, 0f), 8f, Color.cyan);
         bestPossibleText.gameObject.SetActive(ScoreMod.CurrentScoreSystemInternal.ImplementsScorePrediction);
 
-        switch (ScoreMod.PaceType.Value) {
+        switch (Plugin.PaceType.Value) {
             case "Score":
                 paceType = PaceType.Score;
 

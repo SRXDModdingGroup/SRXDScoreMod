@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 
 namespace SRXDScoreMod; 
 
@@ -9,6 +10,7 @@ internal static class HighScoresContainer {
     private static readonly bool SAVE_HIGH_SCORES = true;
 
     private static bool anyUnsaved;
+    private static string fileDirectory;
     private static string filePath;
     private static Dictionary<string, SavedHighScoreInfo> highScores;
 
@@ -44,7 +46,7 @@ internal static class HighScoresContainer {
             if (newInfo.Hash == split[8])
                 highScores.Add(key, newInfo);
             else
-                ScoreMod.Logger.LogWarning($"WARNING: Did not load score {key}");
+                Plugin.Logger.LogWarning($"WARNING: Did not load score {key}");
         }
     }
 
@@ -78,7 +80,7 @@ internal static class HighScoresContainer {
                 continue;
             
             highScores.Remove(key);
-            ScoreMod.Logger.LogWarning($"WARNING: Removed score {key}");
+            Plugin.Logger.LogWarning($"WARNING: Removed score {key}");
         }
     }
 
@@ -97,7 +99,7 @@ internal static class HighScoresContainer {
         }
 
         if (info.MaxScore != oldInfo.MaxScore || info.MaxStreak != oldInfo.MaxStreak) {
-            ScoreMod.Logger.LogWarning($"WARNING: Max Score for \"{key}\" does not match saved Max Score. Score will not be saved");
+            Plugin.Logger.LogWarning($"WARNING: Max Score for \"{key}\" does not match saved Max Score. Score will not be saved");
 
             return false;
         }
@@ -143,10 +145,10 @@ internal static class HighScoresContainer {
         if (!string.IsNullOrWhiteSpace(filePath))
             return true;
 
-        if (!ScoreMod.TryGetFileDirectory(out string fileDirectory))
+        if (!TryGetFileDirectory(out string directory))
             return false;
 
-        filePath = Path.Combine(fileDirectory, "Highscores.txt");
+        filePath = Path.Combine(directory, "Highscores.txt");
 
         return true;
     }
@@ -167,5 +169,31 @@ internal static class HighScoresContainer {
             return $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystem.Key}_{modifierSet.Id}";
         
         return $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystem.Key}";
+    }
+
+    private static bool TryGetFileDirectory(out string directory) {
+        if (!string.IsNullOrWhiteSpace(fileDirectory)) {
+            directory = fileDirectory;
+
+            return true;
+        }
+            
+        string assemblyLocation = Assembly.GetExecutingAssembly().Location;
+        string assemblyDirectory = Path.GetDirectoryName(assemblyLocation);
+
+        if (string.IsNullOrWhiteSpace(assemblyDirectory) || !Directory.Exists(assemblyDirectory)) {
+            Plugin.Logger.LogWarning("WARNING: Could not get assembly directory");
+            directory = string.Empty;
+
+            return false;
+        }
+
+        fileDirectory = Path.Combine(assemblyDirectory, "ScoreMod");
+        directory = fileDirectory;
+
+        if (!Directory.Exists(fileDirectory))
+            Directory.CreateDirectory(fileDirectory);
+
+        return true;
     }
 }

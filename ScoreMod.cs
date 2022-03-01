@@ -1,26 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using BepInEx;
-using BepInEx.Configuration;
-using BepInEx.Logging;
-using HarmonyLib;
 using UnityEngine;
 
 namespace SRXDScoreMod; 
 
 /// <summary>
-/// Plugin that enables the introduction of custom score systems and score modifiers
+/// Enables the introduction of custom score systems and score modifiers
 /// </summary>
-[BepInDependency("com.pink.spinrhythm.moddingutils", "1.0.2")]
-[BepInPlugin("SRXD.ScoreMod", "ScoreMod", "1.2.0.8")]
-public class ScoreMod : BaseUnityPlugin {
-    internal new static ManualLogSource Logger { get; private set; }
-    internal static ConfigEntry<string> DefaultSystem { get; private set; }
-    internal static ConfigEntry<string> PaceType { get; private set; }
-    internal static ConfigEntry<float> TapTimingOffset { get; private set; }
-    internal static ConfigEntry<float> BeatTimingOffset { get; private set; }
+public static class ScoreMod {
 
     /// <summary>
     /// Invoke when the current score system is changed
@@ -31,26 +18,21 @@ public class ScoreMod : BaseUnityPlugin {
     /// The currently visible score system
     /// </summary>
     public static IScoreSystem CurrentScoreSystem => CurrentScoreSystemInternal;
-    
+
     /// <summary>
     /// The currently used modifier set
     /// </summary>
     public static ModifierSet CurrentModifierSet { get; private set; }
-    
+
     internal static bool AnyModifiersEnabled { get; private set; }
-    
     internal static string ScoreSystemAndMultiplierLabel { get; private set; }
-
     internal static IScoreSystemInternal CurrentScoreSystemInternal { get; private set; }
+    internal static List<IScoreSystemInternal> ScoreSystems { get; } = new();
+    internal static List<CustomScoreSystem> CustomScoreSystems { get; } = new();
     
-    internal static List<IScoreSystemInternal> ScoreSystems { get; private set; }
-    
-    internal static List<CustomScoreSystem> CustomScoreSystems { get; private set; }
-
     private static int scoreSystemIndex;
-    private static float modifierMultiplier;
-    private static string fileDirectory;
-    
+    private static float modifierMultiplier = 1f;
+
     /// <summary>
     /// Adds a new custom score system with a given profile
     /// </summary>
@@ -60,13 +42,13 @@ public class ScoreMod : BaseUnityPlugin {
             if (profile.Id != system.Id)
                 continue;
             
-            Logger.LogWarning($"WARNING: Score system with ID {profile.Id} already exists");
+            Plugin.Logger.LogWarning($"WARNING: Score system with ID {profile.Id} already exists");
                 
             return;
         }
         
         var scoreSystem = new CustomScoreSystem(profile);
-        
+
         ScoreSystems.Add(scoreSystem);
         CustomScoreSystems.Add(scoreSystem);
     }
@@ -79,11 +61,11 @@ public class ScoreMod : BaseUnityPlugin {
         if (modifierSet == CurrentModifierSet)
             return;
 
-        if (CurrentModifierSet != null) { 
+        if (CurrentModifierSet != null) {
             CurrentModifierSet.ModifierChanged -= OnModifierChanged;
             CurrentModifierSet.DisableAll();
         }
-        
+
         CurrentModifierSet = modifierSet;
 
         if (modifierSet != null) {
@@ -91,37 +73,24 @@ public class ScoreMod : BaseUnityPlugin {
             modifierSet.ModifierChanged += OnModifierChanged;
             HighScoresContainer.RemoveInvalidHighScoresForModifierSet(modifierSet);
         }
-        
+
         OnModifierChanged();
     }
 
-    private void Awake() {
-        Logger = base.Logger;
-        
-        DefaultSystem = Config.Bind("Settings", "DefaultSystem", "0", "The name or index of the default scoring system");
-        PaceType = Config.Bind("Settings", "PaceType", "Both", new ConfigDescription("Whether to show the max possible score, its delta relative to PB, both, or hide the Pace display", new AcceptableValueList<string>("Delta", "Score", "Both", "Hide")));
-        TapTimingOffset = Config.Bind("Settings", "TapTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for taps and liftoffs");
-        BeatTimingOffset = Config.Bind("Settings", "BeatTimingOffset", 0f, "Global offset (in ms) applied to all mod timing calculations for beats and hard beat releases");
-
-        var harmony = new Harmony("ScoreMod");
-            
-        harmony.PatchAll(typeof(GameplayState));
-        harmony.PatchAll(typeof(GameplayUI));
-        harmony.PatchAll(typeof(CompleteScreenUI));
-        harmony.PatchAll(typeof(LevelSelectUI));
-        HighScoresContainer.LoadHighScores();
-        ScoreSystems = new List<IScoreSystemInternal> { new BaseScoreSystemWrapper() };
-        CustomScoreSystems = new List<CustomScoreSystem>();
+    internal static void Init() {
+        ScoreSystems.Add(new BaseScoreSystemWrapper());
         AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM16);
         // AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM32);
 
-        if (!int.TryParse(DefaultSystem.Value, out scoreSystemIndex)) {
+        string defaultSystem = Plugin.DefaultSystem.Value;
+
+        if (!int.TryParse(defaultSystem, out scoreSystemIndex)) {
             scoreSystemIndex = 0;
             
             for (int i = 0; i < ScoreSystems.Count; i++) {
-                if (ScoreSystems[i].Name != DefaultSystem.Value)
+                if (ScoreSystems[i].Name != defaultSystem)
                     continue;
-                
+
                 scoreSystemIndex = i;
 
                 break;
@@ -130,16 +99,11 @@ public class ScoreMod : BaseUnityPlugin {
 
         if (scoreSystemIndex >= ScoreSystems.Count)
             scoreSystemIndex = ScoreSystems.Count - 1;
-        
-        CurrentScoreSystemInternal = ScoreSystems[scoreSystemIndex];
-        modifierMultiplier = 1f;
-        UpdateLabelString();
-        // SetModifierSet(new ModifierSet("Test", "test",
-        //     new Modifier("Mod0", 0, 10),
-        //     new Modifier("Mod1", 1, 25),
-        //     new Modifier("Mod2", 2, -50)));
-    }
 
+        CurrentScoreSystemInternal = ScoreSystems[scoreSystemIndex];
+        UpdateLabelString();
+    }
+    
     internal static void GameUpdate() {
         if (Input.GetKey(KeyCode.P)) {
             if (Input.GetKeyDown(KeyCode.Alpha1))
@@ -165,32 +129,6 @@ public class ScoreMod : BaseUnityPlugin {
         }
     }
 
-    internal static bool TryGetFileDirectory(out string directory) {
-        if (!string.IsNullOrWhiteSpace(fileDirectory)) {
-            directory = fileDirectory;
-
-            return true;
-        }
-            
-        string assemblyLocation = Assembly.GetExecutingAssembly().Location;
-        string assemblyDirectory = Path.GetDirectoryName(assemblyLocation);
-
-        if (string.IsNullOrWhiteSpace(assemblyDirectory) || !Directory.Exists(assemblyDirectory)) {
-            Logger.LogWarning("WARNING: Could not get assembly directory");
-            directory = string.Empty;
-
-            return false;
-        }
-
-        fileDirectory = Path.Combine(assemblyDirectory, "ScoreMod");
-        directory = fileDirectory;
-
-        if (!Directory.Exists(fileDirectory))
-            Directory.CreateDirectory(fileDirectory);
-
-        return true;
-    }
-
     internal static int GetModifiedScore(int score) {
         if (AnyModifiersEnabled)
             return Mathf.CeilToInt(modifierMultiplier * score);
@@ -214,7 +152,7 @@ public class ScoreMod : BaseUnityPlugin {
     private static void UpdateLabelString() {
         if (AnyModifiersEnabled) {
             int multiplier = CurrentModifierSet.GetOverallMultiplier();
-            
+
             ScoreSystemAndMultiplierLabel = $"{CurrentScoreSystem.Name} ({multiplier / 100}.{(multiplier % 100).ToString().TrimEnd('0')}x)";
         }
         else
@@ -230,7 +168,7 @@ public class ScoreMod : BaseUnityPlugin {
             AnyModifiersEnabled = CurrentModifierSet.GetAnyEnabled();
             modifierMultiplier = 0.01f * CurrentModifierSet.GetOverallMultiplier();
         }
-        
+
         UpdateLabelString();
         LevelSelectUI.UpdateUI();
     }
