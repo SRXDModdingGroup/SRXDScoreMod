@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using SpinCore.Utility;
 using UnityEngine;
 
 namespace SRXDScoreMod; 
@@ -120,10 +121,16 @@ public static class ScoreMod {
         if (CurrentModifierSet == null) {
             AnyModifiersEnabled = false;
             modifierMultiplier = 1f;
+            ScoreSubmissionUtility.EnableScoreSubmission(Plugin.Instance);
         }
         else {
             AnyModifiersEnabled = CurrentModifierSet.GetAnyEnabled();
             modifierMultiplier = 0.01f * CurrentModifierSet.GetOverallMultiplier();
+            
+            if (AnyModifiersEnabled)
+                ScoreSubmissionUtility.DisableScoreSubmission(Plugin.Instance);
+            else
+                ScoreSubmissionUtility.EnableScoreSubmission(Plugin.Instance);
         }
 
         UpdateLabelString();
