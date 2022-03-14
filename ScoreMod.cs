@@ -22,7 +22,7 @@ public static class ScoreMod {
     /// <summary>
     /// The currently used modifier set
     /// </summary>
-    public static ModifierSet CurrentModifierSet { get; private set; }
+    public static ScoreModifierSet CurrentModifierSet { get; private set; }
 
     internal static bool AnyModifiersEnabled { get; private set; }
     internal static string ScoreSystemAndMultiplierLabel { get; private set; }
@@ -57,7 +57,7 @@ public static class ScoreMod {
     /// Sets the modifier set to use
     /// </summary>
     /// <param name="modifierSet">The modifier set to use</param>
-    public static void SetModifierSet(ModifierSet modifierSet) {
+    public static void SetModifierSet(ScoreModifierSet modifierSet) {
         if (modifierSet == CurrentModifierSet)
             return;
 

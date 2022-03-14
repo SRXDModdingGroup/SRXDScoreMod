@@ -102,8 +102,8 @@
         <Compile Include="Types\ColoredGraphValue.cs" />
         <Compile Include="Types\CustomTimingAccuracy.cs" />
         <Compile Include="Types\HighScoreInfo.cs" />
-        <Compile Include="Types\Modifier.cs" />
-        <Compile Include="Types\ModifierSet.cs" />
+        <Compile Include="Types\ScoreModifier.cs" />
+        <Compile Include="Types\ScoreModifierSet.cs" />
         <Compile Include="Types\PieGraphValue.cs" />
         <Compile Include="Types\RankThreshold.cs" />
         <Compile Include="Types\SavedHighScoreInfo.cs" />

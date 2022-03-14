@@ -22,7 +22,7 @@ internal class SavedHighScoreInfo {
         }
     }
 
-    public SavedHighScoreInfo(string key, int score, int streak, int maxScore, int maxStreak, int secondaryScore, ModifierSet modifierSet)
+    public SavedHighScoreInfo(string key, int score, int streak, int maxScore, int maxStreak, int secondaryScore, ScoreModifierSet modifierSet)
         : this(score, streak, maxScore, maxStreak, secondaryScore) {
         if (modifierSet == null) {
             ModifierFlags = 0u;

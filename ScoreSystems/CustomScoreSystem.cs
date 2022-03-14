@@ -639,7 +639,7 @@ internal class CustomScoreSystem : IScoreSystemInternal {
             else if (totalValueForSection == maxValueForSection)
                 color = Color.cyan;
             else if (totalValueForSection > maxValueForSection - greatSectionThreshold)
-                color = Color.green;
+                color = new Color(0f, 0.9f, 0f);
             else
                 color = Color.yellow;
                 

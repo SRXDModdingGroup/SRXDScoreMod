@@ -63,7 +63,7 @@ internal static class HighScoresContainer {
         }
     }
 
-    public static void RemoveInvalidHighScoresForModifierSet(ModifierSet modifierSet) {
+    public static void RemoveInvalidHighScoresForModifierSet(ScoreModifierSet modifierSet) {
         if (highScores.Count == 0)
             return;
         
@@ -85,7 +85,7 @@ internal static class HighScoresContainer {
     }
 
     public static bool TrySetHighScore(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType,
-        IScoreSystemInternal scoreSystem, ModifierSet modifierSet, SavedHighScoreInfo info) {
+        IScoreSystemInternal scoreSystem, ScoreModifierSet modifierSet, SavedHighScoreInfo info) {
         if (modifierSet != null && modifierSet.GetAnyBlocksSubmission())
             return false;
         
@@ -132,7 +132,7 @@ internal static class HighScoresContainer {
     }
 
     public static SavedHighScoreInfo GetHighScore(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType,
-        IScoreSystemInternal scoreSystem, ModifierSet modifierSet) {
+        IScoreSystemInternal scoreSystem, ScoreModifierSet modifierSet) {
         string key = GetKey(trackInfoRef, difficultyType, scoreSystem, modifierSet);
 
         if (highScores.TryGetValue(key, out var info))
@@ -164,7 +164,7 @@ internal static class HighScoresContainer {
         }
     }
 
-    private static string GetKey(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType, IScoreSystemInternal scoreSystem, ModifierSet modifierSet) {
+    private static string GetKey(TrackInfoAssetReference trackInfoRef, TrackData.DifficultyType difficultyType, IScoreSystemInternal scoreSystem, ScoreModifierSet modifierSet) {
         if (modifierSet != null && modifierSet.GetAnyEnabled())
             return $"{GetTrackId(trackInfoRef, difficultyType)}_{scoreSystem.Key}_{modifierSet.Id}";
         

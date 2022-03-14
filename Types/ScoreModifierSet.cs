@@ -6,7 +6,7 @@ namespace SRXDScoreMod;
 /// <summary>
 /// A collection of modifiers
 /// </summary>
-public class ModifierSet {
+public class ScoreModifierSet {
     private const int MAX_MODIFIERS = 32;
     
     internal string Id { get; }
@@ -14,18 +14,18 @@ public class ModifierSet {
     internal event Action ModifierChanged;
 
     private bool invokeModifierChanged = true;
-    private Modifier[] modifiers;
-    private Modifier[] modifiersByIndex;
+    private ScoreModifier[] modifiers;
+    private ScoreModifier[] modifiersByIndex;
 
     /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="id">The unique identifier for the set. This value should not be changed after the modifier set is first introduced</param>
     /// <param name="modifiers">The modifiers used by the set</param>
-    public ModifierSet(string id, params Modifier[] modifiers) {
+    public ScoreModifierSet(string id, params ScoreModifier[] modifiers) {
         Id = id;
         this.modifiers = modifiers;
-        modifiersByIndex = new Modifier[MAX_MODIFIERS];
+        modifiersByIndex = new ScoreModifier[MAX_MODIFIERS];
 
         foreach (var modifier in modifiers) {
             modifier.EnabledInternal.Bind(_ => {
