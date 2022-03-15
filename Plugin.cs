@@ -41,7 +41,7 @@ internal class Plugin : SpinPlugin {
     }
 
     protected override void CreateMenus() {
-        var root = CreateOptionsTab("ScoreMod").UIRoot;
+        var root = CreateOptionsTab("Score Mod").UIRoot;
 
         if (CurrentSystem.Value >= ScoreMod.ScoreSystems.Count)
             CurrentSystem.Value = 0;
