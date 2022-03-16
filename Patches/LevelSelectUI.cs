@@ -6,6 +6,7 @@ using System.Reflection.Emit;
 using HarmonyLib;
 using SMU.Extensions;
 using SMU.Utilities;
+using SpinCore.UI;
 using TMPro;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -17,7 +18,6 @@ internal static class LevelSelectUI {
     internal static bool MenuOpen => currentLevelSelectMenu != null && currentLevelSelectMenu.isActiveAndEnabled;
     
     private static XDLevelSelectMenuBase currentLevelSelectMenu;
-    private static TMP_Text scoreSystemNameText;
     
     public static void UpdateUI() {
         if (currentLevelSelectMenu == null || !currentLevelSelectMenu.isActiveAndEnabled)
@@ -46,25 +46,6 @@ internal static class LevelSelectUI {
         
         foreach (var text in currentLevelSelectMenu.streak)
             text.text = streak;
-        
-        if (scoreSystemNameText != null)
-            scoreSystemNameText.SetText(ScoreMod.ScoreSystemAndMultiplierLabel);
-    }
-
-    private static void CreateScoreSystemNameText(TMP_Text bastText) {
-        if (scoreSystemNameText != null)
-            Object.Destroy(scoreSystemNameText);
-
-        scoreSystemNameText = Object.Instantiate(bastText.gameObject, bastText.transform.parent, true).GetComponent<TMP_Text>();
-        scoreSystemNameText.gameObject.SetActive(true);
-        scoreSystemNameText.transform.localPosition += new Vector3(-107f, 70f, 0f);
-        scoreSystemNameText.horizontalAlignment = HorizontalAlignmentOptions.Left;
-        scoreSystemNameText.verticalAlignment = VerticalAlignmentOptions.Middle;
-        scoreSystemNameText.overflowMode = TextOverflowModes.Overflow;
-        scoreSystemNameText.rectTransform.anchorMax += 100f * Vector2.right;
-        scoreSystemNameText.fontSize *= 0.7f;
-        
-        scoreSystemNameText.SetText(ScoreMod.ScoreSystemAndMultiplierLabel);
     }
         
     [HarmonyPatch(typeof(XDLevelSelectMenuBase), nameof(XDLevelSelectMenuBase.OpenMenu)), HarmonyPostfix]
@@ -84,19 +65,19 @@ internal static class LevelSelectUI {
             }
         }
         
-        if (scoreSystemNameText == null)
+        if (__instance.transform.Find("Score System"))
             return;
         
-        Object.Destroy(scoreSystemNameText);
-        scoreSystemNameText = null;
-    }
-
-    [HarmonyPatch(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty"), HarmonyPostfix]
-    private static void XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty_Postfix(XDLevelSelectMenuBase __instance) {
-        if (__instance == null || __instance.score == null || __instance.score[0] == null || scoreSystemNameText != null)
-            return;
+        var scoreSystemDropdown = SpinUI.CreateDropdown("Score System", __instance.transform, ScoreMod.ScoreSystems.Select(system => system.Name).ToArray());
         
-        CreateScoreSystemNameText(__instance.score[0]);
+        scoreSystemDropdown.Bind(Plugin.CurrentSystem);
+        Dispatcher.QueueForNextFrame(() => {
+            var rect = scoreSystemDropdown.transform.parent.GetComponent<RectTransform>();
+            
+            rect.pivot = Vector2.zero;
+            rect.offsetMin = new Vector2(535f, 0f);
+            rect.offsetMax = new Vector2(745f, 565f);
+        });
     }
 
     [HarmonyPatch(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty"), HarmonyTranspiler]
