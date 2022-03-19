@@ -28,6 +28,9 @@ public class ScoreModifierSet {
         modifiersByIndex = new ScoreModifier[MAX_MODIFIERS];
 
         foreach (var modifier in modifiers) {
+            if (modifiersByIndex[modifier.Index] != null)
+                throw new ArgumentException("Two score modifiers can not have the same index");
+            
             modifier.EnabledInternal.Bind(_ => {
                 if (invokeModifierChanged)
                     ModifierChanged?.Invoke();
@@ -36,17 +39,11 @@ public class ScoreModifierSet {
         }
     }
 
-    internal void DisableAll() {
-        invokeModifierChanged = false;
-        
-        foreach (var modifier in modifiers)
-            modifier.EnabledInternal.Value = false;
-
-        invokeModifierChanged = true;
-        ModifierChanged?.Invoke();
-    }
-
-    internal bool GetAnyEnabled() {
+    /// <summary>
+    /// Returns true if any modifier in the set is enabled
+    /// </summary>
+    /// <returns>True if any modifier in the set is enabled</returns>
+    public bool GetAnyEnabled() {
         foreach (var modifier in modifiers) {
             if (modifier.Enabled.Value)
                 return true;
@@ -55,30 +52,24 @@ public class ScoreModifierSet {
         return false;
     }
 
-    internal bool GetAnyBlocksSubmission() {
+    /// <summary>
+    /// Returns true if any enabled modifier in the set blocks score submission
+    /// </summary>
+    /// <returns>True if any enabled modifier in the set blocks score submission</returns>
+    public bool GetAnyBlocksSubmission() {
         foreach (var modifier in modifiers) {
-            if (modifier.BlocksSubmission)
+            if (modifier.Enabled.Value && modifier.BlocksSubmission)
                 return true;
         }
 
         return false;
     }
 
-    internal bool GetBlocksSubmissionGivenActiveFlags(uint flags) {
-        for (int i = 0, j = 1; i < MAX_MODIFIERS; i++, j <<= 1) {
-            if ((flags & j) == 0u)
-                continue;
-            
-            var modifier = modifiersByIndex[i];
-
-            if (modifier != null && modifier.BlocksSubmission)
-                return true;
-        }
-
-        return false;
-    }
-
-    internal int GetOverallMultiplier() {
+    /// <summary>
+    /// Returns the overall multiplier percentage as an integer
+    /// </summary>
+    /// <returns>The overall multiplier percentage as an integer</returns>
+    public int GetOverallMultiplier() {
         int multiplier = 100;
         int negativeOnly = 100;
 
@@ -98,6 +89,30 @@ public class ScoreModifierSet {
             return Mathf.Max(0, negativeOnly);
 
         return multiplier;
+    }
+
+    internal void DisableAll() {
+        invokeModifierChanged = false;
+        
+        foreach (var modifier in modifiers)
+            modifier.EnabledInternal.Value = false;
+
+        invokeModifierChanged = true;
+        ModifierChanged?.Invoke();
+    }
+
+    internal bool GetBlocksSubmissionGivenActiveFlags(uint flags) {
+        for (int i = 0, j = 1; i < MAX_MODIFIERS; i++, j <<= 1) {
+            if ((flags & j) == 0u)
+                continue;
+            
+            var modifier = modifiersByIndex[i];
+
+            if (modifier != null && modifier.Enabled.Value && modifier.BlocksSubmission)
+                return true;
+        }
+
+        return false;
     }
 
     internal int GetMultiplierGivenActiveFlags(uint flags) {
