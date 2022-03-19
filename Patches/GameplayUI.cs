@@ -32,7 +32,7 @@ internal class GameplayUI {
 
     public static void UpdateUI() {
         if (systemNameText != null)
-            systemNameText.text = ScoreMod.ScoreSystemAndMultiplierLabel;
+            systemNameText.text = ScoreMod.CurrentScoreSystem.Name;
     }
 
     internal static void PlayCustomTimingFeedback(PlayState playState, CustomTimingAccuracy timingAccuracy) {

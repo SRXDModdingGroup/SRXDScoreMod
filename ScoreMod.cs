@@ -25,7 +25,6 @@ public static class ScoreMod {
     public static ScoreModifierSet CurrentModifierSet { get; private set; }
 
     internal static bool AnyModifiersEnabled { get; private set; }
-    internal static string ScoreSystemAndMultiplierLabel { get; private set; }
     internal static IScoreSystemInternal CurrentScoreSystemInternal { get; private set; }
     internal static List<IScoreSystemInternal> ScoreSystems { get; } = new();
     internal static List<CustomScoreSystem> CustomScoreSystems { get; } = new();
@@ -82,7 +81,6 @@ public static class ScoreMod {
         AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM16);
         // AddCustomScoreSystem(DefaultScoreSystemProfiles.StandardPPM32);
         CurrentScoreSystemInternal = ScoreSystems[0];
-        UpdateLabelString();
     }
 
     internal static void LateInit() => Plugin.CurrentSystem.BindAndInvoke(OnCurrentSystemChanged);
@@ -94,23 +92,12 @@ public static class ScoreMod {
         return score;
     }
 
-    private static void UpdateLabelString() {
-        if (AnyModifiersEnabled) {
-            int multiplier = CurrentModifierSet.GetOverallMultiplier();
-
-            ScoreSystemAndMultiplierLabel = $"{CurrentScoreSystem.Name} ({multiplier / 100}.{(multiplier % 100).ToString().TrimEnd('0')}x)";
-        }
-        else
-            ScoreSystemAndMultiplierLabel = CurrentScoreSystem.Name;
-    }
-
     private static void OnCurrentSystemChanged(int value) {
         if (value == scoreSystemIndex)
             return;
 
         scoreSystemIndex = value;
         CurrentScoreSystemInternal = ScoreSystems[value];
-        UpdateLabelString();
         GameplayUI.UpdateUI();
         CompleteScreenUI.UpdateUI(true);
         LevelSelectUI.UpdateUI();
@@ -132,8 +119,5 @@ public static class ScoreMod {
             else
                 ScoreSubmissionUtility.EnableScoreSubmission(Plugin.Instance);
         }
-
-        UpdateLabelString();
-        LevelSelectUI.UpdateUI();
     }
 }
