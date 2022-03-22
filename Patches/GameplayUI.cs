@@ -125,7 +125,7 @@ internal class GameplayUI {
     [HarmonyPatch(typeof(Track), nameof(Track.UpdateUI)), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> Track_UpdateUI_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
-        var operations = new DeferredListOperation<CodeInstruction>();
+        var operations = new EnumerationOperation<CodeInstruction>();
         var currentScoreSystem = generator.DeclareLocal(typeof(IScoreSystem));
         var PlayState_get_TotalNoteScore = typeof(PlayState).GetProperty(nameof(PlayState.TotalNoteScore)).GetGetMethod();
         var PlayState_get_combo = typeof(PlayState).GetProperty(nameof(PlayState.combo)).GetGetMethod();
@@ -163,10 +163,8 @@ internal class GameplayUI {
         ReplaceGetter(PlayState_get_combo, IScoreSystem_get_Streak);
         ReplaceGetter(PlayState_get_multiplier, IScoreSystem_get_Multiplier);
         ReplaceGetter(PlayState_get_fullComboState, IScoreSystemInternal_get_StarState);
-            
-        operations.Execute(instructionsList);
 
-        return instructionsList;
+        return operations.Enumerate(instructionsList);
 
         void ReplaceGetter(MethodInfo fromMethod, MethodInfo toMethod) {
             var matches = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {

@@ -118,7 +118,7 @@ internal static class CompleteScreenUI {
     [HarmonyPatch(typeof(RankAnimator), nameof(RankAnimator.Setup)), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> RankAnimator_Setup_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
-        var operations = new DeferredListOperation<CodeInstruction>();
+        var operations = new EnumerationOperation<CodeInstruction>();
         var fullComboState = generator.DeclareLocal(typeof(FullComboState));
         var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);
         var IScoreSystem_get_FullComboState = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.FullComboState)).GetGetMethod();
@@ -143,16 +143,14 @@ internal static class CompleteScreenUI {
                 new CodeInstruction(OpCodes.Ldloc_S, fullComboState).WithLabels(labels)
             });
         }
-            
-        operations.Execute(instructionsList);
 
-        return instructionsList;
+        return operations.Enumerate(instructionsList);
     }
 
     [HarmonyPatch(typeof(LevelCompleteCoreAnimationBehaviour), "AnimateText"), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> LevelCompleteCoreAnimationBehaviour_AnimateText_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
-        var operations = new DeferredListOperation<CodeInstruction>();
+        var operations = new EnumerationOperation<CodeInstruction>();
         var currentScoreSystem = generator.DeclareLocal(typeof(IScoreSystem));
         var CompleteScreenUI_GetInterpolatedScoreString = typeof(CompleteScreenUI).GetMethod(nameof(GetInterpolatedScoreString), BindingFlags.NonPublic | BindingFlags.Static);
         var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);
@@ -205,16 +203,14 @@ internal static class CompleteScreenUI {
             new (OpCodes.Ldloc_1), // interpolatedTime
             new (OpCodes.Call, CompleteScreenUI_GetInterpolatedScoreString)
         });
-            
-        operations.Execute(instructionsList);
 
-        return instructionsList;
+        return operations.Enumerate(instructionsList);
     }
 
     [HarmonyPatch(typeof(PerformanceGraph), nameof(PerformanceGraph.SetupPerformanceGraph)), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> PerformanceGraph_SetupPerformanceGraph_Transpiler(IEnumerable<CodeInstruction> instructions) {
         var instructionsList = new List<CodeInstruction>(instructions);
-        var operations = new DeferredListOperation<CodeInstruction>();
+        var operations = new EnumerationOperation<CodeInstruction>();
         var CompleteScreenUI_FillPerformanceGraphValues = typeof(CompleteScreenUI).GetMethod(nameof(FillPerformanceGraphValues), BindingFlags.NonPublic | BindingFlags.Static);
         var AnimatedGraph_elementColors = typeof(AnimatedGraph).GetField("elementColors", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -238,16 +234,14 @@ internal static class CompleteScreenUI {
             new (OpCodes.Ldfld, AnimatedGraph_elementColors),
             new (OpCodes.Call, CompleteScreenUI_FillPerformanceGraphValues)
         });
-        
-        operations.Execute(instructionsList);
 
-        return instructionsList;
+        return operations.Enumerate(instructionsList);
     }
 
     [HarmonyPatch(typeof(ExtendedStats), nameof(ExtendedStats.Display)), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> ExtendedStats_Display_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
-        var operations = new DeferredListOperation<CodeInstruction>();
+        var operations = new EnumerationOperation<CodeInstruction>();
         var pieGraphValue = generator.DeclareLocal(typeof(PieGraphValue));
         var CompleteScreenUI_GetPieGraphValue = typeof(CompleteScreenUI).GetMethod(nameof(GetPieGraphValue), BindingFlags.NonPublic | BindingFlags.Static);
         var PieGraphValue_get_Perfect = typeof(PieGraphValue).GetProperty(nameof(PieGraphValue.Perfect)).GetGetMethod();
@@ -277,9 +271,7 @@ internal static class CompleteScreenUI {
             new (OpCodes.Call, PieGraphValue_get_Missed),
             new (OpCodes.Stloc_S, (byte) 6), // misses
         });
-        
-        operations.Execute(instructionsList);
 
-        return instructionsList;
+        return operations.Enumerate(instructionsList);
     }
 }
