@@ -125,7 +125,7 @@ internal class GameplayUI {
     [HarmonyPatch(typeof(Track), nameof(Track.UpdateUI)), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> Track_UpdateUI_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
-        var operations = new EnumerationOperation<CodeInstruction>();
+        var operations = new EnumerableOperation<CodeInstruction>();
         var currentScoreSystem = generator.DeclareLocal(typeof(IScoreSystem));
         var PlayState_get_TotalNoteScore = typeof(PlayState).GetProperty(nameof(PlayState.TotalNoteScore)).GetGetMethod();
         var PlayState_get_combo = typeof(PlayState).GetProperty(nameof(PlayState.combo)).GetGetMethod();

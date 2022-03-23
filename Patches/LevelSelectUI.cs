@@ -83,7 +83,7 @@ internal static class LevelSelectUI {
     [HarmonyPatch(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty"), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> XDLevelSelectMenuBase_FillOutCurrentTrackAndDifficulty_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
-        var operations = new EnumerationOperation<CodeInstruction>();
+        var operations = new EnumerableOperation<CodeInstruction>();
         var highScoreInfo = generator.DeclareLocal(typeof(HighScoreInfo));
         var scoreString = generator.DeclareLocal(typeof(string));
         var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);

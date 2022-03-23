@@ -354,7 +354,7 @@ internal static class GameplayState {
     [HarmonyPatch(typeof(TrackGameplayLogic), nameof(TrackGameplayLogic.UpdateNoteState)), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> TrackGameplayLogic_UpdateNoteState_Transpiler(IEnumerable<CodeInstruction> instructions) {
         var instructionsList = new List<CodeInstruction>(instructions);
-        var operations = new EnumerationOperation<CodeInstruction>();
+        var operations = new EnumerableOperation<CodeInstruction>();
         var GameplayState_NormalNoteHit = typeof(GameplayState).GetMethod(nameof(NormalNoteHit), BindingFlags.NonPublic | BindingFlags.Static);
         var GameplayState_BeatReleaseHit = typeof(GameplayState).GetMethod(nameof(BeatReleaseHit), BindingFlags.NonPublic | BindingFlags.Static);
         var GameplayState_NormalNoteMiss = typeof(GameplayState).GetMethod(nameof(NormalNoteMiss), BindingFlags.NonPublic | BindingFlags.Static);
@@ -470,7 +470,7 @@ internal static class GameplayState {
     [HarmonyPatch(typeof(TrackGameplayLogic), nameof(TrackGameplayLogic.UpdateFreestyleSectionState)), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> TrackGameplayLogic_UpdateFreestyleSectionState_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
-        var operations = new EnumerationOperation<CodeInstruction>();
+        var operations = new EnumerableOperation<CodeInstruction>();
         var pointValue = generator.DeclareLocal(typeof(int));
         var GameplayState_HoldHit = typeof(GameplayState).GetMethod(nameof(HoldHit), BindingFlags.NonPublic | BindingFlags.Static);
         var GameplayState_LiftoffHit = typeof(GameplayState).GetMethod(nameof(LiftoffHit), BindingFlags.NonPublic | BindingFlags.Static);
@@ -600,7 +600,7 @@ internal static class GameplayState {
     [HarmonyPatch(typeof(TrackGameplayLogic), nameof(TrackGameplayLogic.UpdateSpinSectionState)), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> TrackGameplayLogic_UpdateSpinSectionState_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         var instructionsList = new List<CodeInstruction>(instructions);
-        var operations = new EnumerationOperation<CodeInstruction>();
+        var operations = new EnumerableOperation<CodeInstruction>();
         var heldTime = generator.DeclareLocal(typeof(float));
         var pointValue = generator.DeclareLocal(typeof(int));
         var callLabel = generator.DefineLabel();
@@ -701,7 +701,7 @@ internal static class GameplayState {
     [HarmonyPatch(typeof(TrackGameplayLogic), nameof(TrackGameplayLogic.UpdateScratchSectionState)), HarmonyTranspiler]
     private static IEnumerable<CodeInstruction> TrackGameplayLogic_UpdateScratchSectionState_Transpiler(IEnumerable<CodeInstruction> instructions) {
         var instructionsList = new List<CodeInstruction>(instructions);
-        var operations = new EnumerationOperation<CodeInstruction>();
+        var operations = new EnumerableOperation<CodeInstruction>();
         var GameplayState_ScratchMiss = typeof(GameplayState).GetMethod(nameof(ScratchMiss), BindingFlags.NonPublic | BindingFlags.Static);
         var GameplayState_UpdateScratchTime = typeof(GameplayState).GetMethod(nameof(UpdateScratchTime), BindingFlags.NonPublic | BindingFlags.Static);
         var GameplayState_GetPointValueForSustain = typeof(GameplayState).GetMethod(nameof(GetPointValueForSustain), BindingFlags.NonPublic | BindingFlags.Static);
