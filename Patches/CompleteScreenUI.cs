@@ -103,8 +103,8 @@ internal static class CompleteScreenUI {
         return $"<line-height=50%>{time * score:0}\n<size=50%>+{time * secondaryScore:0}";
     }
 
-    [HarmonyPatch(typeof(XDLevelCompleteMenu), nameof(XDLevelCompleteMenu.Setup)), HarmonyPostfix]
-    private static void XDLevelCompleteMenu_Setup_Postfix(XDLevelCompleteMenu __instance, PlayState playState) {
+    [HarmonyPatch(typeof(XDLevelCompleteMenu), nameof(XDLevelCompleteMenu.OpenMenu)), HarmonyPostfix]
+    private static void XDLevelCompleteMenu_OpenMenu_Postfix(XDLevelCompleteMenu __instance) {
         levelCompleteMenu = __instance;
         accLabel = __instance.accuracyGameObject.GetComponentsInChildren<TranslatedTextMeshPro>()[0];
         fcLabel = __instance.FcBonusGameObject.GetComponentsInChildren<TranslatedTextMeshPro>()[0];
