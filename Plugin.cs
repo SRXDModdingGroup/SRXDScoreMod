@@ -6,7 +6,6 @@ using SMU.Utilities;
 namespace SRXDScoreMod; 
 
 [BepInDependency("com.pink.spinrhythm.moddingutils", "1.0.6")]
-[BepInDependency("com.pink.spinrhythm.spincore")]
 [BepInPlugin("SRXD.ScoreMod", "ScoreMod", "1.2.0.9")]
 internal class Plugin : BaseUnityPlugin {
     public static Plugin Instance { get; private set; }

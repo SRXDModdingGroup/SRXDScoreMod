@@ -269,7 +269,12 @@ internal class CustomScoreSystem : IScoreSystemInternal {
 
     internal void UpdateSpin(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, spinTickRate);
 
-    internal void UpdateScratch(int noteIndex, float heldTime) => UpdateSustainedNoteValue(noteIndex, heldTime, scratchTickRate);
+    internal void UpdateScratch(int noteIndex, float heldTime) {
+        if (scoreStates[noteIndex].RemainingStreak > 0)
+            AddScore(noteIndex, 0, 0, 1, null, false);
+        
+        UpdateSustainedNoteValue(noteIndex, heldTime, scratchTickRate);
+    }
 
     internal void CompleteNote(int noteIndex) {
         if (CompleteScoreState(noteIndex))

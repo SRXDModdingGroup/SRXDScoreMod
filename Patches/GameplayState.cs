@@ -217,12 +217,15 @@ internal static class GameplayState {
             scoreSystem.UpdateHold(noteIndex, heldTime);
     }
     
-    private static void UpdateSpinTime(int noteIndex, double heldTime) {
+    private static void UpdateSpinTime(int noteIndex, float heldTime, float holdLength, SpinSectionState.State state) {
         if (!Playing)
             return;
 
+        if (state == SpinSectionState.State.Passed)
+            heldTime = holdLength;
+
         foreach (var scoreSystem in ScoreMod.CustomScoreSystems)
-            scoreSystem.UpdateSpin(noteIndex, (float) heldTime);
+            scoreSystem.UpdateSpin(noteIndex, heldTime);
     }
     
     private static void UpdateScratchTime(int noteIndex, float heldTime) {
@@ -544,6 +547,7 @@ internal static class GameplayState {
         var SpinnerSection_noteIndex = typeof(SpinnerSection).GetField(nameof(SpinnerSection.noteIndex));
         var SpinnerSection_startsAtTime = typeof(SpinnerSection).GetField(nameof(SpinnerSection.startsAtTime));
         var SpinSectionState_failedInitialSpin = typeof(SpinSectionState).GetField(nameof(SpinSectionState.failedInitialSpin));
+        var SpinSectionState_state = typeof(SpinSectionState).GetField(nameof(SpinSectionState.state));
 
         var matches = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
             instr => instr.Calls(ScoreState_AddScoreIfPossible)
@@ -579,6 +583,9 @@ internal static class GameplayState {
             new (OpCodes.Ldloc_3), // section
             new (OpCodes.Ldfld, SpinnerSection_startsAtTime),
             new (OpCodes.Sub),
+            new (OpCodes.Ldloc_S, 26), // spinLength
+            new (OpCodes.Ldarg_S, 4), // state
+            new (OpCodes.Ldfld, SpinSectionState_state),
             new (OpCodes.Call, GameplayState_UpdateSpinTime)
         });
         
