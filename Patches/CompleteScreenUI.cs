@@ -6,11 +6,8 @@ using System.Reflection.Emit;
 using HarmonyLib;
 using SMU.Extensions;
 using SMU.Utilities;
-using SpinCore.UI;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
-using Object = UnityEngine.Object;
 
 namespace SRXDScoreMod; 
 
@@ -20,7 +17,6 @@ internal static class CompleteScreenUI {
     private static TranslatedTextMeshPro accLabel;
     private static TranslatedTextMeshPro fcLabel;
     private static TranslatedTextMeshPro pfcLabel;
-    private static TMP_Dropdown scoreSystemDropdown;
     
     public static void UpdateUI(bool updateGraphs) {
         if (levelCompleteMenu == null || !levelCompleteMenu.gameObject.activeSelf)
@@ -28,27 +24,6 @@ internal static class CompleteScreenUI {
 
         var scoreSystem = ScoreMod.CurrentScoreSystemInternal;
         var scoreValueText = levelCompleteMenu.scoreValueText;
-
-        if (scoreSystemDropdown == null) {
-            scoreSystemDropdown = SpinUI.CreateDropdown("Score System", scoreValueText.transform.parent, ScoreMod.ScoreSystems.Select(system => system.Name).ToArray());
-            scoreSystemDropdown.Bind(Plugin.CurrentSystem);
-
-            var parent = scoreSystemDropdown.transform.parent;
-            
-            Object.Destroy(parent.GetComponent<VerticalLayoutGroup>());
-            Dispatcher.QueueForNextFrame(() => {
-                parent.gameObject.AddComponent<HorizontalLayoutGroup>();
-                parent.localScale = new Vector3(0.8f, 0.8f, 1f);
-
-                var rect = parent.GetComponent<RectTransform>();
-
-                rect.pivot = Vector2.zero;
-                rect.offsetMin = new Vector2(250f, 362f);
-                rect.offsetMax = new Vector2(600f, 0f);
-                parent.Find("Heading").GetComponent<LayoutElement>().preferredWidth = 0f;
-                scoreSystemDropdown.GetComponent<LayoutElement>().preferredWidth = 60f;
-            });
-        }
         
         // scoreSystemNameText.SetText(ScoreMod.ScoreSystemAndMultiplierLabel);
         scoreValueText.verticalAlignment = VerticalAlignmentOptions.Middle;

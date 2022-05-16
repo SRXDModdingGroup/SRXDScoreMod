@@ -6,6 +6,8 @@ using System.Reflection.Emit;
 using HarmonyLib;
 using SMU.Extensions;
 using SMU.Utilities;
+using UnityEngine;
+using Input = UnityEngine.Input;
 
 namespace SRXDScoreMod;
 
@@ -234,6 +236,12 @@ internal static class GameplayState {
     #endregion
 
     #region Patches
+
+    [HarmonyPatch(typeof(Game), nameof(Game.Update)), HarmonyPostfix]
+    private static void Game_Update_Postfix() {
+        if (Input.GetKeyDown(KeyCode.F1))
+            Plugin.CurrentSystem.Value = (Plugin.CurrentSystem.Value + 1) % ScoreMod.ScoreSystems.Count;
+    }
 
     [HarmonyPatch(typeof(PlayState), nameof(PlayState.Complete)), HarmonyPostfix]
     private static void PlayState_Complete_Postfix(PlayState __instance) {

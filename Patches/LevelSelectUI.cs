@@ -6,7 +6,6 @@ using System.Reflection.Emit;
 using HarmonyLib;
 using SMU.Extensions;
 using SMU.Utilities;
-using SpinCore.UI;
 using TMPro;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -67,17 +66,14 @@ internal static class LevelSelectUI {
         
         if (__instance.transform.Find("Score System"))
             return;
-        
-        var scoreSystemDropdown = SpinUI.CreateDropdown("Score System", __instance.transform, ScoreMod.ScoreSystems.Select(system => system.Name).ToArray());
-        
-        scoreSystemDropdown.Bind(Plugin.CurrentSystem);
-        Dispatcher.QueueForNextFrame(() => {
-            var rect = scoreSystemDropdown.transform.parent.GetComponent<RectTransform>();
-            
-            rect.pivot = Vector2.zero;
-            rect.offsetMin = new Vector2(535f, 0f);
-            rect.offsetMax = new Vector2(745f, 565f);
-        });
+
+        var scoreSystemText = Object.Instantiate(scoreValueText.gameObject, __instance.transform, false).GetComponent<TMP_Text>();
+
+        scoreSystemText.gameObject.name = "Score System";
+        scoreSystemText.fontSize = 14f;
+        scoreSystemText.transform.localPosition = new Vector3(655f, 200f, 0f);
+
+        Plugin.CurrentSystem.BindAndInvoke(value => scoreSystemText.SetText(ScoreMod.ScoreSystems[value].Name));
     }
 
     [HarmonyPatch(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty"), HarmonyTranspiler]
