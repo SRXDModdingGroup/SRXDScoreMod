@@ -71,9 +71,12 @@ internal static class LevelSelectUI {
 
         scoreSystemText.gameObject.name = "Score System";
         scoreSystemText.fontSize = 14f;
-        scoreSystemText.transform.localPosition = new Vector3(655f, 200f, 0f);
+        scoreSystemText.alignment = TextAlignmentOptions.MidlineLeft;
+        scoreSystemText.overflowMode = TextOverflowModes.Overflow;
+        scoreSystemText.GetComponent<RectTransform>().offsetMax += new Vector2(500f, 0);
+        scoreSystemText.transform.localPosition = new Vector3(1160f, 200f, 0f);
 
-        Plugin.CurrentSystem.BindAndInvoke(value => scoreSystemText.SetText(ScoreMod.ScoreSystems[value].Name));
+        Plugin.CurrentSystem.BindAndInvoke(value => scoreSystemText.SetText($"(F1) {ScoreMod.ScoreSystems[value].Name}"));
     }
 
     [HarmonyPatch(typeof(XDLevelSelectMenuBase), "FillOutCurrentTrackAndDifficulty"), HarmonyTranspiler]
