@@ -26,6 +26,8 @@ internal interface IScoreSystemInternal : IScoreSystem {
     
     public void Init(PlayState playState, int startIndex, int endIndex);
 
+    public void ResetScore();
+
     public void Complete(PlayState playState);
 
     public CustomTimingAccuracy GetTimingAccuracyForTap(float timeOffset);

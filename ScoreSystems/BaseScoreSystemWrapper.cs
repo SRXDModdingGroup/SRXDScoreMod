@@ -82,6 +82,8 @@ internal class BaseScoreSystemWrapper : IScoreSystemInternal {
         gameplayVariables = GameplayVariables.Instance;
         scoreState = playState.scoreState;
     }
+    
+    public void ResetScore() { }
 
     public void Complete(PlayState playState) {
         var trackInfoRef = playState.TrackInfoRef;

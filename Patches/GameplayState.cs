@@ -266,9 +266,6 @@ internal static class GameplayState {
 
     [HarmonyPatch(typeof(Track), nameof(Track.PlayTrack)), HarmonyPostfix]
     private static void Track_PlayTrack_Postfix(Track __instance) {
-        if (__instance.IsInEditMode)
-            return;
-        
         Playing = true;
         tapTimingOffset = 0.001f * Plugin.TapTimingOffset.Value;
         beatTimingOffset = 0.001f * Plugin.BeatTimingOffset.Value;
@@ -324,6 +321,25 @@ internal static class GameplayState {
         
         foreach (var scoreSystem in ScoreMod.ScoreSystems)
             scoreSystem.Init(playState, startIndex, endIndex);
+    }
+
+    [HarmonyPatch(typeof(PlayableTrackData), nameof(PlayableTrackData.EndEditing)), HarmonyPostfix]
+    private static void PlayableTrackData_EndEditing_Postfix(PlayableTrackData __instance) {
+        var playState = Track.Instance.playStateFirst;
+        
+        if (__instance != playState.trackData)
+            return;
+        
+        int endIndex = __instance.NoteCount;
+        
+        foreach (var scoreSystem in ScoreMod.ScoreSystems)
+            scoreSystem.Init(playState, 0, endIndex);
+    }
+
+    [HarmonyPatch(typeof(PlayState), nameof(PlayState.ClearNoteStates)), HarmonyPostfix]
+    private static void PlayState_ClearNoteStates_Postfix(PlayState __instance) {
+        foreach (var scoreSystem in ScoreMod.ScoreSystems)
+            scoreSystem.ResetScore();
     }
 
     [HarmonyPatch(typeof(TrackGameplayLogic), nameof(TrackGameplayLogic.UpdateNoteState)), HarmonyPostfix]

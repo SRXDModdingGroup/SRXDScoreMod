@@ -97,7 +97,9 @@ internal class CustomScoreSystem : IScoreSystemInternal {
     private TimingWindow[] beatReleaseTimingWindows;
 
     #endregion
-    
+
+    private int startIndex;
+    private int endIndex;
     private int score;
     private int maxPossibleScore;
     private int maxPossibleScoreSoFar;
@@ -148,6 +150,19 @@ internal class CustomScoreSystem : IScoreSystemInternal {
     #region IScoreSystemFunctions
 
     public void Init(PlayState playState, int startIndex, int endIndex) {
+        trackData = playState.trackData;
+        this.startIndex = startIndex;
+        this.endIndex = endIndex;
+        ResetScore();
+
+        var highScoreInfo = HighScoresContainer.GetHighScore(playState.TrackInfoRef, playState.trackData.Difficulty, this, ScoreMod.CurrentModifierSet);
+
+        HighScore = highScoreInfo.Score;
+        HighSecondaryScore = highScoreInfo.SecondaryScore;
+        BestStreak = highScoreInfo.Streak;
+    }
+
+    public void ResetScore() {
         score = 0;
         SecondaryScore = 0;
         maxPossibleScore = 0;
@@ -162,15 +177,8 @@ internal class CustomScoreSystem : IScoreSystemInternal {
         maxPossibleStreakSoFar = 0;
         pointsToNextMultiplier = GetPointsToNextMultiplier(maxMultiplier);
         overbeatTimes.Clear();
-        trackData = playState.trackData;
         
-        InitScoreStates(startIndex, endIndex);
-        
-        var highScoreInfo = HighScoresContainer.GetHighScore(playState.TrackInfoRef, playState.trackData.Difficulty, this, ScoreMod.CurrentModifierSet);
-
-        HighScore = highScoreInfo.Score;
-        HighSecondaryScore = highScoreInfo.SecondaryScore;
-        BestStreak = highScoreInfo.Streak;
+        InitScoreStates();
     }
 
     public void Complete(PlayState playState) {
@@ -438,7 +446,13 @@ internal class CustomScoreSystem : IScoreSystemInternal {
         StarColor = Color.cyan;
     }
 
-    private void InitScoreStates(int startIndex, int endIndex) {
+    private void InitScoreStates() {
+        if (trackData == null) {
+            scoreStates = Array.Empty<NoteScoreState>();
+            
+            return;
+        }
+        
         scoreStates = new NoteScoreState[trackData.NoteCount];
 
         int maxTapValue = GetMaxPointValue(tapTimingWindows);
