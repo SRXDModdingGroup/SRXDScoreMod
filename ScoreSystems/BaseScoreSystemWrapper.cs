@@ -162,8 +162,6 @@ internal class BaseScoreSystemWrapper : IScoreSystemInternal {
         }
     }
 
-    public int GetPointValueForSustain(int baseValue, int noteIndex) => baseValue;
-
     public CustomTimingAccuracy GetTimingAccuracyForTap(float timeOffset) => BaseToCustomTimingAccuracy(gameplayVariables.GetTimingAccuracy(timeOffset));
 
     public CustomTimingAccuracy GetTimingAccuracyForBeat(float timeOffset) => BaseToCustomTimingAccuracy(gameplayVariables.GetTimingAccuracyForBeat(timeOffset));

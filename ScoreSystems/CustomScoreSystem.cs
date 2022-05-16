@@ -197,8 +197,6 @@ internal class CustomScoreSystem : IScoreSystemInternal {
         PostGameInfo3Value = GetEarlyLateRatio();
     }
 
-    public int GetPointValueForSustain(int baseValue, int noteIndex) => scoreStates[noteIndex].GainedBaseSustainPoints;
-
     public CustomTimingAccuracy GetTimingAccuracyForTap(float timeOffset) => GetTimingWindow(timeOffset, tapTimingWindows).TimingAccuracy;
 
     public CustomTimingAccuracy GetTimingAccuracyForBeat(float timeOffset) => GetTimingWindow(timeOffset, beatTimingWindows).TimingAccuracy;
