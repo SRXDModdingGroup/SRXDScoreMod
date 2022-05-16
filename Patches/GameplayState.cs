@@ -475,7 +475,7 @@ internal static class GameplayState {
             new (OpCodes.Call, GameplayState_HoldHit)
         });
         
-        operations.Insert(matches[0][0].End, new CodeInstruction[] {
+        operations.Insert(matches[1][0].End, new CodeInstruction[] {
             new (OpCodes.Ldarg_0), // playState
             new (OpCodes.Ldloc_S, 4), // section
             new (OpCodes.Ldfld, FreestyleSection_endNoteIndex),
@@ -505,7 +505,7 @@ internal static class GameplayState {
         }).ToList();
         
         operations.Insert(matches[0][0].End, new CodeInstruction[] {
-            new (OpCodes.Ldloc_S, 6), // section
+            new (OpCodes.Ldloc_S, 4), // section
             new (OpCodes.Ldfld, FreestyleSection_endNoteIndex),
             new (OpCodes.Call, GameplayState_LiftoffMiss)
         });
@@ -515,7 +515,7 @@ internal static class GameplayState {
         }).ToList();
         
         operations.Insert(matches[0][0].End, new CodeInstruction[] {
-            new (OpCodes.Ldloc_S, 6), // section
+            new (OpCodes.Ldloc_S, 4), // section
             new (OpCodes.Ldfld, FreestyleSection_firstNoteIndex),
             new (OpCodes.Ldloc_S, 13), // heldTime
             new (OpCodes.Call, GameplayState_UpdateHoldTime)

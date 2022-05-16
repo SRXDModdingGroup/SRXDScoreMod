@@ -14,6 +14,8 @@ namespace SRXDScoreMod;
 
 // Contains patch functions to show modded scores and pace prediction on the in-game HUD
 internal class GameplayUI {
+    private static readonly int FACE_COLOR = Shader.PropertyToID("_FaceColor");
+    
     public enum PaceType {
         Hide,
         Score,
@@ -25,6 +27,7 @@ internal class GameplayUI {
     private static PaceType paceType;
     private static TMP_Text systemNameText;
     private static TMP_Text bestPossibleText;
+    private static CustomTimingAccuracy customTimingAccuracy;
 
     public static void UpdateUI() {
         if (systemNameText != null)
@@ -32,17 +35,17 @@ internal class GameplayUI {
     }
 
     internal static void PlayCustomTimingFeedback(PlayState playState, CustomTimingAccuracy timingAccuracy) {
-        if (!GameplayState.Playing)
-            return;
-        
-        
+        customTimingAccuracy = timingAccuracy;
+        playState.PlayTimingFeedback(timingAccuracy.BaseAccuracy);
     }
 
-    private static TMP_Text GenerateText(GameObject baseObject, Vector3 position, float fontSize, Color color, string text = "") {
+    private static TMP_Text GenerateText(string name, GameObject baseObject, Vector3 position, float fontSize, Color color, string text = "") {
         var newObject = Object.Instantiate(baseObject, Vector3.zero, baseObject.transform.rotation, baseObject.transform.parent);
 
+        newObject.name = name;
         newObject.transform.localPosition = position;
         newObject.transform.localScale = baseObject.transform.localScale;
+        newObject.GetComponent<HdrMeshEffect>().colorIndex = 0;
 
         var textComponent = newObject.GetComponentInChildren<TMP_Text>();
 
@@ -54,6 +57,13 @@ internal class GameplayUI {
         textComponent.verticalAlignment = VerticalAlignmentOptions.Top;
 
         return textComponent;
+    }
+
+    private static AccuracyLogInstance ModifyAccuracyLogInstance(AccuracyLogInstance instance) {
+        foreach (var material in instance.materials)
+            material.SetColor(FACE_COLOR, 4f * customTimingAccuracy.Color);
+
+        return instance;
     }
 
     [HarmonyPatch(typeof(DomeHud), "Update"), HarmonyPrefix]
@@ -78,18 +88,18 @@ internal class GameplayUI {
         showPace = paceType != PaceType.Hide;
         
         if (systemNameText != null)
-            Object.Destroy(systemNameText);
+            Object.Destroy(systemNameText.gameObject);
         
         if (bestPossibleText != null)
-            Object.Destroy(bestPossibleText);
+            Object.Destroy(bestPossibleText.gameObject);
 
         if (!showPace)
             return;
 
         var baseText = __instance.trackTitleText.gameObject;
 
-        systemNameText = GenerateText(baseText, new Vector3(235f, 102f, 0f), 4f, Color.white);
-        bestPossibleText = GenerateText(baseText, new Vector3(235f, 67f, 0f), 8f, Color.cyan);
+        systemNameText = GenerateText("System Name", baseText, new Vector3(180f, 390f, 0f), 4f, Color.white);
+        bestPossibleText = GenerateText("Best Possible", baseText, new Vector3(180f, 360f, 0f), 8f, 4f * Color.cyan);
         bestPossibleText.gameObject.SetActive(ScoreMod.CurrentScoreSystemInternal.ImplementsScorePrediction);
         UpdateUI();
     }
@@ -121,9 +131,9 @@ internal class GameplayUI {
         int delta = bestPossible - scoreSystem.HighScore;
             
         if (delta >= 0)
-            bestPossibleText.color = Color.cyan;
+            bestPossibleText.color = 4f * Color.cyan;
         else
-            bestPossibleText.color = Color.gray * 0.75f;
+            bestPossibleText.color = Color.gray;
 
         if (paceType == PaceType.Delta || paceType == PaceType.Both) {
             string paceString;
@@ -140,5 +150,23 @@ internal class GameplayUI {
         }
         else
             bestPossibleText.SetText($"Pace: {bestPossible.ToString(),7}");
+    }
+
+    [HarmonyPatch(typeof(DomeHud), nameof(DomeHud.AddToAccuracyLog)), HarmonyTranspiler]
+    private static IEnumerable<CodeInstruction> DomeHid_AddToAccuracyLog_Transpiler(IEnumerable<CodeInstruction> instructions) {
+        var instructionsList = instructions.ToList();
+        var operations = new EnumerableOperation<CodeInstruction>();
+        var AccuracyLogType_Get = typeof(AccuracyLogType).GetMethod(nameof(AccuracyLogType.Get));
+        var GameplayUI_ModifyAccuracyLogInstance = typeof(GameplayUI).GetMethod(nameof(ModifyAccuracyLogInstance), BindingFlags.NonPublic | BindingFlags.Static);
+
+        var matches = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.Calls(AccuracyLogType_Get)
+        }).ToList();
+        
+        operations.Insert(matches[0][0].End, new CodeInstruction[] {
+            new(OpCodes.Call, GameplayUI_ModifyAccuracyLogInstance)
+        });
+
+        return operations.Enumerate(instructionsList);
     }
 }
