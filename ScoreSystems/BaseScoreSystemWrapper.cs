@@ -171,6 +171,17 @@ internal class BaseScoreSystemWrapper : IScoreSystemInternal {
     public CustomTimingAccuracy GetTimingAccuracyForLiftoff(float timeOffset) => BaseToCustomTimingAccuracy(gameplayVariables.GetTimingAccuracy(timeOffset));
 
     public CustomTimingAccuracy GetTimingAccuracyForBeatRelease(float timeOffset) => BaseToCustomTimingAccuracy(gameplayVariables.GetTimingAccuracyForBeat(timeOffset));
+    
+    public DomeHudFilledBar.BarState GetMultiplierBarState() {
+        if (scoreState == null)
+            return new DomeHudFilledBar.BarState();
+        
+        return new DomeHudFilledBar.BarState()
+        {
+            amount = scoreState.TotalMultiplierBucketProgress,
+            count = scoreState.MaxMultiplierBucket
+        };
+    }
 
     public HighScoreInfo GetHighScoreInfoForTrack(MetadataHandle handle, TrackData.DifficultyType difficultyType) {
         var metadataSet = handle.TrackDataMetadata;

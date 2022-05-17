@@ -38,5 +38,7 @@ internal interface IScoreSystemInternal : IScoreSystem {
 
     public CustomTimingAccuracy GetTimingAccuracyForBeatRelease(float timeOffset);
 
+    public DomeHudFilledBar.BarState GetMultiplierBarState();
+
     public HighScoreInfo GetHighScoreInfoForTrack(TrackInfoAssetReference trackInfoRef, TrackDataMetadata metadata);
 }

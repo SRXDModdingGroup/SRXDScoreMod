@@ -75,6 +75,7 @@ internal static class LevelSelectUI {
         scoreSystemText.overflowMode = TextOverflowModes.Overflow;
         scoreSystemText.GetComponent<RectTransform>().offsetMax += new Vector2(500f, 0);
         scoreSystemText.transform.localPosition = new Vector3(1160f, 200f, 0f);
+        scoreSystemText.raycastTarget = false;
 
         Plugin.CurrentSystem.BindAndInvoke(value => scoreSystemText.SetText($"(F1) {ScoreMod.ScoreSystems[value].Name}"));
     }

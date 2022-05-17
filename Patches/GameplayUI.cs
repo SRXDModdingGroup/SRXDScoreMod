@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using SMU.Extensions;
 using SMU.Utilities;
 using TMPro;
 using UnityEngine;
@@ -60,8 +61,13 @@ internal class GameplayUI {
     }
 
     private static AccuracyLogInstance ModifyAccuracyLogInstance(AccuracyLogInstance instance) {
+        if (customTimingAccuracy == null)
+            return instance;
+        
         foreach (var material in instance.materials)
             material.SetColor(FACE_COLOR, 4f * customTimingAccuracy.Color);
+
+        customTimingAccuracy = null;
 
         return instance;
     }
@@ -83,7 +89,7 @@ internal class GameplayUI {
     }
 
     [HarmonyPatch(typeof(DomeHud), nameof(DomeHud.Init)), HarmonyPostfix]
-    private static void DomeHid_Init_Postfix(DomeHud __instance) {
+    private static void DomeHud_Init_Postfix(DomeHud __instance) {
         paceType = Plugin.PaceType.Value;
         showPace = paceType != PaceType.Hide;
         
@@ -102,6 +108,13 @@ internal class GameplayUI {
         bestPossibleText = GenerateText("Best Possible", baseText, new Vector3(180f, 360f, 0f), 8f, 4f * Color.cyan);
         bestPossibleText.gameObject.SetActive(ScoreMod.CurrentScoreSystemInternal.ImplementsScorePrediction);
         UpdateUI();
+    }
+
+    [HarmonyPatch(typeof(DomeHud), "MultiplierBarResultCallback"), HarmonyPrefix]
+    private static bool DomeHud_MultiplierBarResultCallback_Prefix(ref DomeHudFilledBar.BarState __result) {
+        __result = ScoreMod.CurrentScoreSystemInternal.GetMultiplierBarState();
+
+        return false;
     }
 
     [HarmonyPatch(typeof(Track), nameof(Track.UpdateUI)), HarmonyPostfix]
@@ -153,7 +166,7 @@ internal class GameplayUI {
     }
 
     [HarmonyPatch(typeof(DomeHud), nameof(DomeHud.AddToAccuracyLog)), HarmonyTranspiler]
-    private static IEnumerable<CodeInstruction> DomeHid_AddToAccuracyLog_Transpiler(IEnumerable<CodeInstruction> instructions) {
+    private static IEnumerable<CodeInstruction> DomeHud_AddToAccuracyLog_Transpiler(IEnumerable<CodeInstruction> instructions) {
         var instructionsList = instructions.ToList();
         var operations = new EnumerableOperation<CodeInstruction>();
         var AccuracyLogType_Get = typeof(AccuracyLogType).GetMethod(nameof(AccuracyLogType.Get));
@@ -165,6 +178,29 @@ internal class GameplayUI {
         
         operations.Insert(matches[0][0].End, new CodeInstruction[] {
             new(OpCodes.Call, GameplayUI_ModifyAccuracyLogInstance)
+        });
+
+        return operations.Enumerate(instructionsList);
+    }
+
+    [HarmonyPatch(typeof(DomeHud), "LateUpdate"), HarmonyTranspiler]
+    private static IEnumerable<CodeInstruction> DomeHud_LateUpdate_Transpiler(IEnumerable<CodeInstruction> instructions) {
+        var instructionsList = instructions.ToList();
+        var operations = new EnumerableOperation<CodeInstruction>();
+        var ScoreMod_get_CurrentScoreSystemInternal = typeof(ScoreMod).GetProperty(nameof(ScoreMod.CurrentScoreSystemInternal), BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true);
+        var IScoreSystem_get_Multiplier = typeof(IScoreSystem).GetProperty(nameof(IScoreSystem.Multiplier)).GetGetMethod();
+        var PlayState_multiplierBucket_Get = typeof(PlayState).GetProperty(nameof(PlayState.multiplierBucket)).GetGetMethod();
+
+        var matches = PatternMatching.Match(instructionsList, new Func<CodeInstruction, bool>[] {
+            instr => instr.opcode == OpCodes.Ldloc_0, // playState
+            instr => instr.Calls(PlayState_multiplierBucket_Get)
+        }).ToList();
+        
+        operations.Replace(matches[0][0].Start, 2, new CodeInstruction[] {
+            new CodeInstruction(OpCodes.Call, ScoreMod_get_CurrentScoreSystemInternal).WithLabels(instructionsList[matches[0][0].Start].labels),
+            new(OpCodes.Callvirt, IScoreSystem_get_Multiplier),
+            new(OpCodes.Ldc_I4_1),
+            new(OpCodes.Sub)
         });
 
         return operations.Enumerate(instructionsList);

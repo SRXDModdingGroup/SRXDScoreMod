@@ -116,6 +116,7 @@ internal class CustomScoreSystem : IScoreSystemInternal {
         Name = profile.Name;
         Id = profile.Id;
         Key = profile.Key;
+        Multiplier = 1;
         matchPointValue = profile.MatchPointValue;
         spinStartPointValue = profile.SpinStartPointValue;
         maxMultiplier = profile.MaxMultiplier;
@@ -213,7 +214,23 @@ internal class CustomScoreSystem : IScoreSystemInternal {
     public CustomTimingAccuracy GetTimingAccuracyForLiftoff(float timeOffset) => GetTimingWindow(timeOffset, liftoffTimingWindows).TimingAccuracy;
 
     public CustomTimingAccuracy GetTimingAccuracyForBeatRelease(float timeOffset) => GetTimingWindow(timeOffset, beatReleaseTimingWindows).TimingAccuracy;
-    
+
+    public DomeHudFilledBar.BarState GetMultiplierBarState() {
+        if (Multiplier == maxMultiplier) {
+            return new DomeHudFilledBar.BarState {
+                amount = maxMultiplier - 1,
+                count = maxMultiplier - 1
+            };
+        }
+
+        int multiplierSize = GetPointsToNextMultiplier(Multiplier);
+
+        return new DomeHudFilledBar.BarState {
+            amount = Multiplier - 1 + (float) (multiplierSize - pointsToNextMultiplier) / multiplierSize,
+            count = maxMultiplier - 1
+        };
+    }
+
     public HighScoreInfo GetHighScoreInfoForTrack(MetadataHandle handle, TrackData.DifficultyType difficultyType)
         => GetHighScoreInfoForTrack(handle.TrackInfoRef, difficultyType);
 

@@ -33,7 +33,7 @@ internal static class CompleteScreenUI {
         else
             scoreValueText.SetText($"<line-height=50%>{scoreSystem.Score:0}\n<size=50%>+{scoreSystem.SecondaryScore:0}");
         
-        levelCompleteMenu.streakValueText.SetText(scoreSystem.Streak.ToString());
+        levelCompleteMenu.streakValueText.SetText(scoreSystem.MaxStreak.ToString());
         levelCompleteMenu.rankAnimator.Setup(scoreSystem.Rank, null);
         levelCompleteMenu.pfcStatusText.SetText(scoreSystem.FullComboState == FullComboState.PerfectFullCombo ? "PFC" : "FC");
         levelCompleteMenu.newBestGameObject.SetActive(scoreSystem.IsHighScore);
