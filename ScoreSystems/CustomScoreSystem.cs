@@ -541,6 +541,9 @@ internal class CustomScoreSystem : IScoreSystemInternal {
                     break;
                 }
                 case NoteType.SectionContinuationOrEnd: {
+                    if (note.FreestyleEndType != FreestyleSection.EndType.Release)
+                        break;
+                    
                     int index = trackData.FreestyleSectionIndexForNoteIndex[i];
 
                     if (index < 0 || index >= trackData.FreestyleSections.Count)
