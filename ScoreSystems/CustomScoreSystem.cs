@@ -494,45 +494,61 @@ internal class CustomScoreSystem : IScoreSystemInternal {
             int availableStreak = 0;
 
             switch (note.NoteType) {
-                case NoteType.Match:
+                case NoteType.Match: {
                     availablePoints = matchPointValue;
                     availableStreak = 1;
-                    
+
                     break;
-                case NoteType.DrumStart:
+                }
+                case NoteType.DrumStart: {
                     availablePoints = maxBeatValue;
                     availableSecondaryScore = 1;
                     availableStreak = 1;
 
                     if (note.length > 0f)
                         availableSustainPoints = Mathf.FloorToInt(beatHoldTickRate * note.length);
-                    
+
                     break;
+                }
                 case NoteType.SpinRightStart:
-                case NoteType.SpinLeftStart:
-                    var spinnerSection = trackData.SpinnerSections[trackData.SpinnerSectionIndexForNoteIndex[i]];
+                case NoteType.SpinLeftStart: {
+                    int index = trackData.SpinnerSectionIndexForNoteIndex[i];
+
+                    if (index < 0 || index >= trackData.SpinnerSections.Count)
+                        break;
                     
+                    var spinnerSection = trackData.SpinnerSections[index];
+
                     availablePoints = spinStartPointValue;
                     availableSustainPoints = Mathf.FloorToInt(spinTickRate * (spinnerSection.endsAtTime - spinnerSection.startsAtTime));
                     availableStreak = 1;
-                    
+
                     break;
-                case NoteType.HoldStart:
-                    var freestyleSection0 = trackData.FreestyleSections[trackData.FreestyleSectionIndexForNoteIndex[i]];
+                }
+                case NoteType.HoldStart: {
+                    int index = trackData.FreestyleSectionIndexForNoteIndex[i];
+
+                    if (index < 0 || index >= trackData.FreestyleSections.Count)
+                        break;
+
+                    var freestyleSection = trackData.FreestyleSections[index];
 
                     availablePoints = maxTapValue;
-                    availableSustainPoints = Mathf.FloorToInt(holdTickRate * (freestyleSection0.EndTime - freestyleSection0.Time));
+                    availableSustainPoints = Mathf.FloorToInt(holdTickRate * (freestyleSection.EndTime - freestyleSection.Time));
                     availableSecondaryScore = 1;
                     availableStreak = 1;
-                    
-                    break;
-                case NoteType.SectionContinuationOrEnd:
-                    if (note.FreestyleEndType != FreestyleSection.EndType.Release)
-                        break;
-                    
-                    var freestyleSection1 = trackData.FreestyleSections[trackData.FreestyleSectionIndexForNoteIndex[i]];
 
-                    if (freestyleSection1.endNoteIndex != i)
+                    break;
+                }
+                case NoteType.SectionContinuationOrEnd: {
+                    int index = trackData.FreestyleSectionIndexForNoteIndex[i];
+
+                    if (index < 0 || index >= trackData.FreestyleSections.Count)
+                        break;
+
+                    var freestyleSection = trackData.FreestyleSections[index];
+
+                    if (freestyleSection.endNoteIndex != i)
                         break;
 
                     availablePoints = maxLiftoffValue;
@@ -540,36 +556,45 @@ internal class CustomScoreSystem : IScoreSystemInternal {
                     availableStreak = 1;
 
                     break;
-                case NoteType.Tap:
+                }
+                case NoteType.Tap: {
                     availablePoints = maxTapValue;
                     availableSecondaryScore = 1;
                     availableStreak = 1;
-                    
+
                     break;
-                case NoteType.DrumEnd:
+                }
+                case NoteType.DrumEnd: {
                     if (note.DrumEndType != DrumSection.EndType.Release)
                         break;
 
-                    var startNote = trackData.GetNote(trackData.DrumIndexForNoteIndex[i]);
-                    
-                    if (startNote.endNoteIndex != i)
+                    int index = trackData.DrumIndexForNoteIndex[i];
+
+                    if (index < 0 || index >= trackData.NoteCount || trackData.GetNote(index).endNoteIndex != i)
                         break;
-                    
+
                     availablePoints = maxBeatReleaseValue;
                     availableSecondaryScore = 1;
                     availableStreak = 1;
 
                     break;
-                case NoteType.ScratchStart:
-                    var scratchSection = trackData.ScratchSections[trackData.ScratchSectionIndexForNoteIndex[i]];
+                }
+                case NoteType.ScratchStart: {
+                    int index = trackData.ScratchSectionIndexForNoteIndex[i];
+
+                    if (index < 0 || index >= trackData.ScratchSections.Count)
+                        break;
+
+                    var scratchSection = trackData.ScratchSections[index];
 
                     if (scratchSection.IsEmpty)
                         break;
-                    
+
                     availableSustainPoints = Mathf.FloorToInt(scratchTickRate * (scratchSection.endsAtTime - scratchSection.startsAtTime));
                     availableStreak = 1;
 
                     break;
+                }
             }
 
             maxPossibleScore += maxMultiplier * (availablePoints + availableSustainPoints);
